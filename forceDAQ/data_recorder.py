@@ -25,7 +25,7 @@ class SoftTrigger(object):
         Parameters
         ----------
         time : int
-        code: numerical or string
+        code : numerical or string
 
         """
         self.time = time
@@ -247,23 +247,23 @@ class DataRecorder(object):
 
         Parameters
         ----------
-        filename: string
+        filename : string
             the filename
-        directory: string, optional
+        directory : string, optional
             the data subdirectory
-        suffix: string, optional
+        suffix : string, optional
             the data filename suffix
-        time_stamp_filename: boolean, optional
+        time_stamp_filename : boolean, optional
             if True all filename will contain a timestamp. This is usefull to
             ensure that data will not overwritten
-        varnames: boolean, optional
+        varnames : boolean, optional
             write variable names in first line of data output
-        comment_line: string, optional
+        comment_line : string, optional
             add some comments at the beginning of the data output file
 
         Returns
         -------
-        filename: string
+        filename : string
                 the actually used filename (incl. timestamp)
 
         """

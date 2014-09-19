@@ -7,7 +7,7 @@ if __name__ == "__main__":
     udp_p = UDPConnectionProcess(receive_queue=receive_queue)
     udp_p.start()
     udp_p.event_polling.set() # start polling
-
+    connected = udp_p.event_is_connected.is_set()
     while True:
         data = receive_queue.get()
         print data

@@ -3,6 +3,7 @@
 Authors: Florian Krause <florian@expyriment.org>, Oliver Lindemann <oliver@expyriment.org>'
 
 This file has the following licence: GNU General Public License v3
+
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
