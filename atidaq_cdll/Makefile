@@ -5,6 +5,7 @@
 # MS Windows: Requires MinGW and MSYS. 
 # 			  Call "make atidaq.dll" from MSYS command line
 #
+# See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 
 compile = gcc -c -fPIC 
 link = gcc -shared -o

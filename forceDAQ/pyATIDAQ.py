@@ -2,6 +2,7 @@
 
 (see ftconfig.h & ftsharedrt.h for details)
 
+See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
 __author__ = "Oliver Lindemann"
