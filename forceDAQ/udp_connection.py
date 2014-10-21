@@ -1,4 +1,6 @@
 """ A lan connect class using udp
+
+See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
