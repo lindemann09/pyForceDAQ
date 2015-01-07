@@ -108,7 +108,7 @@ class Sensor(DAQReadAnalog):
         self.start_data_acquisition()
         data = None
         for x in range(n_samples):
-            sample = self.poll_data()
+            sample = self.poll_data(convert_to_force=False)
             if data is None:
                 data = sample.force_np_array
             else:
@@ -119,7 +119,7 @@ class Sensor(DAQReadAnalog):
 
         self._atidaq.bias(np.mean(data, axis=0))
 
-    def poll_data(self):
+    def poll_data(self, convert_to_force=True):
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
@@ -133,11 +133,15 @@ class Sensor(DAQReadAnalog):
         """
 
         read_buffer, read_samples = self.read_analog()
+        time = self._clock.time
 
-        data = ForceData(time = self._clock.time,
-                device_id = self.device_id,
-                forces = self._atidaq.convertToFT(read_buffer[Sensor.SENSOR_CHANNELS]),
-                trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist()) # todo test: does it work without np.copy
+        forces = read_buffer[Sensor.SENSOR_CHANNELS]
+        if convert_to_force:
+            forces = self._atidaq.convertToFT(forces)
+
+        data = ForceData(time = time, device_id = self.device_id,
+                forces = forces,
+                trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
         # set counter if multiple sample in same millisecond
         if data.time > self._last_sample_time_counter[0]:
