@@ -11,7 +11,7 @@ import atexit
 from multiprocessing import Queue
 from time import localtime, strftime, sleep
 from clock import Clock
-import force_sensor
+from force_sensor import ForceData, SensorSettings, SensorProcess
 from udp_connection import UDPData, UDPConnectionProcess
 
 class SoftTrigger(object):
@@ -39,8 +39,7 @@ class SoftTrigger(object):
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False,
-                    max_buffer_size=10000, sync_clock=None):
+    def __init__(self, force_sensors, poll_udp_connection=False, sync_clock=None):
 
 
         """Array of ForceSensors
@@ -58,10 +57,10 @@ class DataRecorder(object):
 
         self.sample_counter = {}
         for fs in force_sensors:
-            if not isinstance(fs, force_sensor.Settings):
+            if not isinstance(fs, SensorSettings):
                 RuntimeError("Recorder needs a list of ForceSensors!")
             else:
-                fst = force_sensor.SensorProcess(settings= fs,
+                fst = SensorProcess(settings= fs,
                                                  data_queue = self._queue)
                 fst.start()
                 self._force_sensor_processes.append(fst)
@@ -78,8 +77,6 @@ class DataRecorder(object):
 
         self._is_recording = False
         self._file = None
-        self._data_buffer = []
-        self.max_buffer_size = max_buffer_size
         self.pause_recording()
         atexit.register(self.quit)
 
@@ -116,6 +113,11 @@ class DataRecorder(object):
     def process_sensor_input(self):
         """Reads data from process queue and writes data to disk
 
+        returns
+        --------
+            fifo : array
+                all data since last process data
+
         Notes
         -----
         This function should be called frequently. The execution of the function
@@ -123,18 +125,19 @@ class DataRecorder(object):
 
         """
 
+        fifo = []
         while True:
             try:
                 data = self._queue.get_nowait()
             except:
                 # until queue empty
-                return
+                return fifo
 
-            if isinstance(data, force_sensor.ForceData):
+            if isinstance(data, ForceData):
                 self.sample_counter[data.device_id] += 1
 
             if self._file is not None:
-                if isinstance(data, force_sensor.ForceData):
+                if isinstance(data, ForceData):
                     self._file.write("%d,%d,%d, %.4f,%.4f,%.4f\n" % \
                                  (data.device_id, data.time, data.counter,
                                   data.Fx, data.Fy, data.Fz)) # write ascii data to file todo does not write trigger or torque
@@ -147,9 +150,7 @@ class DataRecorder(object):
                                  (data.time, data.string)) # write ascii data to fill todo: DOC output format
 
             # add data to buffer
-            self._data_buffer.append(data)
-            while (len(self._data_buffer) > self.max_buffer_size):
-                self._data_buffer.pop(0)
+            fifo.append(data)
 
     def set_soft_trigger(self, code):
         """Set a software trigger
@@ -159,44 +160,8 @@ class DataRecorder(object):
         """
         self._queue.put_nowait(SoftTrigger(time = self.clock.time, code = code))
 
-    def get_buffer(self):
-        """Gets the all data in the FIFO buffer and clears the buffer. The most
-        recent sample is thus get_buffer()[-1].
 
-        Returns
-        --------
-        data_array : array of data (ForceData, SoftTrigger or UDPData)
-
-        Notes
-        -----
-        The function calls process_sensor_input and might therefore take some
-        time, if the last process_data was not called recently
-
-        Check buffer size to control whether data might have been missed data,
-        since your last get_last_data call. This might be the case if
-        `len(data_recorder.get_last_data()) >= data_recorder.max_buffer_size`.
-        """
-
-        self.process_sensor_input()
-        rtn = self._data_buffer
-        self._data_buffer = []
-        return rtn
-
-    @property
-    def buffer_size(self):
-        """Getter for the current size of the FIFO buffer
-
-        Notes
-        -----
-        The function calls process_sensor_input and might therefore take some
-        time, if the last process_data was not called recently
-
-        """
-
-        self.process_sensor_input()
-        return len(self._data_buffer)
-
-    def start_recording(self):
+    def start_recording(self, determine_bias=False):
         """Start polling process and record
 
         See Also
@@ -205,6 +170,12 @@ class DataRecorder(object):
 
         """
 
+        if determine_bias:
+            self.determine_biases(n_samples=1000)
+
+        if sum(map(lambda x:not(x.event_bias_is_available.is_set()),
+                    self._force_sensor_processes)):
+            raise RuntimeError("Sensors can't be started before bias has been determined.")
         # start processes
         map(lambda x:x.event_polling.set(), self._force_sensor_processes)
         if self.udp is not None:
@@ -213,15 +184,20 @@ class DataRecorder(object):
 
     def pause_recording(self):
         """Pauses all polling processes and pause recording
+
+        returns
+        --------
+         data : last data
+
         """
 
         map(lambda x:x.event_polling.clear(), self._force_sensor_processes)
         if self.udp is not None:
             self.udp.event_polling.clear()
         self._is_recording = False
-        self.process_sensor_input()
+        return self.process_sensor_input()
 
-    def determine_biases(self, n_samples=100):
+    def determine_biases(self, n_samples):
         """Record n data samples (n_samples) to determine bias.
         Afterwards recording is in pause mode
 
@@ -236,7 +212,6 @@ class DataRecorder(object):
         """
 
         self.pause_recording()
-        self.process_sensor_input()
         map(lambda x:x.determine_bias(n_samples=n_samples),
             self._force_sensor_processes)
         map(lambda x:x.event_bias_is_available.wait(), self._force_sensor_processes)

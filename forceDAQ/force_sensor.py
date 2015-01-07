@@ -66,7 +66,7 @@ class ForceData(object):
         """numpy array of all force data"""
         return np.array([self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz])
 
-class Settings(DAQConfiguration):
+class SensorSettings(DAQConfiguration):
 
     def __init__(self, calibration_file, sync_clock, device_id=1, channels="ai0:7",
                         rate=1000, minVal = -10,  maxVal = 10):
@@ -161,7 +161,7 @@ class SensorProcess(Process):
         # todo: explain usage
 
         #type checks
-        if not isinstance(settings, Settings):
+        if not isinstance(settings, SensorSettings):
             raise RuntimeError("settings has to be force_sensor.Settings object")
 
         super(SensorProcess, self).__init__()
@@ -195,6 +195,7 @@ class SensorProcess(Process):
         sensor = Sensor(self.sensor_settings)
         self.event_polling.clear()
         is_polling = False
+
         while not self._event_stop_request.is_set():
             if self.event_polling.is_set():
                 if not is_polling:

@@ -79,8 +79,6 @@ def record_data(remote_control, recorder):
 
     while True:
 
-        recorder.process_sensor_input()
-
         # process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
@@ -101,7 +99,7 @@ def record_data(remote_control, recorder):
 
 
             #get last ForceData
-            data = recorder.get_buffer()
+            data = recorder.process_sensor_input()
             if len(data)>0:
                 force_data = data[-1]
             else:
@@ -154,7 +152,6 @@ def record_data(remote_control, recorder):
                                 text_colour=misc.constants.C_YELLOW)
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt))
-
 
             pygame.display.update(update_rects)
 
@@ -301,7 +298,7 @@ if __name__ == "__main__":
     remote_control, filename = initialize(remote_control=False,
                                           filename="output")
     clock = Clock()
-    sensor1 = force_sensor.Settings(device_id=SENSOR_ID, sync_clock=clock,
+    sensor1 = force_sensor.SensorSettings(device_id=SENSOR_ID, sync_clock=clock,
                                     calibration_file="FT_demo.cal")
     recorder = DataRecorder([sensor1], poll_udp_connection=False)
     filename = recorder.open_data_file(filename, directory="data", suffix=".csv",

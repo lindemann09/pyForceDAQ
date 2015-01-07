@@ -4,13 +4,13 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ import DataRecorder, force_sensor, Clock
+from forceDAQ import DataRecorder, force_sensor, Clock, SoftTrigger
 
 if __name__  == "__main__":
     clock = Clock()
 
     # create a sensor
-    sensor1 = force_sensor.Settings(device_id=1, sync_clock=clock,
+    sensor1 = force_sensor.SensorSettings(device_id=1, sync_clock=clock,
                                     calibration_file="FT_demo.cal")
 
     # create a data recorder
@@ -22,38 +22,31 @@ if __name__  == "__main__":
     print "setting bias, not touch the sensor!"
     #raw_input("Press Enter...")
     recorder.determine_biases(n_samples=100)
-
+    data = []
     clock.wait(1000)
     print "start recording"
     #raw_input("Press Enter...")
 
     recorder.start_recording()
     clock.wait(500)
-    recorder.process_sensor_input()
-    # record for two seconds and print ever 100th sample
     recorder.set_soft_trigger(100)
-    clock.reset_stopwatch()
-    while clock.stopwatch_time<1000:
-        recorder.process_sensor_input()
+    clock.wait(1000)
     recorder.set_soft_trigger(200)
 
-    clock.reset_stopwatch()
-    counter = 0
-    while clock.stopwatch_time <= 100:
-        recorder.process_sensor_input()
-
-        data = recorder.get_buffer()
-        for d in data:
-            counter += 1
-            if isinstance(d, force_sensor.ForceData):
-                if counter % 100 == 1:
-                    print d
-                    pass
-
-    recorder.pause_recording()
+    data = recorder.process_sensor_input()
+    recorder.quit()
     print "stop recording"
 
+    counter = 0
+    for d in data:
+        counter += 1
+        if isinstance(d, force_sensor.ForceData):
+            if counter % 100 == 1:
+                print d
+                pass
+        if isinstance(d, SoftTrigger):
+            print d.time
+
     print counter
-    recorder.quit()
 
 
