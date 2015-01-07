@@ -1,18 +1,26 @@
-"""class to record force sensor data
-
-See COPYING file distributed along with the pyForceDAQ copyright and license terms.
-"""
-
-__author__ = 'Oliver Lindemann'
-
+"""class to record force sensor data"""
 import ctypes as ct
 import numpy as np
 from multiprocessing import Process, Event
 import atexit
 
+import PyDAQmx
 from pyATIDAQ import ATI_CDLL
-from nidaq import DAQConfiguration, DAQReadAnalog
+
 from clock import Clock
+
+
+# Constants
+# force sensor settings
+SENSOR_CHANNELS = range(0, 5+1)  # channel 0:5 for FT sensor, channel 6 for trigger
+TRIGGER_CHANNELS = range(5, 6+1) # channel 7 for trigger synchronization validation
+
+# ReadAnalogF64 settings
+NUM_SAMPS_PER_CHAN = ct.c_int32(1)
+TIMEOUT = ct.c_longdouble(1.0) # one second
+ARRAY_SIZE_IN_SAMPS = ct.c_uint32(len(SENSOR_CHANNELS) + len(TRIGGER_CHANNELS))
+
+NI_DAQ_BUFFER_SIZE = 1000
 
 class ForceData(object):
     """The Force data structure with the following properties
@@ -51,14 +59,15 @@ class ForceData(object):
         self.device_id = device_id
         self.counter = counter
         self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz = forces
-        self.trigger = trigger
+        self.trigger1 = trigger[0]
+        self.trigger2 = trigger[1]
 
     def __str__(self):
         """converts data to string. """
         txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
                 self.time, self.counter,
                 self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz)
-        txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
+        txt += ",%.4f,%.4f" % (self.trigger1, self.trigger2)
         return txt
 
     @property
@@ -66,38 +75,89 @@ class ForceData(object):
         """numpy array of all force data"""
         return np.array([self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz])
 
-class Settings(DAQConfiguration):
+    @property
+    def trigger_np_array(self):
+        """numpy array of all trigger data """
+        return np.array([self.trigger1, self.trigger2])
+
+class Settings():
 
     def __init__(self, calibration_file, sync_clock, device_id=1, channels="ai0:7",
                         rate=1000, minVal = -10,  maxVal = 10):
-
-        DAQConfiguration.__init__(self, device_id=device_id, channels=channels,
-                             rate=rate, minVal = minVal,  maxVal = maxVal)
         self.sync_clock = sync_clock
+        self.device_id = device_id
+        self.rate = rate
+        self.minVal = minVal
+        self.maxVal = maxVal
+        self.channels = channels
         self.calibration_file = calibration_file
 
-class Sensor(DAQReadAnalog):
+class Sensor(PyDAQmx.Task):
 
-    SENSOR_CHANNELS = range(0, 5+1)  # channel 0:5 for FT sensor, channel 6 for trigger
-    TRIGGER_CHANNELS = range(5, 6+1) # channel 7 for trigger synchronization validation
-
-    def __init__(self, settings):
+    def __init__(self, force_sensor_settings):
         """ TODO"""
 
-        DAQReadAnalog.__init__(self, configuration=settings,
-                    read_array_size_in_samples = \
-                    len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
+        PyDAQmx.Task.__init__(self)
 
         # ATI voltage to forrce converter
         self._atidaq = ATI_CDLL()
         # get calibration
         index = ct.c_short(1)
-        self._atidaq.createCalibration(settings.calibration_file, index)
+        self._atidaq.createCalibration(force_sensor_settings.calibration_file, index)
         self._atidaq.setForceUnits("N")
         self._atidaq.setTorqueUnits("N-m")
 
-        self._clock = Clock(settings.sync_clock)
+        # CreateAIVoltageChan
+        physicalChannel = "Dev{0}/{1}".format(force_sensor_settings.device_id,
+                                              force_sensor_settings.channels)
+        self.CreateAIVoltageChan(physicalChannel, # physicalChannel
+                            "",                         # nameToAssignToChannel,
+                            PyDAQmx.DAQmx_Val_Diff,     # terminalConfig
+                            ct.c_double(force_sensor_settings.minVal),
+                            ct.c_double(force_sensor_settings.maxVal),  # min max Val
+                            PyDAQmx.DAQmx_Val_Volts,    # units
+                            None                        # customScaleName
+                            )
+
+        #CfgSampClkTiming
+        self.CfgSampClkTiming("",                 # source
+                            ct.c_double(force_sensor_settings.rate),          # rate
+                            PyDAQmx.DAQmx_Val_Rising,   # activeEdge
+                            PyDAQmx.DAQmx_Val_ContSamps,# sampleMode
+                            ct.c_uint64(NI_DAQ_BUFFER_SIZE) # sampsPerChanToAcquire, i.e. buffer size
+                            )
+
+        # fill in data
+        self.read_samples = ct.c_int32()
+        self.read_buffer = np.zeros((ARRAY_SIZE_IN_SAMPS.value,), dtype=np.float64)
+
+        self.device_id = force_sensor_settings.device_id
+        self._task_is_started = False
+        self._clock = Clock(force_sensor_settings.sync_clock)
         self._last_sample_time_counter = (0, 0) # time & cunter
+
+    @property
+    def is_acquiring_data(self):
+        return self._task_is_started
+
+    def start_data_acquisition(self):
+        """Start data acquisition of the NI device
+        call always before polling
+
+        """
+
+        if not self._task_is_started:
+            self.StartTask()
+            self._task_is_started = True
+
+    def stop_data_acquisition(self):
+        """ Stop data acquisition of the NI device
+        """
+
+        if self._task_is_started:
+            self.StopTask()
+            self._task_is_started = False
+
 
     def determine_bias(self, n_samples=100):
         """determines the bias
@@ -108,7 +168,7 @@ class Sensor(DAQReadAnalog):
         self.start_data_acquisition()
         data = None
         for x in range(n_samples):
-            sample = self.poll_data()
+            sample = self.poll_data(convert_to_force=False)
             if data is None:
                 data = sample.force_np_array
             else:
@@ -119,50 +179,59 @@ class Sensor(DAQReadAnalog):
 
         self._atidaq.bias(np.mean(data, axis=0))
 
-    def poll_data(self):
-        """Polling data
+    def poll_data(self, convert_to_force=True, return_trigger=True):
+        """polling data and timestamp data. run StartTask before polling
 
-        Reading data from NI device and converting voltages to force data using
-        the ATIDAO libraray.
+        TODO document data dict
 
-        Returns
-        -------
-        data: ForceData
-            the converted force data as ForceData object
-
+        Returns ForceData
         """
 
-        read_buffer, read_samples = self.read_analog()
+        rtn = {}
+        error = self.ReadAnalogF64(NUM_SAMPS_PER_CHAN, TIMEOUT,
+                                PyDAQmx.DAQmx_Val_GroupByScanNumber, # fillMode
+                                self.read_buffer,
+                                ARRAY_SIZE_IN_SAMPS,
+                                ct.byref(self.read_samples), None) # TODO: process error
 
-        data = ForceData(time = self._clock.time,
-                device_id = self.device_id,
-                forces = self._atidaq.convertToFT(read_buffer[Sensor.SENSOR_CHANNELS]),
-                trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist()) # todo test: does it work without np.copy
+        time = self._clock.time
+        if convert_to_force:
+            forces = self._atidaq.convertToFT(self.read_buffer[SENSOR_CHANNELS]) # TODO: Does that work with numpy arrays
+        else:
+            forces = self.read_buffer[SENSOR_CHANNELS]
+        if return_trigger:
+            trigger = np.copy(self.read_buffer[TRIGGER_CHANNELS])
+        else:
+            trigger = [0,0]
 
         # set counter if multiple sample in same millisecond
-        if data.time > self._last_sample_time_counter[0]:
-            self._last_sample_time_counter = (data.time, 0)
+        if time > self._last_sample_time_counter[0]:
+            self._last_sample_time_counter = (time, 0)
         else:
-            self._last_sample_time_counter = (data.time,
+            self._last_sample_time_counter = (time,
                                         self._last_sample_time_counter[1]+1)
-        data.counter = self._last_sample_time_counter[1]
 
-        return data
+        return ForceData(time = time,
+                         counter = self._last_sample_time_counter[1],
+                         forces=forces,
+                         trigger=trigger,
+                         device_id=self.device_id)
 
 class SensorProcess(Process):
 
-    def __init__(self, settings, data_queue):
+    def __init__(self, force_sensor_settings, data_queue, read_trigger=True):
         """ForceSensorProcess
         """
         # todo: explain usage
 
         #type checks
-        if not isinstance(settings, Settings):
-            raise RuntimeError("settings has to be force_sensor.Settings object")
+        if not isinstance(force_sensor_settings, Settings):
+            raise RuntimeError("force_sensor_settings has to be force_sensor.Settings object")
 
         super(SensorProcess, self).__init__()
-        self.sensor_settings = settings
+        self.sensor_settings = force_sensor_settings
         self.data_queue = data_queue
+        self.read_trigger = read_trigger
 
         self.event_polling = Event()
         self.event_bias_is_available = Event()
@@ -197,9 +266,11 @@ class SensorProcess(Process):
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    sensor.poll_data()
+                    sensor.poll_data(convert_to_force=True,
+                                return_trigger=self.read_trigger)
                     is_polling = True
-                data = sensor.poll_data()
+                data = sensor.poll_data(convert_to_force=True,
+                                            return_trigger=self.read_trigger)
                 self.data_queue.put_nowait(data)
             else:
                 if is_polling:

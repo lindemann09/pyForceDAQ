@@ -8,9 +8,6 @@ Credits and references:
       http://stackoverflow.com/questions/1205722/how-do-i-get-monotonic-time-durations-in-python
       http://stackoverflow.com/questions/1824399/get-mach-absolute-time-uptime-in-nanoseconds-in-python
       https://mail.python.org/pipermail/python-dev/2009-October/093173.html
-
-This file has the following licence: GNU General Public License v3
-
 """
 
 __author__ = 'Florian Krause <florian@expyriment.org>, \

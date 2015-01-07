@@ -1,6 +1,4 @@
 """ A lan connect class using udp
-
-See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
@@ -52,7 +50,7 @@ def get_lan_ip():
 class UDPData(object):
     """UDP Data object
 
-    This structure is used for all received data
+    This object used for all received data
 
     """
 
@@ -63,19 +61,6 @@ class UDPData(object):
     PING_COMMAND = COMMAND_CHAR + "ping"
 
     def __init__(self, string, sender, time=None):
-        """UDP Data object
-
-        Parameters
-        ----------
-        string: string
-            data string
-        sender: string
-            IP of the sender
-        time: int, optional
-            time stamp
-
-        """
-
         self.string = string
         self.sender = sender
         self.time = time
@@ -93,10 +78,6 @@ class UDPData(object):
 
     @property
     def is_ping_command(self):
-        return self.string == UDPData.PING_COMMAND
-
-    @property
-    def is_reply_command(self):
         return self.string == UDPData.PING_COMMAND
 
 
@@ -131,9 +112,9 @@ class UDPConnection(object):
             return None
 
         if self.timestamps:
-            data = UDPData(string=recv[0], sender=recv[1][0], time=self._clock.time)
+            data = UDPData(string=recv[0], sender=recv[1], time=self._clock.time)
         else:
-            data = UDPData(string=recv[0], sender=recv[1][0])
+            data = UDPData(string=recv[0], sender=recv[1])
 
         # process data
         if data.is_connect_command:
@@ -165,7 +146,7 @@ class UDPConnection(object):
         while self._clock.stopwatch_time < timeout * 1000:
             try:
                 self.socket.sendto(string, (self.peer_ip, self.udp_port))
-                # print "send:", string, self.peer_ip
+                # print "send:", data, self.peer_ip
                 return True
             except:
                 sleep(0.001)  # wait 1 ms
@@ -185,12 +166,12 @@ class UDPConnection(object):
         self._clock.reset_stopwatch()
         while self._clock.stopwatch_time < duration * 1000:
             in_ = self.poll()
-            if in_ is not None and in_.string == input_string:
+            if in_ == UDPData.REPLY_COMMAND:
                 return True
         return False
 
     def unconnect_peer(self, timeout=1.0):
-        self.send(UDPData.UNCONNECT_COMMAND)
+        self.send(UDPData.REPLY_COMMAND)
         self.peer_ip = None
 
     @property
@@ -208,11 +189,9 @@ class UDPConnection(object):
         return (False, None)
 
     def clear_receive_buffer(self):
-        while True:
-            try:
-                self.socket.recvfrom(1024)
-            except:
-                return None
+        data = ""
+        while data is not None:
+            data = self.poll()
 
     def poll_last_data(self):
         """polls all data and returns only the last one
@@ -226,13 +205,17 @@ class UDPConnection(object):
 
 
 class UDPConnectionProcess(Process):
-    """UDPConnectionProcess polls and writes to a data queue.
 
-    Example::
+    def __init__(self, receive_queue, peer_ip=None, sync_clock=None):
+        """UDPConnectionProcess
 
-        # Server that prints each input and echos it to the client
-        # that is currently connected
+        Polls the UDPConnection and write the receive_queue
+        Starting process automatically connects to peer and quits if connection failed.
 
+        Examples
+        -------
+
+        # print each input and send it back
         from udp_connection import UDPConnectionProcess, Queue
 
         receive_queue = Queue()
@@ -246,25 +229,8 @@ class UDPConnectionProcess(Process):
             if data is not None:
                 udp_p.send_queue.put(data.string)
 
-    Example::
-
-        # connecting to a server
-        # TODO
-    """        # todo
-
-    def __init__(self, receive_queue, peer_ip=None, sync_clock=None):
-        """Initialize UDPConnectionProcess
-
-        Parameters
-        ----------
-        receive_queue: multiprocessing.Queue
-            the queue to which the received data should be put
-        peer_ip : string
-            the IP of the peer to which the connection should be established
-        sync_clock : Clock
-            the internal clock for timestamps will synchronized with this clock
-
-        """ # todo
+        """
+        # todo: explain receiving data
 
         super(UDPConnectionProcess, self).__init__()
         self.receive_queue = receive_queue

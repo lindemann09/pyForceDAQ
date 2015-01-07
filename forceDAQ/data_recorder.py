@@ -1,11 +1,4 @@
-"""class to record force sensor data
-
-See COPYING file distributed along with the pyForceDAQ copyright and license terms.
-"""
-
-__author__ = "Oliver Lindemann"
-
-
+"""class to record force sensor data"""
 import os
 import atexit
 from multiprocessing import Queue
@@ -29,7 +22,7 @@ class SoftTrigger(object):
         Parameters
         ----------
         time : int
-        code : numerical or string
+        code: numerical or string
 
         """
         self.time = time
@@ -39,7 +32,7 @@ class SoftTrigger(object):
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False,
+    def __init__(self, force_sensors, read_trigger=False, poll_udp_connection=False,
                     max_buffer_size=10000, sync_clock=None):
 
 
@@ -61,8 +54,9 @@ class DataRecorder(object):
             if not isinstance(fs, force_sensor.Settings):
                 RuntimeError("Recorder needs a list of ForceSensors!")
             else:
-                fst = force_sensor.SensorProcess(settings= fs,
-                                                 data_queue = self._queue)
+                fst = force_sensor.SensorProcess(force_sensor_settings = fs,
+                                                 data_queue = self._queue,
+                                                 read_trigger=read_trigger)
                 fst.start()
                 self._force_sensor_processes.append(fst)
                 self.sample_counter[fs.device_id] = 0
@@ -137,7 +131,7 @@ class DataRecorder(object):
                 if isinstance(data, force_sensor.ForceData):
                     self._file.write("%d,%d,%d, %.4f,%.4f,%.4f\n" % \
                                  (data.device_id, data.time, data.counter,
-                                  data.Fx, data.Fy, data.Fz)) # write ascii data to file todo does not write trigger or torque
+                                  data.Fx, data.Fy, data.Fz)) # write ascii data to file
                 elif isinstance(data, SoftTrigger):
                      self._file.write("#T,%d,%d,0,0,0\n" % \
                                  (data.time, data.code)) # write ascii data to fill todo: DOC output format
@@ -251,23 +245,23 @@ class DataRecorder(object):
 
         Parameters
         ----------
-        filename : string
+        filename: string
             the filename
-        directory : string, optional
+        directory: string, optional
             the data subdirectory
-        suffix : string, optional
+        suffix: string, optional
             the data filename suffix
-        time_stamp_filename : boolean, optional
+        time_stamp_filename: boolean, optional
             if True all filename will contain a timestamp. This is usefull to
             ensure that data will not overwritten
-        varnames : boolean, optional
+        varnames: boolean, optional
             write variable names in first line of data output
-        comment_line : string, optional
+        comment_line: string, optional
             add some comments at the beginning of the data output file
 
         Returns
         -------
-        filename : string
+        filename: string
                 the actually used filename (incl. timestamp)
 
         """
