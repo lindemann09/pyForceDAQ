@@ -3,27 +3,16 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
-__author__ = "Oliver Lindemann"
+__author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 import numpy as np
 from multiprocessing import Process, Event
 import atexit
 
-import PyDAQmx
 from pyATIDAQ import ATI_CDLL
+from nidaq import DAQConfiguration, DAQReadAnalog
 from clock import Clock
-
-
-# Constants
-SENSOR_CHANNELS = range(0, 5+1)  # channel 0:5 for FT sensor, channel 6 for trigger
-TRIGGER_CHANNELS = range(5, 6+1) # channel 7 for trigger synchronization validation
-ARRAY_SIZE_IN_SAMPS = ct.c_uint32(len(SENSOR_CHANNELS) + len(TRIGGER_CHANNELS))
-
-# ReadAnalogF64 settings
-NUM_SAMPS_PER_CHAN = ct.c_int32(1)
-TIMEOUT = ct.c_longdouble(1.0) # one second
-NI_DAQ_BUFFER_SIZE = 1000
 
 class ForceData(object):
     """The Force data structure with the following properties
@@ -62,15 +51,14 @@ class ForceData(object):
         self.device_id = device_id
         self.counter = counter
         self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz = forces
-        self.trigger1 = trigger[0]
-        self.trigger2 = trigger[1]
+        self.trigger = trigger
 
     def __str__(self):
         """converts data to string. """
         txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
                 self.time, self.counter,
                 self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz)
-        txt += ",%.4f,%.4f" % (self.trigger1, self.trigger2)
+        txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
         return txt
 
     @property
@@ -78,41 +66,27 @@ class ForceData(object):
         """numpy array of all force data"""
         return np.array([self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz])
 
-    @property
-    def trigger_np_array(self):
-        """numpy array of all trigger data """
-        return np.array([self.trigger1, self.trigger2])
-
-
-class DAQSettings(object):
-    """Settings required for NI-DAQ"""
-    def __init__(self, device_id=1, channels="ai0:7", rate=1000, minVal = -10,  maxVal = 10):
-        self.device_id = device_id
-        self.channels = channels
-        self.rate = ct.c_double(rate)
-        self.minVal = ct.c_double(minVal)
-        self.maxVal = ct.c_double(maxVal)
-
-    @property
-    def physicalChannel(self):
-        return "Dev{0}/{1}".format(self.device_id, self.channels)
-
-class Settings(DAQSettings):
+class Settings(DAQConfiguration):
 
     def __init__(self, calibration_file, sync_clock, device_id=1, channels="ai0:7",
                         rate=1000, minVal = -10,  maxVal = 10):
 
-        DAQSettings.__init__(self, device_id=device_id, channels=channels,
+        DAQConfiguration.__init__(self, device_id=device_id, channels=channels,
                              rate=rate, minVal = minVal,  maxVal = maxVal)
         self.sync_clock = sync_clock
         self.calibration_file = calibration_file
 
-class Sensor(PyDAQmx.Task):
+class Sensor(DAQReadAnalog):
+
+    SENSOR_CHANNELS = range(0, 5+1)  # channel 0:5 for FT sensor, channel 6 for trigger
+    TRIGGER_CHANNELS = range(5, 6+1) # channel 7 for trigger synchronization validation
 
     def __init__(self, settings):
         """ TODO"""
 
-        PyDAQmx.Task.__init__(self)
+        DAQReadAnalog.__init__(self, configuration=settings,
+                    read_array_size_in_samples = \
+                    len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
 
         # ATI voltage to forrce converter
         self._atidaq = ATI_CDLL()
@@ -122,50 +96,8 @@ class Sensor(PyDAQmx.Task):
         self._atidaq.setForceUnits("N")
         self._atidaq.setTorqueUnits("N-m")
 
-        # CreateAIVoltageChan
-        self.CreateAIVoltageChan(settings.physicalChannel, # physicalChannel
-                            "",                         # nameToAssignToChannel,
-                            PyDAQmx.DAQmx_Val_Diff,     # terminalConfig
-                            settings.minVal, settings.maxVal,  # min max Val
-                            PyDAQmx.DAQmx_Val_Volts,    # units
-                            None                        # customScaleName
-                            )
-
-        #CfgSampClkTiming
-        self.CfgSampClkTiming("",                 # source
-                            settings.rate,          # rate
-                            PyDAQmx.DAQmx_Val_Rising,   # activeEdge
-                            PyDAQmx.DAQmx_Val_ContSamps,# sampleMode
-                            ct.c_uint64(NI_DAQ_BUFFER_SIZE) # sampsPerChanToAcquire, i.e. buffer size
-                            )
-
-        self.device_id = settings.device_id
-        self._task_is_started = False
         self._clock = Clock(settings.sync_clock)
         self._last_sample_time_counter = (0, 0) # time & cunter
-
-    @property
-    def is_acquiring_data(self):
-        return self._task_is_started
-
-    def start_data_acquisition(self):
-        """Start data acquisition of the NI device
-        call always before polling
-
-        """
-
-        if not self._task_is_started:
-            self.StartTask()
-            self._task_is_started = True
-
-    def stop_data_acquisition(self):
-        """ Stop data acquisition of the NI device
-        """
-
-        if self._task_is_started:
-            self.StopTask()
-            self._task_is_started = False
-
 
     def determine_bias(self, n_samples=100):
         """determines the bias
@@ -176,7 +108,7 @@ class Sensor(PyDAQmx.Task):
         self.start_data_acquisition()
         data = None
         for x in range(n_samples):
-            sample = self.poll_data()
+            sample = self.poll_data(convert_to_force=False)
             if data is None:
                 data = sample.force_np_array
             else:
@@ -187,7 +119,7 @@ class Sensor(PyDAQmx.Task):
 
         self._atidaq.bias(np.mean(data, axis=0))
 
-    def poll_data(self):
+    def poll_data(self, convert_to_force=True):
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
@@ -200,20 +132,16 @@ class Sensor(PyDAQmx.Task):
 
         """
 
-        # fill in data
-        read_samples = ct.c_int32()
-        read_buffer = np.zeros((ARRAY_SIZE_IN_SAMPS.value,), dtype=np.float64)
+        read_buffer, read_samples = self.read_analog()
+        time = self._clock.time
 
-        error = self.ReadAnalogF64(NUM_SAMPS_PER_CHAN, TIMEOUT,
-                                PyDAQmx.DAQmx_Val_GroupByScanNumber, # fillMode
-                                read_buffer,
-                                ARRAY_SIZE_IN_SAMPS,
-                                ct.byref(read_samples), None) # TODO: process error
+        forces = read_buffer[Sensor.SENSOR_CHANNELS]
+        if convert_to_force:
+            forces = self._atidaq.convertToFT(forces)
 
-        data = ForceData(time = self._clock.time,
-                device_id = self.device_id,
-                forces = self._atidaq.convertToFT(read_buffer[SENSOR_CHANNELS]),
-                trigger = read_buffer[TRIGGER_CHANNELS].tolist()) # todo test: does it work without np.copy
+        data = ForceData(time = time, device_id = self.device_id,
+                forces = forces,
+                trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
         # set counter if multiple sample in same millisecond
         if data.time > self._last_sample_time_counter[0]:

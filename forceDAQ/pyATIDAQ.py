@@ -1,6 +1,8 @@
 """pyATIDAQ: Python wrapper for atidaq c library
 
-(see ftconfig.h & ftsharedrt.h for details)
+Notes
+-----
+see ftconfig.h & ftsharedrt.h for details
 
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
