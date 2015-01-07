@@ -105,7 +105,7 @@ class DAQReadAnalog(PyDAQmx.Task):
 
         #fill in data
         read_samples = ct.c_int32()
-        read_buffer = np.zeros((self.read_array_size_in_samples.values,), dtype=np.float64)
+        read_buffer = np.zeros((self.read_array_size_in_samples.value,), dtype=np.float64)
 
         error = self.ReadAnalogF64(DAQReadAnalog.NUM_SAMPS_PER_CHAN,
                                 DAQReadAnalog.TIMEOUT,
