@@ -9,7 +9,7 @@ from forceDAQ import __version__
 import pygame
 from time import strftime
 from expyriment import control, design, stimuli, io, misc
-from forceDAQ import DataRecorder, force_sensor, Clock
+from forceDAQ.recorder import DataRecorder, Clock, SensorSettings
 
 def logo_text_line(text):
     blank = stimuli.Canvas(size=(600, 400))
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     remote_control, filename = initialize(remote_control=False,
                                           filename="output")
     clock = Clock()
-    sensor1 = force_sensor.SensorSettings(device_id=SENSOR_ID, sync_clock=clock,
+    sensor1 = SensorSettings(device_id=SENSOR_ID, sync_clock=clock,
                                     calibration_file="FT_demo.cal")
     recorder = DataRecorder([sensor1], poll_udp_connection=False)
     filename = recorder.open_data_file(filename, directory="data", suffix=".csv",

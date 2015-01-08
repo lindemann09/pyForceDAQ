@@ -4,13 +4,13 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ import DataRecorder, force_sensor, Clock, SoftTrigger
+from forceDAQ.recorder import DataRecorder, Clock, SoftTrigger, ForceData, SensorSettings
 
 if __name__  == "__main__":
     clock = Clock()
 
     # create a sensor
-    sensor1 = force_sensor.SensorSettings(device_id=1, sync_clock=clock,
+    sensor1 = SensorSettings(device_id=1, sync_clock=clock,
                                     calibration_file="FT_demo.cal")
 
     # create a data recorder
@@ -40,7 +40,7 @@ if __name__  == "__main__":
     counter = 0
     for d in data:
         counter += 1
-        if isinstance(d, force_sensor.ForceData):
+        if isinstance(d, ForceData):
             if counter % 100 == 1:
                 print d
                 pass
