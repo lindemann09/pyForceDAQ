@@ -4,7 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.1"
+__version__ = "0.2"
 
 import os
 from multiprocessing import Process, Event, Queue
@@ -167,6 +167,25 @@ class UDPConnection(object):
         return rtn
 
 
+class UDPData(object):
+    """The UDP data class, used to store UDP DATA with timestamps
+
+    """
+
+    def __init__(self, data, time):
+        """Create a UDA_DATA object
+
+        Parameters
+        ----------
+        time : int
+        code : numerical or string
+
+        """
+        self.time = time
+        self.data = data
+
+
+
 class UDPConnectionProcess(Process):
     """UDPConnectionProcess polls and writes to a data queue.
 
@@ -211,56 +230,38 @@ class UDPConnectionProcess(Process):
         super(UDPConnectionProcess, self).__init__()
         self.receive_queue = receive_queue
         self.send_queue = Queue()
-        self.event_polling = Event()
         self.event_is_connected = Event()
 
         self._event_stop_request = Event()
-        self._peer_ip = peer_ip
         self._sync_clock = sync_clock
 
         atexit.register(self.stop)
 
-    def connect(self, timeout=2.0):
-        self.event_is_connected.clear()
-        self.send_queue.put_nowait(UDPData.CONNECT)
-        self.event_is_connected.wait(timeout=timeout)
-        return self.event_is_connected.is_set()
-
-
     def stop(self):
         self._event_stop_request.set()
 
-
     def run(self):
-        udp_connection = UDPConnection(udp_port=5005, timestamps=True,
-                                       sync_clock=self._sync_clock)
+        udp_connection = UDPConnection(udp_port=5005)
+        clock = Clock(sync_clock=self._sync_clock)
 
         while not self._event_stop_request.is_set():
-            if self.event_polling.is_set():
-                data = udp_connection.poll()
-                if data is not None:
-                    self.receive_queue.put_nowait(data)
 
-                try:
-                    send_data = self.send_queue.get_nowait()
-                except:
-                    send_data = None
+            data = udp_connection.poll()
+            if data is not None:
+                self.receive_queue.put_nowait(UDPData(data=data, time=clock.time))
+            try:
+                send_data = self.send_queue.get_nowait()
+            except:
+                send_data = None
 
-                if send_data is not None:
-                    if not self.event_is_connected.is_set() and \
-                            send_data == UDPData.CONNECT and \
-                            self._peer_ip is not None:
-                        udp_connection.connect_peer(peer_ip=self._peer_ip)
-                    else:
-                        udp_connection.send(send_data)
+            if send_data is not None:
+                udp_connection.send(send_data)
 
-                if self.event_is_connected.is_set() != udp_connection.is_connected:
-                    if udp_connection.is_connected:
-                        self.event_is_connected.set()
-                    else:
-                        self.event_is_connected.clear()
-
-            else:
-                self.event_polling.wait(timeout=0.2)
+            # has connection changed?
+            if self.event_is_connected.is_set() != udp_connection.is_connected:
+                if udp_connection.is_connected:
+                    self.event_is_connected.set()
+                else:
+                    self.event_is_connected.clear()
 
         udp_connection.unconnect_peer()

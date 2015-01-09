@@ -18,7 +18,7 @@ exp = control.initialize()
 udp_connection = UDPConnection()
 print udp_connection
 
-if not udp_connection.connect_peer("162.198.1.1"):  # 41.89.98.24
+if not udp_connection.connect_peer("192.168.1.1"):  # 41.89.98.24
     print "error connecting to peer"
     exit()
 

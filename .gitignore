@@ -60,4 +60,5 @@ docs/_build/
 
 # pyATIDAQ
 data/
+events/
 doc/_build

@@ -11,7 +11,7 @@ if __name__  == "__main__":
 
     # create a sensor
     sensor1 = SensorSettings(device_id=1, sync_clock=clock,
-                                    calibration_file="FT_demo.cal") 
+                                    calibration_file="FT_demo.cal")
 
     # create a data recorder
     recorder = DataRecorder(force_sensors = [sensor1],
