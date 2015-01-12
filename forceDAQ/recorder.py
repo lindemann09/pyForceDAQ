@@ -9,7 +9,7 @@ __author__ = "Oliver Lindemann"
 import os
 import atexit
 from multiprocessing import Queue
-from time import localtime, strftime, sleep
+from time import localtime, strftime
 from clock import Clock
 from sensor import ForceData, SensorSettings, SensorProcess
 from udp_connection import UDPData, UDPConnectionProcess

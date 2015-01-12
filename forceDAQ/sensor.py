@@ -242,8 +242,8 @@ class SensorProcess(Process):
         """pause polling and write data queue"""
         if self._event_polling.is_set():
             self._event_polling.clear()
-            while self._buffer_size.value > 0: # wait until buffer is empty and queue is written
-                sleep(0.01)
+            while self.buffer_size > 0: # wait until buffer is empty and queue is written
+                sleep(0.001)
 
     def stop(self):
         if self.is_alive():
@@ -294,7 +294,7 @@ class SensorProcess(Process):
 
                 while len(buffer) > 0:
                     self.data_queue.put(buffer.pop(0))
-                    self._buffer_size.value = 0
+                    self._buffer_size.value = len(buffer)
 
             if self._determine_bias_flag.is_set():
                 sensor.stop_data_acquisition()

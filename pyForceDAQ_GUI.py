@@ -96,7 +96,6 @@ def record_data(remote_control, recorder, plot_indicator=False):
     plotter_thread.start()
 
 
-
     exp.keyboard.clear()
     recorder.start_recording()
     pause_recording = False
@@ -118,12 +117,12 @@ def record_data(remote_control, recorder, plot_indicator=False):
             # pause
             pause_recording = not pause_recording
             if pause_recording:
+                background.stimulus("writing data...").present()
                 recorder.pause_recording()
                 background.stimulus("Paused recording").present()
             else:
                 recorder.start_recording()
                 background.stimulus().present()
-
 
         if not plot_indicator: # plotter
             if last_plotted_smpl < sensor_process.sample_cnt: # new sample
@@ -179,14 +178,15 @@ def record_data(remote_control, recorder, plot_indicator=False):
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
             # counter
-            pos = (-380, 270)
+            pos = (-300, 270)
             stimuli.Canvas(position=pos, size=(300,20),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
             txt = stimuli.TextLine(position= pos,
                                 text_size=15,
-                                text = "n samples: {0}".format(
-                                    sensor_process.sample_cnt),
+                                text = "n samples (buffer): {0} ({1})".format(
+                                    sensor_process.sample_cnt,
+                                    sensor_process.buffer_size),
                                 text_colour=misc.constants.C_YELLOW)
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt))
