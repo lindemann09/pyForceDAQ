@@ -248,7 +248,7 @@ class UDPConnectionProcess(Process):
 
             data = udp_connection.poll()
             if data is not None:
-                self.receive_queue.put_nowait(UDPData(data=data, time=clock.time))
+                self.receive_queue.put(UDPData(data=data, time=clock.time))
             try:
                 send_data = self.send_queue.get_nowait()
             except:

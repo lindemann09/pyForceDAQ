@@ -39,13 +39,13 @@ class SoftTrigger(object):
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False, sync_clock=None):
+    def __init__(self, force_sensors, poll_udp_connection=False, sync_clock=None,
+                 write_queue_after_pause=True):
 
 
-        """Array of ForceSensors
-
-        Starts processes
-        create sensor processes and write data the file"""
+        """queue_data will be saved
+        see sensorprocess.__init__
+        """
 
         self._queue = Queue()
         self.clock = Clock(sync_clock)
@@ -60,8 +60,8 @@ class DataRecorder(object):
             if not isinstance(fs, SensorSettings):
                 RuntimeError("Recorder needs a list of ForceSensors!")
             else:
-                fst = SensorProcess(settings= fs,
-                                                 data_queue = self._queue)
+                fst = SensorProcess(settings = fs, data_queue = self._queue,
+                                    write_queue_after_pause=write_queue_after_pause)
                 fst.start()
                 self._force_sensor_processes.append(fst)
                 self.sample_counter[fs.device_id] = 0
@@ -95,33 +95,26 @@ class DataRecorder(object):
 
         """
 
-        map(lambda x:x.stop(), self._force_sensor_processes)
+        fifo = self.pause_recording()
+        self.close_data_file()
 
         if self.udp is not None:
             self.udp.stop()
 
-        # process all data until all processes are dead (finish putting processes)
-        while True:
-            sleep(0.1)
-            self.process_sensor_input()
-            if sum(map(lambda x:x.is_alive(), self._force_sensor_processes)) == 0:
-                break
+        # wait that all processes are quitted
+        for fsp in self._force_sensor_processes:
+            fsp.stop()
 
-        self.close_data_file()
+        return fifo
 
 
-    def process_sensor_input(self):
+    def process_data_queue(self):
         """Reads data from process queue and writes data to disk
 
         returns
         --------
             fifo : array
                 all data since last process data
-
-        Notes
-        -----
-        This function should be called frequently. The execution of the function
-        might take a while, if the last call was performed a while ago.
 
         """
 
@@ -158,7 +151,7 @@ class DataRecorder(object):
         Trigger will be timestamps and occur in the data output
 
         """
-        self._queue.put_nowait(SoftTrigger(time = self.clock.time, code = code))
+        self._queue.put(SoftTrigger(time = self.clock.time, code = code))
 
 
     def start_recording(self, determine_bias=False):
@@ -176,8 +169,9 @@ class DataRecorder(object):
         if sum(map(lambda x:not(x.event_bias_is_available.is_set()),
                     self._force_sensor_processes)):
             raise RuntimeError("Sensors can't be started before bias has been determined.")
-        # start processes
-        map(lambda x:x.event_polling.set(), self._force_sensor_processes)
+
+        # start polling
+        map(lambda x:x.start_polling(), self._force_sensor_processes)
         if self.udp is not None:
             self.udp.event_polling.set() # start polling
         self._is_recording = True
@@ -191,11 +185,11 @@ class DataRecorder(object):
 
         """
 
-        map(lambda x:x.event_polling.clear(), self._force_sensor_processes)
+        map(lambda x:x.pause_polling_and_write_queue(), self._force_sensor_processes)
         if self.udp is not None:
             self.udp.event_polling.clear()
         self._is_recording = False
-        return self.process_sensor_input()
+        return self.process_data_queue()
 
     def determine_biases(self, n_samples):
         """Record n data samples (n_samples) to determine bias.

@@ -77,11 +77,14 @@ def record_data(remote_control, recorder):
     pause_recording = False
     set_marker = False
 
+    sensor_process = recorder._force_sensor_processes[0] # fixme
+
     while True:
 
         # process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
+            background.stimulus("Quitting").present()
             break
         if key == misc.constants.K_p:
             # pause
@@ -97,16 +100,10 @@ def record_data(remote_control, recorder):
         if not pause_recording and refresh_timer.stopwatch_time >= refresh_interval:
             refresh_timer.reset_stopwatch()
 
-
-            #get last ForceData
-            data = recorder.process_sensor_input()
-            if len(data)>0:
-                force_data = data[-1]
-            else:
-                continue
-
             update_rects = []
-            force_data_array = force_data.force_np_array
+            force_data_array = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz,
+                            sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
+            sample_cnt = sensor_process.sample_cnt
             for cnt in range(6):
                 x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
                 li = level_indicator(value=force_data_array[cnt],
@@ -146,18 +143,15 @@ def record_data(remote_control, recorder):
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
             txt = stimuli.TextLine(position= pos,
-                                text = "n samples: {0}".format(
-                                    recorder.sample_counter[force_data.device_id]),
                                 text_size=15,
+                                text = "n samples: {0}".format(sample_cnt),
                                 text_colour=misc.constants.C_YELLOW)
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt))
 
             pygame.display.update(update_rects)
 
-
     recorder.pause_recording()
-
 
 def get_pygame_rect(stimulus):
     """little helper function that returns the pygame rect from stimuli"""

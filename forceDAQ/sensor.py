@@ -7,12 +7,13 @@ __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 import numpy as np
-from multiprocessing import Process, Event
+from multiprocessing import Process, Event, sharedctypes
 import atexit
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
 from clock import Clock
+from time import sleep
 
 class ForceData(object):
     """The Force data structure with the following properties
@@ -108,18 +109,19 @@ class Sensor(DAQReadAnalog):
         self.start_data_acquisition()
         data = None
         for x in range(n_samples):
-            sample = self.poll_data(convert_to_force=False)
+            read_buffer, _read_samples = self.read_analog()
+            sample = read_buffer[Sensor.SENSOR_CHANNELS]
             if data is None:
-                data = sample.force_np_array
+                data = sample
             else:
-                data = np.vstack((data, sample.force_np_array))
+                data = np.vstack((data, sample))
 
         if not task_was_running:
             self.stop_data_acquisition()
 
         self._atidaq.bias(np.mean(data, axis=0))
 
-    def poll_data(self, convert_to_force=True):
+    def poll_force_data(self):
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
@@ -132,15 +134,11 @@ class Sensor(DAQReadAnalog):
 
         """
 
-        read_buffer, read_samples = self.read_analog()
+        read_buffer, _read_samples = self.read_analog()
         time = self._clock.time
 
-        forces = read_buffer[Sensor.SENSOR_CHANNELS]
-        if convert_to_force:
-            forces = self._atidaq.convertToFT(forces)
-
         data = ForceData(time = time, device_id = self.device_id,
-                forces = forces,
+                forces = self._atidaq.convertToFT(read_buffer[Sensor.SENSOR_CHANNELS]),
                 trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
         # set counter if multiple sample in same millisecond
@@ -155,9 +153,15 @@ class Sensor(DAQReadAnalog):
 
 class SensorProcess(Process):
 
-    def __init__(self, settings, data_queue):
+    def __init__(self, settings, data_queue=None, write_queue_after_pause=True):
         """ForceSensorProcess
+
+        if no data_queue will be set no data will be buffered
+        write_queue_after_pause: does not write shared data queue continuously and
+            writes it the buffer data to queue only after pause (or stop)
+
         """
+
         # todo: explain usage
 
         #type checks
@@ -167,16 +171,59 @@ class SensorProcess(Process):
         super(SensorProcess, self).__init__()
         self.sensor_settings = settings
         self.data_queue = data_queue
-
-        self.event_polling = Event()
+        self._write_queue_after_pause = write_queue_after_pause
+        self._event_polling = Event()
         self.event_bias_is_available = Event()
+        self.daemon = True
+
+        self._last_Fx = sharedctypes.RawValue(ct.c_float)
+        self._last_Fy = sharedctypes.RawValue(ct.c_float)
+        self._last_Fz = sharedctypes.RawValue(ct.c_float)
+        self._last_Tx = sharedctypes.RawValue(ct.c_float)
+        self._last_Ty = sharedctypes.RawValue(ct.c_float)
+        self._last_Tz = sharedctypes.RawValue(ct.c_float)
+        self._buffer_size = sharedctypes.RawValue(ct.c_uint64)
+        self._sample_cnt = sharedctypes.Value(ct.c_uint64)
 
         self._event_stop_request = Event()
         self._determine_bias_flag = Event()
+
         self._bias_n_samples = 200
         atexit.register(self.stop)
 
-    def determine_bias(self, n_samples=100):
+    @property
+    def Fx(self):
+        return self._last_Fx.value
+
+    @property
+    def Fy(self):
+        return self._last_Fy.value
+
+    @property
+    def Fz(self):
+        return self._last_Fz.value
+
+    @property
+    def Tx(self):
+        return self._last_Tx.value
+
+    @property
+    def Ty(self):
+        return self._last_Ty.value
+
+    @property
+    def Tz(self):
+        return self._last_Tz.value
+
+    @property
+    def sample_cnt(self):
+        return self._sample_cnt.value
+
+    @property
+    def buffer_size(self):
+        return self._buffer_size.value
+
+    def determine_bias(self, n_samples=100): # FIXME chnaging no samples. Does that work?
         """recording is paused after bias determination
 
         This process might take a while. Please use "wait_bias_available" to
@@ -188,33 +235,70 @@ class SensorProcess(Process):
         self.event_bias_is_available.clear()
         self._determine_bias_flag.set()
 
+    def start_polling(self):
+        self._event_polling.set()
+
+    def pause_polling_and_write_queue(self):
+        """pause polling and write data queue"""
+        if self._event_polling.is_set():
+            self._event_polling.clear()
+            while self._buffer_size.value > 0: # wait until buffer is empty and queue is written
+                sleep(0.01)
+
     def stop(self):
-        self._event_stop_request.set()
+        if self.is_alive():
+            self.pause_polling_and_write_queue()
+            self._event_stop_request.set()
+            self.join(1)
+            if self.is_alive():
+                self.terminate()
+
+
 
     def run(self):
+        buffer = []
+        self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
-        self.event_polling.clear()
+        self.pause_polling_and_write_queue()
         is_polling = False
-
         while not self._event_stop_request.is_set():
-            if self.event_polling.is_set():
+            if self._event_polling.is_set():
                 if not is_polling:
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    sensor.poll_data()
+                    sensor.poll_force_data()
                     is_polling = True
-                data = sensor.poll_data()
-                self.data_queue.put_nowait(data)
+                data = sensor.poll_force_data()
+                if self.data_queue is not None:
+                    if self._write_queue_after_pause:
+                        buffer.append(data)
+                        self._buffer_size.value = len(buffer)
+                    else:
+                        self.data_queue.put(data)
+                self._last_Fx.value = data.Fx
+                self._last_Fy.value = data.Fy
+                self._last_Fz.value = data.Fz
+                self._last_Tx.value = data.Tx
+                self._last_Ty.value = data.Ty
+                self._last_Tz.value = data.Tz
+                self._sample_cnt.value += 1
             else:
+                # not polling
                 if is_polling:
                     sensor.stop_data_acquisition()
                     is_polling = False
-                self.event_polling.wait(timeout=0.2)
+
+                if self._buffer_size.value > 0:
+                    for sample in buffer:
+                        self.data_queue.put(sample)
+                    buffer = []
+                    self._buffer_size.value = 0
 
             if self._determine_bias_flag.is_set():
                 sensor.stop_data_acquisition()
                 is_polling = False
+                self._event_polling.clear()
                 sensor.determine_bias(n_samples=self._bias_n_samples)
                 self._determine_bias_flag.clear()
                 self.event_bias_is_available.set()

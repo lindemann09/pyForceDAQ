@@ -15,7 +15,8 @@ if __name__  == "__main__":
 
     # create a data recorder
     recorder = DataRecorder(force_sensors = [sensor1],
-                            poll_udp_connection=False, sync_clock=clock)
+                            poll_udp_connection=False, sync_clock=clock,
+                            write_queue_after_pause=False)
     recorder.open_data_file("outdata", directory="data", suffix=".csv",
                            time_stamp_filename=False,   comment_line="")
 
@@ -33,10 +34,8 @@ if __name__  == "__main__":
     clock.wait(1000)
     recorder.set_soft_trigger(200)
 
-    data = recorder.process_sensor_input()
-    recorder.quit()
-    print "stop recording"
-
+    print "pause recording"
+    data = recorder.pause_recording()
     counter = 0
     for d in data:
         counter += 1
@@ -47,6 +46,12 @@ if __name__  == "__main__":
         if isinstance(d, SoftTrigger):
             print d.time
 
-    print counter
+    print "counter", counter
+
+    recorder.quit()
+    print "quitted"
+
+
+
 
 
