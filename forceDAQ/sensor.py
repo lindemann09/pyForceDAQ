@@ -247,11 +247,14 @@ class SensorProcess(Process):
 
     def stop(self):
         if self.is_alive():
+            self.join(2)
+        if self.is_alive():
+            self.terminate()
+
+    def join(self, timeout=None):
             self.pause_polling_and_write_queue()
             self._event_stop_request.set()
-            self.join(1)
-            if self.is_alive():
-                self.terminate()
+            super(SensorProcess, self).join(timeout)
 
 
 
@@ -289,10 +292,8 @@ class SensorProcess(Process):
                     sensor.stop_data_acquisition()
                     is_polling = False
 
-                if self._buffer_size.value > 0:
-                    for sample in buffer:
-                        self.data_queue.put(sample)
-                    buffer = []
+                while len(buffer) > 0:
+                    self.data_queue.put(buffer.pop(0))
                     self._buffer_size.value = 0
 
             if self._determine_bias_flag.is_set():

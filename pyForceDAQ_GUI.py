@@ -8,8 +8,18 @@ from forceDAQ import __version__
 
 import pygame
 from time import strftime
+import numpy as np
 from expyriment import control, design, stimuli, io, misc
 from forceDAQ.recorder import DataRecorder, Clock, SensorSettings
+from plotter import PlotterThread, lock_expyriment
+
+
+colours = [misc.constants.C_RED,
+               misc.constants.C_GREEN,
+               misc.constants.C_YELLOW,
+               misc.constants.C_BLUE,
+               misc.constants.C_EXPYRIMENT_ORANGE,
+               misc.constants.C_EXPYRIMENT_PURPLE]
 
 def logo_text_line(text):
     blank = stimuli.Canvas(size=(600, 400))
@@ -59,7 +69,7 @@ def wait_for_start_recording_event(remote_control):
 
 
 
-def record_data(remote_control, recorder):
+def record_data(remote_control, recorder, plot_indicator=False):
     refresh_interval = 200
     indicator_grid = 70  # distance between indicator center
     indicator_labels = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
@@ -72,12 +82,27 @@ def record_data(remote_control, recorder):
                                            filename=filename)
     background.stimulus(infotext="").present()
 
+    # plotter
+    scaling_plotting = 2.3
+    last_plotted_smpl = 0
+    plotter_thread = PlotterThread(
+                    n_data_rows=3,
+                    data_row_colours=colours[:3],
+                    y_range=(-250, 250),
+                    width=900,
+                    position=(0,0),
+                    background_colour=[10,10,10],
+                    axis_colour=misc.constants.C_YELLOW)
+    plotter_thread.start()
+
+
+
     exp.keyboard.clear()
     recorder.start_recording()
     pause_recording = False
     set_marker = False
 
-    sensor_process = recorder._force_sensor_processes[0] # fixme
+    sensor_process = recorder._force_sensor_processes[0] # FIXME ONE SENSOR ONLY
 
     while True:
 
@@ -86,6 +111,9 @@ def record_data(remote_control, recorder):
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
             background.stimulus("Quitting").present()
             break
+        if key == misc.constants.K_v:
+            plot_indicator = not(plot_indicator)
+            background.stimulus().present()
         if key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
@@ -97,60 +125,75 @@ def record_data(remote_control, recorder):
                 background.stimulus().present()
 
 
+        if not plot_indicator: # plotter
+            if last_plotted_smpl < sensor_process.sample_cnt: # new sample
+                values = np.array([sensor_process.Fx, sensor_process.Fy,
+                               sensor_process.Fz], dtype=float) * scaling_plotting
+                plotter_thread.add_values(values=values)
+                last_plotted_smpl = sensor_process.sample_cnt
+
         if not pause_recording and refresh_timer.stopwatch_time >= refresh_interval:
             refresh_timer.reset_stopwatch()
 
             update_rects = []
-            force_data_array = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz,
-                            sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
-            sample_cnt = sensor_process.sample_cnt
-            for cnt in range(6):
-                x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
-                li = level_indicator(value=force_data_array[cnt],
-                                     text=indicator_labels[cnt],
-                                    minVal=minVal, maxVal=maxVal, width = 50,
-                                     position=(x_pos,0) )
-                li.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(li))
+            if plot_indicator:
+                ## indicator
+                force_data_array = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz,
+                                    sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
+                for cnt in range(6):
+                    x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
+                    li = level_indicator(value=force_data_array[cnt],
+                                         text=indicator_labels[cnt],
+                                        minVal=minVal, maxVal=maxVal, width = 50,
+                                         position=(x_pos,0) )
+                    li.present(update=False, clear=False)
+                    update_rects.append(get_pygame_rect(li))
 
-            #line
-            rect = stimuli.Line(start_point=(-200,0), end_point=(200,0),
-                                line_width=1, colour=misc.constants.C_YELLOW)
-            rect.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(rect))
+                #line
+                rect = stimuli.Line(start_point=(-200,0), end_point=(200,0),
+                                    line_width=1, colour=misc.constants.C_YELLOW)
+                rect.present(update=False, clear=False)
+                update_rects.append(get_pygame_rect(rect))
 
-            # axis labels
-            pos = (-220, -145)
-            stimuli.Canvas(position=pos, size=(30,20),
-                           colour=misc.constants.C_BLACK).present(
-                                    update=False, clear=False)
-            txt = stimuli.TextLine(position=pos, text = str(minVal),
-                        text_size=15, text_colour=misc.constants.C_YELLOW)
-            txt.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(txt))
-            pos = (-220, 145)
-            stimuli.Canvas(position=pos, size=(30,20),
-                           colour=misc.constants.C_BLACK).present(
-                                    update=False, clear=False)
-            txt = stimuli.TextLine(position= pos, text = str(maxVal),
-                        text_size=15, text_colour=misc.constants.C_YELLOW)
-            txt.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(txt))
+                # axis labels
+                pos = (-220, -145)
+                stimuli.Canvas(position=pos, size=(30,20),
+                               colour=misc.constants.C_BLACK).present(
+                                        update=False, clear=False)
+                txt = stimuli.TextLine(position=pos, text = str(minVal),
+                            text_size=15, text_colour=misc.constants.C_YELLOW)
+                txt.present(update=False, clear=False)
+                update_rects.append(get_pygame_rect(txt))
+                pos = (-220, 145)
+                stimuli.Canvas(position=pos, size=(30,20),
+                               colour=misc.constants.C_BLACK).present(
+                                        update=False, clear=False)
+                txt = stimuli.TextLine(position= pos, text = str(maxVal),
+                            text_size=15, text_colour=misc.constants.C_YELLOW)
+                txt.present(update=False, clear=False)
+                update_rects.append(get_pygame_rect(txt))
+                # end indicator
+            else:
+                # plotter
+                update_rects.append(
+                    plotter_thread.get_plotter_rect(exp.screen.size))
 
             # counter
-            pos = (-300, 200)
+            pos = (-380, 270)
             stimuli.Canvas(position=pos, size=(300,20),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
             txt = stimuli.TextLine(position= pos,
                                 text_size=15,
-                                text = "n samples: {0}".format(sample_cnt),
+                                text = "n samples: {0}".format(
+                                    sensor_process.sample_cnt),
                                 text_colour=misc.constants.C_YELLOW)
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt))
 
             pygame.display.update(update_rects)
 
+    plotter_thread.stop()
     recorder.pause_recording()
 
 def get_pygame_rect(stimulus):
@@ -219,6 +262,7 @@ class RecordingScreen(object):
         self.add_text_line_left("Force Recorder " + str(__version__),
                                 [self.left, self.top])
         self.add_text_line_left("p: pause/unpause", [self.left, self.bottom])
+        self.add_text_line_left("v: switch view", [self.left + 200, self.bottom])
         self.add_text_line_right("q: quit recording", [self.right, self.bottom])
         self.add_text_line_centered("filename: " + filename,
                                     [0, self.top])
@@ -271,7 +315,7 @@ if __name__ == "__main__":
     control.defaults.initialize_delay = 0
     control.defaults.pause_key = None
     control.defaults.window_mode = True
-    control.defaults.window_size = (800, 600)
+    control.defaults.window_size = (1000, 700)
     control.defaults.fast_quit = True
     control.defaults.open_gl = False
     control.defaults.event_logging = 0
@@ -279,15 +323,7 @@ if __name__ == "__main__":
     exp.set_log_level(0)
     udp_connection = None
 
-    colours = [misc.constants.C_RED,
-               misc.constants.C_GREEN,
-               misc.constants.C_YELLOW,
-               misc.constants.C_BLUE,
-               misc.constants.C_EXPYRIMENT_ORANGE,
-               misc.constants.C_EXPYRIMENT_PURPLE]
-
     SENSOR_ID = 1  # i.e., NI-device id
-
 
     remote_control, filename = initialize(remote_control=False,
                                           filename="output")
@@ -306,6 +342,7 @@ if __name__ == "__main__":
     stimuli.TextLine("Press key to start recording").present()
     exp.keyboard.wait()
 
-    record_data(remote_control, recorder=recorder)
+    record_data(remote_control, recorder=recorder,
+                    plot_indicator = True)
 
     recorder.quit()
