@@ -2,8 +2,6 @@
 
 import math
 
-
-
 class SensorHistory():
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).
@@ -131,13 +129,13 @@ class SensorHistory():
     def reset_reference_area(self):
         self._reference_position = None
         self._reference_radius = None
-        
+
     def is_in_reference_area(self):
         if self._reference_radius is not None:
             return (self.distance_to_point(self._reference_position) <=
                         self._reference_radius)
         return None
-        
+
 if __name__ == "__main__":
     import random
     def run():

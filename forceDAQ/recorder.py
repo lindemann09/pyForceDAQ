@@ -5,14 +5,14 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-
 import os
 import atexit
 from multiprocessing import Queue
 from time import localtime, strftime
-from clock import Clock
-from sensor import ForceData, SensorSettings, SensorProcess
-from udp_connection import UDPData, UDPConnectionProcess
+
+from daq import Clock, ForceData, SensorSettings, SensorProcess
+from misc.udp_connection import UDPData, UDPConnectionProcess
+
 
 class SoftTrigger(object):
     """The SoftTrigger data class, used to store trigger

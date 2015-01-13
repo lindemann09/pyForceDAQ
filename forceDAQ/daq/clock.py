@@ -11,7 +11,9 @@ __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 import sys
 import time
 import types
-from timer import get_time
+
+from forceDAQ.daq.timer import get_time
+
 
 class Clock(object) :
     """Basic timing class.

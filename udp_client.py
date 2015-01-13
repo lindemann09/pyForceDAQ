@@ -2,7 +2,8 @@
 from expyriment import control, stimuli, io, misc
 from expyriment.misc import Clock
 
-from forceDAQ.udp_connection import UDPConnection
+from forceDAQ.misc.udp_connection import UDPConnection
+
 
 
 

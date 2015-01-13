@@ -9,10 +9,11 @@ __version__ = "0.2"
 import os
 from multiprocessing import Process, Event, Queue
 import atexit
-
 from time import sleep, time
-from clock import Clock
 import socket
+
+from forceDAQ.daq.clock import Clock
+
 
 if os.name != "nt":
     import fcntl
