@@ -14,7 +14,7 @@ import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from clock import Clock
+from forceDAQ.misc import Clock
 
 
 class ForceData(object):

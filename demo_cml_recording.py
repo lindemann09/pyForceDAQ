@@ -4,7 +4,8 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ.daq import Clock, ForceData, SensorSettings
+from forceDAQ.daq import ForceData, SensorSettings
+from forceDAQ.misc import Clock
 from forceDAQ.recorder import DataRecorder, SoftTrigger
 
 if __name__  == "__main__":

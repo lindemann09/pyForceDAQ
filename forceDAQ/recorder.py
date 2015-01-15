@@ -10,8 +10,8 @@ import atexit
 from multiprocessing import Queue
 from time import localtime, strftime
 
-from daq import Clock, ForceData, SensorSettings, SensorProcess
-from misc.udp_connection import UDPData, UDPConnectionProcess
+from daq import ForceData, SensorSettings, SensorProcess
+from misc import Clock, UDPData, UDPConnectionProcess
 
 
 class SoftTrigger(object):

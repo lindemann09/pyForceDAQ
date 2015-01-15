@@ -12,7 +12,7 @@ import atexit
 from time import sleep, time
 import socket
 
-from forceDAQ.daq.clock import Clock
+from forceDAQ.misc.clock import Clock
 
 
 if os.name != "nt":
@@ -229,9 +229,11 @@ class UDPConnectionProcess(Process):
         """ # todo
 
         super(UDPConnectionProcess, self).__init__()
-        self.receive_queue = receive_queue
+        self._receive_queue = receive_queue
         self.send_queue = Queue()
         self.event_is_connected = Event()
+        self.event_new_data_available = Event()
+        self.event_send_new_data = Event()
 
         self._event_stop_request = Event()
         self._sync_clock = sync_clock
@@ -239,22 +241,34 @@ class UDPConnectionProcess(Process):
         atexit.register(self.stop)
 
     def stop(self):
+        if self.event_new_data_available.is_set():
+            self.event_send_new_data.set()
+            while self.event_new_data_available.is_set():
+                sleep(0.01)
         self._event_stop_request.set()
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
-        clock = Clock(sync_clock=self._sync_clock)
-
+        print  udp_connection
+        clock = Clock(sync_clock=self._sync_clock) #TODO: check
+        buffer = []
         while not self._event_stop_request.is_set():
 
             data = udp_connection.poll()
             if data is not None:
-                self.receive_queue.put(UDPData(data=data, time=clock.time))
+                buffer.append(UDPData(data=data, time=clock.time))
+                self.event_new_data_available.set()
+
+            if self.event_send_new_data.is_set():
+                while len(buffer)>0:
+                    self._receive_queue.put(buffer.pop(0))
+                self.event_send_new_data.clear()
+                self.event_new_data_available.clear()
+
             try:
                 send_data = self.send_queue.get_nowait()
             except:
                 send_data = None
-
             if send_data is not None:
                 udp_connection.send(send_data)
 
