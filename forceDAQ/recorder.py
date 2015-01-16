@@ -117,7 +117,7 @@ class DataRecorder(object):
                 return fifo
 
             if isinstance(data, UDPData):
-                self._file.write("#UDP,%d,%s,0,0,0\n" % \
+                self._file.write("UDP,%d,%s,0,0,0\n" % \
                                  (data.time, data.string)) # write ascii data to fill
             fifo.append(data)
 
@@ -277,7 +277,7 @@ class DataRecorder(object):
         if len(comment_line)>0:
             self._file.write("#" + comment_line + "\n")
         if varnames:
-            self._file.write("#device_tag, time, counter, Fx, Fy, Fz")
+            self._file.write("#device_tag, time, counter, Fx, Fy, Fz\n")
         return self.filename
 
     def close_data_file(self):
