@@ -8,7 +8,8 @@ import pygame
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
-from forceDAQ.recorder import DataRecorder, Clock, SensorSettings
+from forceDAQ.misc import Timer
+from forceDAQ.recorder import DataRecorder, SensorSettings
 from plotter import PlotterThread, level_indicator
 
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
@@ -194,8 +195,8 @@ def start():
 
     remote_control, filename = initialize(exp, remote_control=False,
                                           filename="output")
-    clock = Clock()
-    sensor1 = SensorSettings(device_id=SENSOR_ID, sync_clock=clock,
+    timer = Timer()
+    sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
     recorder = DataRecorder([sensor1], poll_udp_connection=False)
     recorder.open_data_file(filename, directory="data", suffix=".csv",

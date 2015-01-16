@@ -3,21 +3,20 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann"
-
 from forceDAQ.daq import ForceData, SensorSettings
-from forceDAQ.misc import Clock
 from forceDAQ.recorder import DataRecorder, SoftTrigger
+from forceDAQ.misc import Timer
 
 if __name__  == "__main__":
-    clock = Clock()
+    timer = Timer()
 
     # create a sensor
-    sensor1 = SensorSettings(device_id=1, sync_clock=clock,
-                                    calibration_file="FT_demo.cal")
+    sensor1 = SensorSettings(device_id=1, sync_timer=timer,
+                             calibration_file="FT_demo.cal")
 
     # create a data recorder
     recorder = DataRecorder(force_sensors = [sensor1],
-                            poll_udp_connection=False, sync_clock=clock,
+                            poll_udp_connection=False,
                             write_queue_after_pause=False)
     recorder.open_data_file("outdata", directory="data", suffix=".csv",
                            time_stamp_filename=False,   comment_line="")
@@ -26,14 +25,14 @@ if __name__  == "__main__":
     #raw_input("Press Enter...")
     recorder.determine_biases(n_samples=100)
     data = []
-    clock.wait(1000)
+    timer.wait(1000)
     print "start recording"
     #raw_input("Press Enter...")
 
     recorder.start_recording()
-    clock.wait(500)
+    timer.wait(500)
     recorder.set_soft_trigger(100)
-    clock.wait(1000)
+    timer.wait(1000)
     recorder.set_soft_trigger(200)
 
     print "pause recording"

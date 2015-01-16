@@ -19,6 +19,7 @@ __version__ = ''
 __revision__ = ''
 __date__ = ''
 
+from time import sleep
 try:
     import ctypes
 except:
@@ -99,7 +100,6 @@ else:
     # Android or something else
     _use_time_module = True
 
-
 if _use_time_module:
     import time
     warn_message = "Failed to initialize monotonic timer. Python's time module will be use."
@@ -112,6 +112,31 @@ if _use_time_module:
         def get_time():
             """Get high-resolution time stamp (float) """
             return time.time()
+
+class Timer(object):#
+    """A simple timer"""
+
+    def __init__(self, sync_timer=None):
+        if sync_timer is None:
+            self._init_time = get_time()
+        else:
+            self._init_time = sync_timer._init_time
+
+    @property
+    def time(self):
+        return int((get_time() - self._init_time) * 1000)
+
+    def wait(self, waiting_time, function=None):
+        """Wait for a certain amout of milliseconds.
+        """
+
+        start = self.time
+        looptime = 200
+        if waiting_time > looptime:
+            sleep((waiting_time - looptime) / 1000)
+        while self.time < start + waiting_time:
+            pass
+
 
 if __name__ == "__main__":
     print get_time()

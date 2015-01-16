@@ -1,4 +1,4 @@
 __author__ = 'Oliver Lindemann'
 
-from clock import Clock
+from timer import Timer
 from udp_connection import UDPConnection, UDPConnectionProcess, UDPData

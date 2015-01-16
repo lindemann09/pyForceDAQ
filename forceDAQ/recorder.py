@@ -11,7 +11,7 @@ from multiprocessing import Queue
 from time import localtime, strftime
 
 from daq import ForceData, SensorSettings, SensorProcess
-from misc import Clock, UDPData, UDPConnectionProcess
+from misc import Timer, UDPData, UDPConnectionProcess
 
 
 class SoftTrigger(object):
@@ -39,7 +39,7 @@ class SoftTrigger(object):
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False, sync_clock=None,
+    def __init__(self, force_sensors, poll_udp_connection=False,
                  write_queue_after_pause=True):
 
 
@@ -48,8 +48,7 @@ class DataRecorder(object):
         """
 
         self._queue = Queue()
-        self.clock = Clock(sync_clock)
-
+        self.timer = Timer()
         #create sensor processes
         if not isinstance(force_sensors, list):
             force_sensors = [force_sensors]
@@ -68,7 +67,7 @@ class DataRecorder(object):
 
         # create udp connection process
         if poll_udp_connection:
-            self.udp = UDPConnectionProcess(self._queue, sync_clock=self.clock)
+            self.udp = UDPConnectionProcess()
             self.udp.start()
             self.udp.event_polling.wait()
             self.udp.event_polling.clear() # stop polling directly
@@ -151,7 +150,7 @@ class DataRecorder(object):
         Trigger will be timestamps and occur in the data output
 
         """
-        self._queue.put(SoftTrigger(time = self.clock.time, code = code))
+        self._queue.put(SoftTrigger(time = self.timer.time, code = code))
 
 
     def start_recording(self, determine_bias=False):

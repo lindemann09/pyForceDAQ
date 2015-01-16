@@ -12,7 +12,7 @@ import atexit
 from time import sleep, time
 import socket
 
-from forceDAQ.misc.clock import Clock
+from timer import Timer
 
 
 if os.name != "nt":
@@ -187,6 +187,7 @@ class UDPData(object):
 
 
 
+
 class UDPConnectionProcess(Process):
     """UDPConnectionProcess polls and writes to a data queue.
 
@@ -214,7 +215,7 @@ class UDPConnectionProcess(Process):
         # TODO
     """        # todo
 
-    def __init__(self, receive_queue, peer_ip=None, sync_clock=None):
+    def __init__(self, sync_timer):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -229,41 +230,29 @@ class UDPConnectionProcess(Process):
         """ # todo
 
         super(UDPConnectionProcess, self).__init__()
-        self._receive_queue = receive_queue
+        self._sync_timer = sync_timer
+        self._receive_queue = Queue()
         self.send_queue = Queue()
-        self.event_is_connected = Event()
-        self.event_new_data_available = Event()
-        self.event_send_new_data = Event()
 
         self._event_stop_request = Event()
-        self._sync_clock = sync_clock
-
         atexit.register(self.stop)
 
     def stop(self):
-        if self.event_new_data_available.is_set():
-            self.event_send_new_data.set()
-            while self.event_new_data_available.is_set():
-                sleep(0.01)
         self._event_stop_request.set()
+        self.join()
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
-        print  udp_connection
-        clock = Clock(sync_clock=self._sync_clock) #TODO: check
-        buffer = []
+        print "* UDP process started"
+        print udp_connection
+
+        timer = Timer(self._init_time)
         while not self._event_stop_request.is_set():
 
             data = udp_connection.poll()
             if data is not None:
-                buffer.append(UDPData(data=data, time=clock.time))
-                self.event_new_data_available.set()
-
-            if self.event_send_new_data.is_set():
-                while len(buffer)>0:
-                    self._receive_queue.put(buffer.pop(0))
-                self.event_send_new_data.clear()
-                self.event_new_data_available.clear()
+                self._receive_queue.put(UDPData(data=data,
+                                                time=timer.time))
 
             try:
                 send_data = self.send_queue.get_nowait()

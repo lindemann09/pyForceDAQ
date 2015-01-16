@@ -14,7 +14,7 @@ import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ.misc import Clock
+from forceDAQ.misc import Timer
 
 
 class ForceData(object):
@@ -31,7 +31,7 @@ class ForceData(object):
     variable_names = "device_id, time, counter, Fx, Fy, Fz, Tx, Ty, Tz, " + \
                      "trigger1, trigger2"
 
-    def __init__(self, time = None, counter=0, forces = [0]*6, trigger=[0, 0],
+    def __init__(self, time=None, counter=0, forces=[0] * 6, trigger=(0, 0),
                  device_id=0):
         """Create a ForceData object
         Parameters
@@ -59,8 +59,11 @@ class ForceData(object):
     def __str__(self):
         """converts data to string. """
         txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
-                self.time, self.counter,
-                self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz)
+                                                           self.time,
+                                                           self.counter,
+                                                           self.Fx, self.Fy,
+                                                           self.Fz, self.Tx,
+                                                           self.Ty, self.Tz)
         txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
         return txt
 
@@ -69,27 +72,28 @@ class ForceData(object):
         """numpy array of all force data"""
         return np.array([self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz])
 
+
 class SensorSettings(DAQConfiguration):
-
-    def __init__(self, calibration_file, sync_clock, device_id=1, channels="ai0:7",
-                        rate=1000, minVal = -10,  maxVal = 10):
-
+    def __init__(self, calibration_file, sync_timer, device_id=1, channels="ai0:7",
+                 rate=1000, minVal=-10, maxVal=10):
         DAQConfiguration.__init__(self, device_id=device_id, channels=channels,
-                             rate=rate, minVal = minVal,  maxVal = maxVal)
-        self.sync_clock = sync_clock
+                                  rate=rate, minVal=minVal, maxVal=maxVal)
         self.calibration_file = calibration_file
+        self.sync_timer = sync_timer
 
 class Sensor(DAQReadAnalog):
-
-    SENSOR_CHANNELS = range(0, 5+1)  # channel 0:5 for FT sensor, channel 6 for trigger
-    TRIGGER_CHANNELS = range(5, 6+1) # channel 7 for trigger synchronization validation
+    SENSOR_CHANNELS = range(0,
+                            5 + 1)  # channel 0:5 for FT sensor, channel 6 for trigger
+    TRIGGER_CHANNELS = range(5,
+                             6 + 1)  # channel 7 for trigger synchronization validation
 
     def __init__(self, settings):
         """ TODO"""
 
         DAQReadAnalog.__init__(self, configuration=settings,
-                    read_array_size_in_samples = \
-                    len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
+                               read_array_size_in_samples= \
+                                   len(Sensor.SENSOR_CHANNELS) + len(
+                                       Sensor.TRIGGER_CHANNELS))
 
         # ATI voltage to forrce converter
         self._atidaq = ATI_CDLL()
@@ -98,9 +102,9 @@ class Sensor(DAQReadAnalog):
         self._atidaq.createCalibration(settings.calibration_file, index)
         self._atidaq.setForceUnits("N")
         self._atidaq.setTorqueUnits("N-m")
+        self.timer = Timer(sync_timer=settings.sync_timer)
 
-        self._clock = Clock(settings.sync_clock)
-        self._last_sample_time_counter = (0, 0) # time & cunter
+        self._last_sample_time_counter = (0, 0)  # time & cunter
 
     def determine_bias(self, n_samples=100):
         """determines the bias
@@ -137,24 +141,25 @@ class Sensor(DAQReadAnalog):
         """
 
         read_buffer, _read_samples = self.read_analog()
-        time = self._clock.time
-
-        data = ForceData(time = time, device_id = self.device_id,
-                forces = self._atidaq.convertToFT(read_buffer[Sensor.SENSOR_CHANNELS]),
-                trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
+        time = self.timer.time
+        data = ForceData(time=time, device_id=self.device_id,
+                         forces=self._atidaq.convertToFT(
+                             read_buffer[Sensor.SENSOR_CHANNELS]),
+                         trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
         # set counter if multiple sample in same millisecond
         if data.time > self._last_sample_time_counter[0]:
             self._last_sample_time_counter = (data.time, 0)
         else:
             self._last_sample_time_counter = (data.time,
-                                        self._last_sample_time_counter[1]+1)
+                                              self._last_sample_time_counter[
+                                                  1] + 1)
         data.counter = self._last_sample_time_counter[1]
 
         return data
 
-class SensorProcess(Process):
 
+class SensorProcess(Process):
     def __init__(self, settings, data_queue=None, write_queue_after_pause=True):
         """ForceSensorProcess
 
@@ -166,9 +171,10 @@ class SensorProcess(Process):
 
         # todo: explain usage
 
-        #type checks
+        # type checks
         if not isinstance(settings, SensorSettings):
-            raise RuntimeError("settings has to be force_sensor.Settings object")
+            raise RuntimeError(
+                "settings has to be force_sensor.Settings object")
 
         super(SensorProcess, self).__init__()
         self.sensor_settings = settings
@@ -225,7 +231,8 @@ class SensorProcess(Process):
     def buffer_size(self):
         return self._buffer_size.value
 
-    def determine_bias(self, n_samples=100): # FIXME chnaging no samples. Does that work?
+    def determine_bias(self,
+                       n_samples=100):  # FIXME chnaging no samples. Does that work?
         """recording is paused after bias determination
 
         This process might take a while. Please use "wait_bias_available" to
@@ -244,7 +251,7 @@ class SensorProcess(Process):
         """pause polling and write data queue"""
         if self._event_polling.is_set():
             self._event_polling.clear()
-            while self.buffer_size > 0: # wait until buffer is empty and queue is written
+            while self.buffer_size > 0:  # wait until buffer is empty and queue is written
                 sleep(0.001)
 
     def stop(self):
@@ -254,10 +261,9 @@ class SensorProcess(Process):
             self.terminate()
 
     def join(self, timeout=None):
-            self.pause_polling_and_write_queue()
-            self._event_stop_request.set()
-            super(SensorProcess, self).join(timeout)
-
+        self.pause_polling_and_write_queue()
+        self._event_stop_request.set()
+        super(SensorProcess, self).join(timeout)
 
 
     def run(self):
