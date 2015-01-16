@@ -215,7 +215,7 @@ class UDPConnectionProcess(Process):
         # TODO
     """        # todo
 
-    def __init__(self, sync_timer):
+    def __init__(self, sync_timer=None):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -230,10 +230,13 @@ class UDPConnectionProcess(Process):
         """ # todo
 
         super(UDPConnectionProcess, self).__init__()
-        self._sync_timer = sync_timer
-        self._receive_queue = Queue()
+        if sync_timer is None:
+            self._sync_timer = Timer()
+        else:
+            self._sync_timer = sync_timer
+        self.receive_queue = Queue()
         self.send_queue = Queue()
-
+        self.event_is_connected = Event()
         self._event_stop_request = Event()
         atexit.register(self.stop)
 
@@ -246,20 +249,19 @@ class UDPConnectionProcess(Process):
         print "* UDP process started"
         print udp_connection
 
-        timer = Timer(self._init_time)
+        timer = Timer(self._sync_timer)
         while not self._event_stop_request.is_set():
 
             data = udp_connection.poll()
             if data is not None:
-                self._receive_queue.put(UDPData(data=data,
+                self.receive_queue.put(UDPData(data=data,
                                                 time=timer.time))
-
             try:
                 send_data = self.send_queue.get_nowait()
             except:
                 send_data = None
             if send_data is not None:
-                udp_connection.send(send_data)
+                udp_connection.send(send_data.data)
 
             # has connection changed?
             if self.event_is_connected.is_set() != udp_connection.is_connected:

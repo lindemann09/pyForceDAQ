@@ -67,7 +67,7 @@ class DataRecorder(object):
 
         # create udp connection process
         if poll_udp_connection:
-            self.udp = UDPConnectionProcess()
+            self.udp = UDPConnectionProcess(sync_timer=self.timer)
             self.udp.start()
             self.udp.event_polling.wait()
             self.udp.event_polling.clear() # stop polling directly
