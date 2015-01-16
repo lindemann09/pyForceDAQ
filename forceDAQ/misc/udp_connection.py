@@ -173,7 +173,7 @@ class UDPData(object):
 
     """
 
-    def __init__(self, data, time):
+    def __init__(self, string, time):
         """Create a UDA_DATA object
 
         Parameters
@@ -183,7 +183,7 @@ class UDPData(object):
 
         """
         self.time = time
-        self.data = data
+        self.string = string
 
 
 
@@ -246,7 +246,7 @@ class UDPConnectionProcess(Process):
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
-        print "* UDP process started"
+        print "UDP process started"
         print udp_connection
 
         timer = Timer(self._sync_timer)
@@ -254,14 +254,14 @@ class UDPConnectionProcess(Process):
 
             data = udp_connection.poll()
             if data is not None:
-                self.receive_queue.put(UDPData(data=data,
+                self.receive_queue.put(UDPData(string=data,
                                                 time=timer.time))
             try:
                 send_data = self.send_queue.get_nowait()
             except:
                 send_data = None
             if send_data is not None:
-                udp_connection.send(send_data.data)
+                udp_connection.send(send_data)
 
             # has connection changed?
             if self.event_is_connected.is_set() != udp_connection.is_connected:

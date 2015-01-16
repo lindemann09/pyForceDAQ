@@ -14,7 +14,7 @@ from plotter import PlotterThread, level_indicator
 
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
-def initialize(exp, remote_control, filename):
+def initialize(exp, remote_control=None, filename=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
 
@@ -51,7 +51,11 @@ def wait_for_start_recording_event(exp, udp_connection):
         exp.keyboard.wait()
 
 
-def record_data(exp, recorder, filename, plot_indicator=False):
+def record_data(exp, recorder, filename, plot_indicator=False,
+                start_paused=True, remote_control=True):
+    """udp command: "start" "stop"
+    """
+
     refresh_interval = 200
     indicator_grid = 70  # distance between indicator center
     indicator_labels = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
@@ -62,7 +66,6 @@ def record_data(exp, recorder, filename, plot_indicator=False):
 
     background = RecordingScreen(window_size = exp.screen.size,
                                            filename=filename)
-    background.stimulus(infotext="").present()
 
     # plotter
     scaling_plotting = 2.3
@@ -77,40 +80,64 @@ def record_data(exp, recorder, filename, plot_indicator=False):
                     axis_colour=misc.constants.C_YELLOW)
     plotter_thread.start()
 
-
     exp.keyboard.clear()
-    recorder.start_recording()
-    pause_recording = False
+    pause_recording = start_paused
+    last_recording_status = None
     set_marker = False
 
     sensor_process = recorder._force_sensor_processes[0] # FIXME ONE SENSOR ONLY
 
-    while True:
+    quit_recording = False
+    while not quit_recording:
 
         # process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
-            background.stimulus("Quitting").present()
-            break
+            quit_recording = True
         if key == misc.constants.K_v:
             plot_indicator = not(plot_indicator)
             background.stimulus().present()
         if key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
+
+        # process udp
+        udp = recorder.process_udp_events()
+        while len(udp)>0:
+            udp_event = udp.pop(0)
+            set_marker = True
+            if remote_control:
+                if udp_event.string == "start":
+                    pause_recording = False
+                    set_marker = False
+                elif udp_event.string == "pause":
+                    pause_recording = True
+                    set_marker = False
+                elif udp_event.string == "quit":
+                    quit_recording = True
+
+        # show pause or recording screen
+        if pause_recording != last_recording_status:
+            last_recording_status = pause_recording
             if pause_recording:
                 background.stimulus("writing data...").present()
                 recorder.pause_recording()
                 background.stimulus("Paused recording").present()
+                if remote_control:
+                    recorder.udp.send_queue.put("paused")
             else:
                 recorder.start_recording()
                 background.stimulus().present()
+                if remote_control:
+                    recorder.udp.send_queue.put("started")
 
-        if not plot_indicator: # plotter
+        if not plot_indicator:
+            # update plotter
             if last_plotted_smpl < sensor_process.sample_cnt: # new sample
                 values = np.array([sensor_process.Fx, sensor_process.Fy,
                                sensor_process.Fz], dtype=float) * scaling_plotting
-                plotter_thread.add_values(values=values)
+                plotter_thread.add_values(values=values, set_marker=set_marker)
+                set_marker = False
                 last_plotted_smpl = sensor_process.sample_cnt
 
         if not pause_recording and refresh_timer.stopwatch_time >= refresh_interval:
@@ -125,7 +152,7 @@ def record_data(exp, recorder, filename, plot_indicator=False):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
                     li = level_indicator(value=force_data_array[cnt],
                                          text=indicator_labels[cnt],
-                                        minVal=minVal, maxVal=maxVal, width = 50,
+                                         minVal=minVal, maxVal=maxVal, width = 50,
                                          position=(x_pos,0) )
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
@@ -175,6 +202,7 @@ def record_data(exp, recorder, filename, plot_indicator=False):
 
             pygame.display.update(update_rects)
 
+    background.stimulus("Quitting").present()
     plotter_thread.stop()
     recorder.pause_recording()
 
@@ -189,16 +217,14 @@ def start():
     control.defaults.event_logging = 0
     exp = design.Experiment()
     exp.set_log_level(0)
-    udp_connection = None
 
     SENSOR_ID = 1  # i.e., NI-device id
 
-    remote_control, filename = initialize(exp, remote_control=False,
-                                          filename="output")
+    remote_control, filename = initialize(exp, filename="output")
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
-    recorder = DataRecorder([sensor1], poll_udp_connection=False)
+    recorder = DataRecorder([sensor1], poll_udp_connection=True)
     recorder.open_data_file(filename, directory="data", suffix=".csv",
                         time_stamp_filename=False, comment_line="")
 
@@ -207,10 +233,16 @@ def start():
     stimuli.BlankScreen().present()
     recorder.determine_biases(n_samples=500)
 
-    stimuli.TextLine("Press key to start recording").present()
-    exp.keyboard.wait()
+    if remote_control:
+        pass
+    else:
+        stimuli.TextLine("Press key to start recording").present()
+        exp.keyboard.wait()
 
     record_data(exp, recorder=recorder,
-                    filename=filename, plot_indicator = True)
+                    filename=filename,
+                    plot_indicator = True,
+                    start_paused=True,
+                    remote_control=remote_control)
 
     recorder.quit()

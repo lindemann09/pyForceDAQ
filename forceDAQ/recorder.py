@@ -69,13 +69,12 @@ class DataRecorder(object):
         if poll_udp_connection:
             self.udp = UDPConnectionProcess(sync_timer=self.timer)
             self.udp.start()
-            self.udp.event_polling.wait()
-            self.udp.event_polling.clear() # stop polling directly
         else:
             self.udp = None
 
         self._is_recording = False
         self._file = None
+
         self.pause_recording()
         atexit.register(self.quit)
 
@@ -106,6 +105,22 @@ class DataRecorder(object):
 
         return fifo
 
+    def process_udp_events(self):
+        """process udp event and return"""
+        fifo = []
+
+        while True:
+            try:
+                data = self.udp.receive_queue.get_nowait()
+            except:
+                # until queue empty or no udp connection
+                return fifo
+
+            if isinstance(data, UDPData):
+                self._file.write("#UDP,%d,%s,0,0,0\n" % \
+                                 (data.time, data.string)) # write ascii data to fill
+            fifo.append(data)
+
 
     def process_data_queue(self):
         """Reads data from process queue and writes data to disk
@@ -117,7 +132,9 @@ class DataRecorder(object):
 
         """
 
-        fifo = []
+        fifo = self.process_udp_events()
+        #copy udp_input to main queue
+
         while True:
             try:
                 data = self._queue.get_nowait()
@@ -136,10 +153,6 @@ class DataRecorder(object):
                 elif isinstance(data, SoftTrigger):
                      self._file.write("#T,%d,%d,0,0,0\n" % \
                                  (data.time, data.code)) # write ascii data to fill todo: DOC output format
-
-                if isinstance(data, UDPData):
-                     self._file.write("#UDP,%d,%s,0,0,0\n" % \
-                                 (data.time, data.string)) # write ascii data to fill todo: DOC output format
 
             # add data to buffer
             fifo.append(data)
@@ -171,8 +184,6 @@ class DataRecorder(object):
 
         # start polling
         map(lambda x:x.start_polling(), self._force_sensor_processes)
-        if self.udp is not None:
-            self.udp.event_polling.set() # start polling
         self._is_recording = True
 
     def pause_recording(self):
@@ -185,8 +196,6 @@ class DataRecorder(object):
         """
 
         map(lambda x:x.pause_polling_and_write_queue(), self._force_sensor_processes)
-        if self.udp is not None:
-            self.udp.event_polling.clear()
         self._is_recording = False
         return self.process_data_queue()
 
@@ -281,4 +290,3 @@ class DataRecorder(object):
         if self._file is not None:
             self._file.close()
             self._file = None
-

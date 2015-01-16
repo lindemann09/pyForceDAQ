@@ -14,7 +14,7 @@ if __name__=="__main__":
     goon = True
     while goon:
         try:
-            udp_data = udp.receive_queue.get()
+            udp_data = udp.receive_queue.get_nowait()
         except:
             udp_data = None
 
