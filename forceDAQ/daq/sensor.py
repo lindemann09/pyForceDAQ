@@ -17,6 +17,17 @@ from nidaq import DAQConfiguration, DAQReadAnalog
 from forceDAQ.misc import Timer
 
 
+CTYPE_FORCES = ct.c_float * 600
+CTYPE_TRIGGER = ct.c_float * 2
+
+class CTypesForceData(ct.Structure):
+    _fields_ = [("device_id", ct.c_int),
+            ("time", ct.c_int),
+            ("counter", ct.c_uint64),
+            ("forces", CTYPE_FORCES),
+            ("trigger", CTYPE_TRIGGER)]
+
+
 class ForceData(object):
     """The Force data structure with the following properties
         * device_id
@@ -53,7 +64,7 @@ class ForceData(object):
         self.time = time
         self.device_id = device_id
         self.counter = counter
-        self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz = forces
+        self.forces = forces
         self.trigger = trigger
 
     def __str__(self):
@@ -61,17 +72,75 @@ class ForceData(object):
         txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
                                                            self.time,
                                                            self.counter,
-                                                           self.Fx, self.Fy,
-                                                           self.Fz, self.Tx,
-                                                           self.Ty, self.Tz)
+                                                           self.forces[0],
+                                                           self.forces[1],
+                                                           self.forces[2],
+                                                           self.forces[3],
+                                                           self.forces[4],
+                                                           self.forces[5])
         txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
         return txt
 
     @property
-    def force_np_array(self):
-        """numpy array of all force data"""
-        return np.array([self.Fx, self.Fy, self.Fz, self.Tx, self.Ty, self.Tz])
+    def Fx(self):
+        return self.forces[0]
 
+    @Fx.setter
+    def Fx(self, value):
+        self.forces[0] = value
+
+    @property
+    def Fy(self):
+        return self.forces[1]
+
+    @Fy.setter
+    def Fy(self, value):
+        self.forces[1] = value
+
+    @property
+    def Fz(self):
+        return self.forces[2]
+
+    @Fz.setter
+    def Fz(self, value):
+        self.forces[2] = value
+
+    @property
+    def Tx(self):
+        return self.forces[3]
+
+    @Tx.setter
+    def Tx(self, value):
+        self.forces[3] = value
+
+    @property
+    def Ty(self):
+        return self.forces[4]
+
+    @Ty.setter
+    def Ty(self, value):
+        self.forces[4] = value
+
+    @property
+    def Tz(self):
+        return self.forces[3]
+
+    @Tz.setter
+    def Tz(self, value):
+        self.forces[3] = value
+
+    @property
+    def ctypes_struct(self):
+        return CTypesForceData(self.device_id, self.time, self.counter,
+              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
+
+    @ctypes_struct.setter
+    def ctypes_struct(self, struct):
+        self.device_id = struct.device_id
+        self.time = struct.time
+        self.counter = struct.counter
+        self.force = struct.forces
+        self.trigger = struct.triger
 
 class SensorSettings(DAQConfiguration):
     def __init__(self, calibration_file, sync_timer, device_id=1, channels="ai0:7",
