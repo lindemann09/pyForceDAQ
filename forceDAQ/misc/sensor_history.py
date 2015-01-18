@@ -2,7 +2,7 @@
 
 import math
 
-class SensorHistory():
+class SensorHistory(object):
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).
 
@@ -16,6 +16,7 @@ class SensorHistory():
         self._correction_cnt = 0
         self._previous_moving_average = self.moving_average
 
+        self._thresholds = []
         self._motion_index = 0
         self._reference_position = None
         self._reference_radius = None
@@ -123,6 +124,7 @@ class SensorHistory():
         return None
 
     def set_reference_area(self, radius):
+        """set current position as reference area"""
         self._reference_position = self.moving_average
         self._reference_radius = radius
 
@@ -136,11 +138,53 @@ class SensorHistory():
                         self._reference_radius)
         return None
 
+    @property
+    def level_thresholds(self):
+        return self._thresholds
+
+    @level_thresholds.setter
+    def level_thresholds(self, values):
+        """set limits for threshold detection
+        """
+        self._thresholds = list(values)
+        self._thresholds.sort()
+
+    @property
+    def levels(self):
+        """returns the levels of the parameters depending on the defined thesholds
+        or None is no thesholds are defined
+
+        see doc _find_level
+
+        """
+
+
+        if len(self._thresholds)>0:
+            return map(lambda x: find_level(x, self._thresholds),
+                    self.moving_average)
+        else:
+            return None
+
+def find_level(value, thresholds):
+    """find level of value depending of thresholds (array)
+
+    return:
+            0 below smallest threshold
+            1 large first but small second threshold
+            ..
+            x larger highest threshold (x=n thresholds)
+        """
+    for cnt, x in enumerate(thresholds):
+        if value < x:
+            return cnt
+    return cnt + 1
+
+
 if __name__ == "__main__":
     import random
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)
-        for x in range(19908):
+        for x in range(1998):
             x = [random.randint(0, 100), random.randint(0, 100),
                     random.randint(0, 100)]
             sh.update(x)
@@ -148,6 +192,8 @@ if __name__ == "__main__":
         print sh.moving_average, sh.calc_history_average()
         print sh.velocity(100)
 
-    import timeit
-    print timeit.timeit(run, number=4)
+        sh.level_thresholds = (35, 20, 50)
+        print sh.levels
 
+    import timeit
+    print timeit.timeit(run, number=1)
