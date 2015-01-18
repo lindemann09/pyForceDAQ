@@ -7,7 +7,6 @@ __author__ = "Oliver Lindemann"
 
 import os
 import atexit
-from multiprocessing import Queue
 from time import localtime, strftime
 
 from daq import ForceData, SensorSettings, SensorProcess
@@ -47,7 +46,6 @@ class DataRecorder(object):
         see sensorprocess.__init__
         """
 
-        self._queue = Queue()
         self.timer = Timer()
         #create sensor processes
         if not isinstance(force_sensors, list):
@@ -59,8 +57,8 @@ class DataRecorder(object):
             if not isinstance(fs, SensorSettings):
                 RuntimeError("Recorder needs a list of ForceSensors!")
             else:
-                fst = SensorProcess(settings = fs, data_queue = self._queue,
-                                    write_queue_after_pause=write_queue_after_pause)
+                fst = SensorProcess(settings = fs,
+                                    return_buffered_data_after_pause=write_queue_after_pause)
                 fst.start()
                 self._force_sensor_processes.append(fst)
                 self.sample_counter[fs.device_id] = 0
@@ -74,8 +72,7 @@ class DataRecorder(object):
 
         self._is_recording = False
         self._file = None
-
-        self.pause_recording()
+        self._soft_trigger = []
         atexit.register(self.quit)
 
 
@@ -93,7 +90,7 @@ class DataRecorder(object):
 
         """
 
-        fifo = self.pause_recording()
+        buffer = self.pause_recording()
         self.close_data_file()
 
         if self.udp is not None:
@@ -103,67 +100,51 @@ class DataRecorder(object):
         for fsp in self._force_sensor_processes:
             fsp.stop()
 
-        return fifo
+        return buffer
 
     def process_udp_events(self):
-        """process udp event and return"""
-        fifo = []
-
+        """process udp events and return them"""
+        buffer = []
         while True:
             try:
                 data = self.udp.receive_queue.get_nowait()
             except:
                 # until queue empty or no udp connection
-                return fifo
+                break
+            buffer.append(data)
+        self._write_data(buffer)
+        return buffer
 
-            if isinstance(data, UDPData):
-                self._file.write("UDP,%d,%s,0,0,0\n" % \
-                                 (data.time, data.string)) # write ascii data to fill
-            fifo.append(data)
-
-
-    def process_data_queue(self):
-        """Reads data from process queue and writes data to disk
-
-        returns
-        --------
-            fifo : array
-                all data since last process data
-
+    def _write_data(self, data_buffer):
+        """ writes data to disk and set counters
         """
 
-        fifo = self.process_udp_events()
-        #copy udp_input to main queue
-
-        while True:
-            try:
-                data = self._queue.get_nowait()
-            except:
-                # until queue empty
-                return fifo
-
-            if isinstance(data, ForceData):
-                self.sample_counter[data.device_id] += 1
+        for d in data_buffer:
+            if isinstance(d, ForceData):
+                self.sample_counter[d.device_id] += 1
 
             if self._file is not None:
-                if isinstance(data, ForceData):
+                if isinstance(d, ForceData):
                     self._file.write("%d,%d,%d, %.4f,%.4f,%.4f\n" % \
-                                 (data.device_id, data.time, data.counter,
-                                  data.Fx, data.Fy, data.Fz)) # write ascii data to file todo does not write trigger or torque
-                elif isinstance(data, SoftTrigger):
+                                 (d.device_id, d.time, d.counter,
+                                  d.Fx, d.Fy, d.Fz)) # write ascii data to file todo does not write trigger or torque
+                elif isinstance(d, SoftTrigger):
                      self._file.write("#T,%d,%d,0,0,0\n" % \
-                                 (data.time, data.code)) # write ascii data to fill todo: DOC output format
+                                 (d.time, d.code)) # write ascii data to fill todo: DOC output format
+                elif isinstance(d, UDPData):
+                    self._file.write("UDP,%d,%s,0,0,0\n" % \
+                                     (d.time, d.string)) # write ascii data to fill
 
-            # add data to buffer
-            fifo.append(data)
 
-    def set_soft_trigger(self, code):
-        """Set a software trigger
+    def write_soft_trigger(self, code, time=None):
+        """Set marker code in file
 
         Trigger will be timestamps and occur in the data output
 
         """
-        self._queue.put(SoftTrigger(time = self.timer.time, code = code))
+        if time is None:
+            time = self.timer.time
+        self._soft_trigger.append(SoftTrigger(time = time, code = code))
 
 
     def start_recording(self, determine_bias=False):
@@ -187,17 +168,30 @@ class DataRecorder(object):
         self._is_recording = True
 
     def pause_recording(self):
-        """Pauses all polling processes and pause recording
+        """Pauses all polling processes and process data
 
         returns
         --------
-         data : last data
+        data : all last data
 
         """
-
-        map(lambda x:x.pause_polling_and_write_queue(), self._force_sensor_processes)
         self._is_recording = False
-        return self.process_data_queue()
+
+        data = []
+        #sensors
+        for fsp in self._force_sensor_processes:
+            buffer = fsp.pause_polling_get_buffer()
+            self._write_data(buffer)
+            data.extend(buffer)
+        # udp event
+        buffer = self.process_udp_events()
+        data.extend(buffer)
+        # soft trigger
+        self._write_data(self._soft_trigger)
+        data.extend(self._soft_trigger)
+        self._soft_trigger = []
+
+        return data
 
     def determine_biases(self, n_samples):
         """Record n data samples (n_samples) to determine bias.

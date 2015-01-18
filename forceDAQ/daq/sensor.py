@@ -6,7 +6,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
-from multiprocessing import Process, Event, sharedctypes
+from multiprocessing import Process, Event, sharedctypes, Pipe
 import atexit
 from time import sleep
 
@@ -229,11 +229,11 @@ class Sensor(DAQReadAnalog):
 
 
 class SensorProcess(Process):
-    def __init__(self, settings, data_queue=None, write_queue_after_pause=True):
+    def __init__(self, settings, return_buffered_data_after_pause=True,
+                  chunk_size=10000):
         """ForceSensorProcess
 
-        if no data_queue will be set no data will be buffered
-        write_queue_after_pause: does not write shared data queue continuously and
+        return_buffered_data_after_pause: does not write shared data queue continuously and
             writes it the buffer data to queue only after pause (or stop)
 
         """
@@ -247,9 +247,13 @@ class SensorProcess(Process):
 
         super(SensorProcess, self).__init__()
         self.sensor_settings = settings
-        self.data_queue = data_queue
-        self._write_queue_after_pause = write_queue_after_pause
-        self._event_polling = Event()
+        self._return_buffer = return_buffered_data_after_pause
+        self._chunk_size = chunk_size
+
+        self._pipe_i, self._pipe_o = Pipe()
+        self._event_start_polling = Event()
+        self._event_sending_data = Event()
+        self._event_new_data = Event()
         self.event_bias_is_available = Event()
         self.daemon = True
 
@@ -301,7 +305,7 @@ class SensorProcess(Process):
         return self._buffer_size.value
 
     def determine_bias(self,
-                       n_samples=100):  # FIXME chnaging no samples. Does that work?
+                       n_samples=100):  # FIXME changing no samples. Does that work?
         """recording is paused after bias determination
 
         This process might take a while. Please use "wait_bias_available" to
@@ -314,23 +318,29 @@ class SensorProcess(Process):
         self._determine_bias_flag.set()
 
     def start_polling(self):
-        self._event_polling.set()
+        self._event_start_polling.set()
 
-    def pause_polling_and_write_queue(self):
-        """pause polling and write data queue"""
-        if self._event_polling.is_set():
-            self._event_polling.clear()
-            while self.buffer_size > 0:  # wait until buffer is empty and queue is written
-                sleep(0.001)
+    def pause_polling_get_buffer(self):
+        """pause polling and return recorded buffer"""
+        rtn = []
+        self._event_start_polling.clear()
+        sleep(0.1) # wait data acquisition paused properly
+        if self._event_sending_data.is_set() or self._buffer_size.value > 0:
+            self._event_sending_data.wait()
+            while self._buffer_size.value > 0:  # wait until buffer is empty
+                rtn.extend(self._pipe_i.recv())
+            self._event_sending_data.clear() # stop sending
+        return rtn
 
-    def stop(self):
+    def stop(self): #FIXME deamon?
+        rtn = self.pause_polling_get_buffer()
         if self.is_alive():
             self.join(2)
         if self.is_alive():
             self.terminate()
+        return rtn
 
     def join(self, timeout=None):
-        self.pause_polling_and_write_queue()
         self._event_stop_request.set()
         super(SensorProcess, self).join(timeout)
 
@@ -339,46 +349,53 @@ class SensorProcess(Process):
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
-        self.pause_polling_and_write_queue()
+        self._event_start_polling.clear()
+        self._event_sending_data.clear()
         is_polling = False
         while not self._event_stop_request.is_set():
-            if self._event_polling.is_set():
+
+            if self._event_start_polling.is_set():
+                # is polling
                 if not is_polling:
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
                     sensor.poll_force_data()
                     is_polling = True
-                data = sensor.poll_force_data()
-                if self.data_queue is not None:
-                    if self._write_queue_after_pause:
-                        buffer.append(data)
-                        self._buffer_size.value = len(buffer)
-                    else:
-                        self.data_queue.put(data)
-                self._last_Fx.value = data.Fx
-                self._last_Fy.value = data.Fy
-                self._last_Fz.value = data.Fz
-                self._last_Tx.value = data.Tx
-                self._last_Ty.value = data.Ty
-                self._last_Tz.value = data.Tz
+                d = sensor.poll_force_data()
+                self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
+				                     self._last_Tx.value, self._last_Ty.value, \
+                                     self._last_Tz.value = d.forces
                 self._sample_cnt.value += 1
+
+                if self._return_buffer:
+                    buffer.append(d)
+                    self._buffer_size.value = len(buffer)
+
             else:
-                # not polling
+                # pause: not polling
                 if is_polling:
                     sensor.stop_data_acquisition()
                     is_polling = False
 
-                while len(buffer) > 0:
-                    self.data_queue.put(buffer.pop(0))
-                    self._buffer_size.value = len(buffer)
+                if self._return_buffer and self._buffer_size.value>0:
+                    self._event_sending_data.set()
+                    chks = self._chunk_size
+                    while len(buffer)>0:
+                        if chks > len(buffer):
+                            chks = len(buffer)
+                        self._pipe_o.send(buffer[0:chks])
+                        buffer[0:chks] = []
+                        self._buffer_size.value = len(buffer)
+                    # wait that data are read
+                    if self._event_sending_data.is_set():
+                        sleep(0.01)
 
-            if self._determine_bias_flag.is_set():
-                sensor.stop_data_acquisition()
-                is_polling = False
-                self._event_polling.clear()
-                sensor.determine_bias(n_samples=self._bias_n_samples)
-                self._determine_bias_flag.clear()
-                self.event_bias_is_available.set()
+                if self._determine_bias_flag.is_set():
+                    sensor.determine_bias(n_samples=self._bias_n_samples)
+                    self._determine_bias_flag.clear()
+                    self.event_bias_is_available.set()
 
+        # stop process
+        self._buffer_size.value = 0
         sensor.stop_data_acquisition()

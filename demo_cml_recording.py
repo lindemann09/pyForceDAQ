@@ -31,9 +31,9 @@ if __name__  == "__main__":
 
     recorder.start_recording()
     timer.wait(500)
-    recorder.set_soft_trigger(100)
+    recorder.write_soft_trigger(100)
     timer.wait(1000)
-    recorder.set_soft_trigger(200)
+    recorder.write_soft_trigger(200)
 
     print "pause recording"
     data = recorder.pause_recording()

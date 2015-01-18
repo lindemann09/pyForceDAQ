@@ -138,42 +138,52 @@ class SensorTest(Process):
     def __init__(self, chunk_size=10000):
         super(SensorTest, self).__init__()
         self._pipe_i, self._pipe_o = Pipe()
-        self.event_buffer_empty = Event()
-        self.event_buffer_empty.set()
+        self._buffer_size = sharedctypes.RawValue(ct.c_uint64)
+        self.event_sending_data = Event()
+        self.event_reading_data = Event()
         self.chunk_size = chunk_size
 
 
     def read_buffer(self):
         data = []
-        while not self.event_buffer_empty.is_set():
-            d = self._pipe_i.recv()
-            data.extend(d)
+        if self._buffer_size.value > 0:
+            self.event_sending_data.wait()
+            while self._buffer_size.value > 0:
+                data.extend(self._pipe_i.recv())
+            self.event_sending_data.clear()
         return data
 
-    def join(self):
+    def stop(self):
         rtn = self.read_buffer()
-        super(SensorTest, self).join()
+        self.join()
         return rtn
 
 
     def run(self):
 
+        self.event_sending_data.clear()
         data = []
+        self._buffer_size.value = 0
         for cnt in range(1000*60*5):
             d = ForceData(time=8, counter=cnt,
                   forces=np.random.random(6),
                   trigger=(99,cnt+100))
             data.append(d)
-        self.event_buffer_empty.clear()
+            self._buffer_size.value = len(data)
+
         print data[2345].forces
-        # copy
+        # sending data
+        self.event_sending_data.set()
         chks = self.chunk_size
         while len(data)>0:
             if chks > len(data):
                 chks = len(data)
             self._pipe_o.send(data[0:chks])
             data[0:chks] = []
-        self.event_buffer_empty.set()
+            self._buffer_size.value = len(data)
+        # wait that data read
+        if self.event_sending_data.is_set():
+            sleep(0.01)
 
 
 def MB(x):
@@ -192,4 +202,4 @@ if __name__=="__main__":
     print b[2345].forces
     print "stop", timeit.default_timer() - tic, MB(b), len(b)
 
-    print sensor.join()
+    print sensor.stop()

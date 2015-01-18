@@ -1,3 +1,3 @@
 __author__ = 'Oliver Lindemann'
 
-from sensor import ForceData, SensorProcess, SensorSettings
+from sensor import CTypesForceData, ForceData, Sensor, SensorProcess, SensorSettings
