@@ -8,7 +8,7 @@ import pygame
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
-from forceDAQ.misc import Timer
+from forceDAQ.misc import Timer, SensorHistory
 from forceDAQ.recorder import DataRecorder, SensorSettings
 from plotter import PlotterThread, level_indicator
 
@@ -53,22 +53,27 @@ def wait_for_start_recording_event(exp, udp_connection):
 
 def record_data(exp, recorder, filename, plot_indicator=False,
                 start_paused=True, remote_control=True):
-    """udp command: "start" "stop"
+    """udp command:
+            "start", "pause", "stop"
+            "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
+            "thresholds stop" : stop level detection
     """
 
     refresh_interval = 200
     indicator_grid = 70  # distance between indicator center
-    indicator_labels = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
+    parameter_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
     minVal = -70
     maxVal = +70
+    scaling_plotting = 2.3
+
+    pause_recording = start_paused
+    last_recording_status = None
+    set_marker = False
 
     refresh_timer = misc.Clock()
-
     background = RecordingScreen(window_size = exp.screen.size,
                                            filename=filename)
-
     # plotter
-    scaling_plotting = 2.3
     last_plotted_smpl = 0
     plotter_thread = PlotterThread(
                     n_data_rows=3,
@@ -81,11 +86,12 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     plotter_thread.start()
 
     exp.keyboard.clear()
-    pause_recording = start_paused
-    last_recording_status = None
-    set_marker = False
 
-    sensor_process = recorder._force_sensor_processes[0] # FIXME ONE SENSOR ONLY
+    # TODO HARDCODED VARIABLES
+    # one sensor only, paramter for level detection
+    sensor_process = recorder._force_sensor_processes[0]
+    level_detection_parameter = parameter_names.index("Fz")
+    history = SensorHistory(history_size = 5, number_of_parameter=1)
 
     quit_recording = False
     while not quit_recording:
@@ -115,6 +121,16 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     set_marker = False
                 elif udp_event.string == "quit":
                     quit_recording = True
+                elif udp_event.string.startswith("thresholds"):
+                    try:
+                        tmp = udp_event.string.split("=")[1]
+                        tmp = eval(tmp)
+                    except:
+                        tmp = None
+                    if isinstance(tmp, list):
+                        history.level_thresholds = tmp
+                    else:
+                        history.level_thresholds = [] # stop level detection
 
         # show pause or recording screen
         if pause_recording != last_recording_status:
@@ -131,14 +147,25 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                 if remote_control:
                     recorder.udp.send_queue.put("started")
 
-        if not plot_indicator:
+        # process new samples
+        if last_plotted_smpl < sensor_process.sample_cnt: # new sample
+            smpl = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz]
+            # history
+            history.update([ smpl[level_detection_parameter] ])
+            # level detection
+            if len(history.level_thresholds) > 0:
+                tmp = history.level[0]
+                if tmp > 0:
+                    recorder.udp.send_queue.put("level={0}".format(tmp))
+
             # update plotter
-            if last_plotted_smpl < sensor_process.sample_cnt: # new sample
-                values = np.array([sensor_process.Fx, sensor_process.Fy,
-                               sensor_process.Fz], dtype=float) * scaling_plotting
-                plotter_thread.add_values(values=values, set_marker=set_marker)
+            if not plot_indicator:
+                plotter_thread.add_values(
+                        values = np.array(smpl, dtype=float)  * scaling_plotting,
+                        set_marker=set_marker)
                 set_marker = False
                 last_plotted_smpl = sensor_process.sample_cnt
+
 
         if not pause_recording and refresh_timer.stopwatch_time >= refresh_interval:
             refresh_timer.reset_stopwatch()
@@ -151,7 +178,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
                     li = level_indicator(value=force_data_array[cnt],
-                                         text=indicator_labels[cnt],
+                                         text=parameter_names[cnt],
                                          minVal=minVal, maxVal=maxVal, width = 50,
                                          position=(x_pos,0) )
                     li.present(update=False, clear=False)
@@ -201,6 +228,8 @@ def record_data(exp, recorder, filename, plot_indicator=False,
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
             pygame.display.update(update_rects)
+            # end refesh screen
+        # end while recording
 
     background.stimulus("Quitting").present()
     plotter_thread.stop()
