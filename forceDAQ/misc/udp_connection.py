@@ -238,36 +238,46 @@ class UDPConnectionProcess(Process):
         self.send_queue = Queue()
         self.event_is_connected = Event()
         self._event_stop_request = Event()
+        self._event_is_polling = Event()
         atexit.register(self.stop)
 
     def stop(self):
         self._event_stop_request.set()
-        self.join()
+        if self.is_alive():
+            self.join()
+
+    def pause(self):
+        self._event_is_polling.clear()
+
+    def start_polling(self):
+        self._event_is_polling.set()
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
         print "UDP process started"
         print udp_connection
-
+        self.start_polling()
         timer = Timer(self._sync_timer)
         while not self._event_stop_request.is_set():
+            if not self._event_is_polling.is_set():
+                self._event_is_polling.wait(timeout=0.1)
+            else:
+                data = udp_connection.poll()
+                if data is not None:
+                    self.receive_queue.put(UDPData(string=data,
+                                                    time=timer.time))
+                try:
+                    send_data = self.send_queue.get_nowait()
+                except:
+                    send_data = None
+                if send_data is not None:
+                    udp_connection.send(send_data)
 
-            data = udp_connection.poll()
-            if data is not None:
-                self.receive_queue.put(UDPData(string=data,
-                                                time=timer.time))
-            try:
-                send_data = self.send_queue.get_nowait()
-            except:
-                send_data = None
-            if send_data is not None:
-                udp_connection.send(send_data)
-
-            # has connection changed?
-            if self.event_is_connected.is_set() != udp_connection.is_connected:
-                if udp_connection.is_connected:
-                    self.event_is_connected.set()
-                else:
-                    self.event_is_connected.clear()
+                # has connection changed?
+                if self.event_is_connected.is_set() != udp_connection.is_connected:
+                    if udp_connection.is_connected:
+                        self.event_is_connected.set()
+                    else:
+                        self.event_is_connected.clear()
 
         udp_connection.unconnect_peer()
