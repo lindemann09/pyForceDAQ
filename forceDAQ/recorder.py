@@ -38,8 +38,7 @@ class SoftTrigger(object):
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False,
-                 write_queue_after_pause=True):
+    def __init__(self, force_sensors, poll_udp_connection=False):
 
 
         """queue_data will be saved
@@ -58,7 +57,7 @@ class DataRecorder(object):
                 RuntimeError("Recorder needs a list of ForceSensors!")
             else:
                 fst = SensorProcess(settings = fs,
-                                    return_buffered_data_after_pause=write_queue_after_pause)
+                                    pipe_buffered_data_after_pause=True)
                 fst.start()
                 self._force_sensor_processes.append(fst)
                 self.sample_counter[fs.device_id] = 0
@@ -183,6 +182,7 @@ class DataRecorder(object):
             buffer = fsp.pause_polling_get_buffer()
             self._write_data(buffer)
             data.extend(buffer)
+
         # udp event
         buffer = self.process_udp_events()
         data.extend(buffer)

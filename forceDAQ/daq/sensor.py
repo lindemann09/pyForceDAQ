@@ -229,7 +229,7 @@ class Sensor(DAQReadAnalog):
 
 
 class SensorProcess(Process):
-    def __init__(self, settings, return_buffered_data_after_pause=True,
+    def __init__(self, settings, pipe_buffered_data_after_pause=True,
                   chunk_size=10000):
         """ForceSensorProcess
 
@@ -247,11 +247,11 @@ class SensorProcess(Process):
 
         super(SensorProcess, self).__init__()
         self.sensor_settings = settings
-        self._return_buffer = return_buffered_data_after_pause
+        self._return_buffer = pipe_buffered_data_after_pause
         self._chunk_size = chunk_size
 
         self._pipe_i, self._pipe_o = Pipe()
-        self._event_start_polling = Event()
+        self._event_is_polling = Event()
         self._event_sending_data = Event()
         self._event_new_data = Event()
         self.event_bias_is_available = Event()
@@ -318,12 +318,12 @@ class SensorProcess(Process):
         self._determine_bias_flag.set()
 
     def start_polling(self):
-        self._event_start_polling.set()
+        self._event_is_polling.set()
 
     def pause_polling_get_buffer(self):
         """pause polling and return recorded buffer"""
         rtn = []
-        self._event_start_polling.clear()
+        self._event_is_polling.clear()
         sleep(0.1) # wait data acquisition paused properly
         if self._event_sending_data.is_set() or self._buffer_size.value > 0:
             self._event_sending_data.wait()
@@ -334,13 +334,14 @@ class SensorProcess(Process):
 
     def stop(self): #FIXME deamon?
         rtn = self.pause_polling_get_buffer()
-        if self.is_alive():
-            self.join(2)
-        if self.is_alive():
-            self.terminate()
+        self.join()
+        #if self.is_alive():
+        #    self.terminate()
         return rtn
 
     def join(self, timeout=None):
+        if self._event_is_polling.is_set():
+            self.pause_polling_get_buffer()
         self._event_stop_request.set()
         super(SensorProcess, self).join(timeout)
 
@@ -349,12 +350,13 @@ class SensorProcess(Process):
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
-        self._event_start_polling.clear()
+        self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
+
         while not self._event_stop_request.is_set():
 
-            if self._event_start_polling.is_set():
+            if self._event_is_polling.is_set():
                 # is polling
                 if not is_polling:
                     # start NI device and acquire one first dummy sample to
@@ -395,6 +397,9 @@ class SensorProcess(Process):
                     sensor.determine_bias(n_samples=self._bias_n_samples)
                     self._determine_bias_flag.clear()
                     self.event_bias_is_available.set()
+
+                self._event_is_polling.wait(timeout=0.1)
+
 
         # stop process
         self._buffer_size.value = 0

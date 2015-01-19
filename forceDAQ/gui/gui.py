@@ -4,6 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
+from time import sleep
 import pygame
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
@@ -70,7 +71,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     last_recording_status = None
     set_marker = False
 
-    refresh_timer = misc.Clock()
+    gui_clock = misc.Clock()
     background = RecordingScreen(window_size = exp.screen.size,
                                            filename=filename)
     # plotter
@@ -80,7 +81,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     data_row_colours=colours[:3],
                     y_range=(-250, 250),
                     width=900,
-                    position=(0,0),
+                    position=(0,-30),
                     background_colour=[10,10,10],
                     axis_colour=misc.constants.C_YELLOW)
     plotter_thread.start()
@@ -95,6 +96,9 @@ def record_data(exp, recorder, filename, plot_indicator=False,
 
     quit_recording = False
     while not quit_recording:
+
+        if pause_recording:
+            sleep(0.001)
 
         # process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
@@ -143,6 +147,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     recorder.udp.send_queue.put("paused")
             else:
                 recorder.start_recording()
+                start_recording_time = gui_clock.time
                 background.stimulus().present()
                 if remote_control:
                     recorder.udp.send_queue.put("started")
@@ -154,7 +159,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
             history.update([ smpl[level_detection_parameter] ])
             # level detection
             if len(history.level_thresholds) > 0:
-                tmp = history.level[0]
+                tmp = history.levels[0]
                 if tmp > 0:
                     recorder.udp.send_queue.put("level={0}".format(tmp))
 
@@ -167,8 +172,8 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                 last_plotted_smpl = sensor_process.sample_cnt
 
 
-        if not pause_recording and refresh_timer.stopwatch_time >= refresh_interval:
-            refresh_timer.reset_stopwatch()
+        if not pause_recording and gui_clock.stopwatch_time >= refresh_interval:
+            gui_clock.reset_stopwatch()
 
             update_rects = []
             if plot_indicator:
@@ -214,21 +219,27 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
             # counter
-            pos = (-300, 270)
-            stimuli.Canvas(position=pos, size=(300,20),
+            pos = (-300, 250)
+            stimuli.Canvas(position=pos, size=(400,60),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
-            txt = stimuli.TextLine(position= pos,
+            txt = stimuli.TextBox(position= pos,
+                                size = (400, 60),
+                                #background_colour=(30,30,30),
                                 text_size=15,
-                                text = "n samples (buffer): {0} ({1})".format(
-                                    sensor_process.sample_cnt,
-                                    sensor_process.buffer_size),
-                                text_colour=misc.constants.C_YELLOW)
+                                text = "n samples recorder: {0}\n".format(
+                                                    sensor_process.sample_cnt) +
+                                       "n samples buffered: {0} ({1} seconds)".format(
+                                    sensor_process.buffer_size,
+                                    (gui_clock.time - start_recording_time)/1000),
+                                text_colour=misc.constants.C_YELLOW,
+                                text_justification = 0)
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
             pygame.display.update(update_rects)
             # end refesh screen
+
         # end while recording
 
     background.stimulus("Quitting").present()

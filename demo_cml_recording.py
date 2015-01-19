@@ -16,8 +16,7 @@ if __name__  == "__main__":
 
     # create a data recorder
     recorder = DataRecorder(force_sensors = [sensor1],
-                            poll_udp_connection=False,
-                            write_queue_after_pause=False)
+                            poll_udp_connection=False)
     recorder.open_data_file("outdata", directory="data", suffix=".csv",
                            time_stamp_filename=False,   comment_line="")
 
