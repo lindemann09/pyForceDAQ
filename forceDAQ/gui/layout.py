@@ -34,7 +34,7 @@ def logo_text_line(text):
     return blank
 
 class RecordingScreen(object):
-    def __init__(self, window_size, filename):
+    def __init__(self, window_size, filename, remote_control):
         """Expyriment has to be intialized"""
         margin = 50
         self.left = -1*window_size[0]/2 + margin
@@ -48,8 +48,9 @@ class RecordingScreen(object):
         self.add_text_line_left("p: pause/unpause", [self.left, self.bottom])
         self.add_text_line_left("v: switch view", [self.left + 200, self.bottom])
         self.add_text_line_right("q: quit recording", [self.right, self.bottom])
-        self.add_text_line_centered("filename: " + filename,
-                                    [0, self.top])
+        self.add_text_line_centered("file: " + filename, [0, self.top])
+        if remote_control:
+            self.add_text_line_centered("REMOTE CONTROL", [0, self.top-20])
         self.add_text_line_right("date: {0}".format(strftime("%d/%m/%Y")),
                                 [self.right, self.top])
 

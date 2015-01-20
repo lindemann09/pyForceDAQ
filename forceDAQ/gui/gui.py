@@ -56,7 +56,7 @@ def wait_for_start_recording_event(exp, udp_connection):
 
 
 def record_data(exp, recorder, filename, plot_indicator=False,
-                start_paused=True, remote_control=True):
+                start_paused=True, remote_control=False):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -75,7 +75,8 @@ def record_data(exp, recorder, filename, plot_indicator=False,
 
     gui_clock = misc.Clock()
     background = RecordingScreen(window_size = exp.screen.size,
-                                           filename=filename)
+                                           filename=filename,
+                                           remote_control=remote_control)
     # plotter
     last_plotted_smpl = 0
     plotter_thread = PlotterThread(
@@ -128,7 +129,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                 elif udp_event.string == RcCmd.PAUSE:
                     pause_recording = True
                     set_marker = False
-                elif udp_event.string == RcCmd.THRESHOLDS:
+                elif udp_event.string == RcCmd.QUIT:
                     quit_recording = True
                 elif udp_event.string.startswith(RcCmd.THRESHOLDS):
                     try:
@@ -271,7 +272,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     plotter_thread.stop()
     recorder.pause_recording()
 
-def start():
+def start(remote_control=None):
     # expyriment
     control.defaults.initialize_delay = 0
     control.defaults.pause_key = None
@@ -285,13 +286,12 @@ def start():
 
     SENSOR_ID = 1  # i.e., NI-device id
 
-    remote_control, filename = initialize(exp, filename="output")
+    remote_control, filename = initialize(exp, remote_control=remote_control,
+                                          filename="output")
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
     recorder = DataRecorder([sensor1], poll_udp_connection=True)
-    recorder.open_data_file(filename, directory="data", suffix=".csv",
-                        time_stamp_filename=False, comment_line="")
 
     stimuli.TextLine("Press key to determine bias").present()
     exp.keyboard.wait()
@@ -299,10 +299,30 @@ def start():
     recorder.determine_biases(n_samples=500)
 
     if remote_control:
-        pass
+        stimuli.TextLine("Wait connecting peer").present()
+        while not recorder.udp.event_is_connected.is_set():
+            exp.keyboard.check()
+            sleep(0.01)
+
+        stimuli.TextLine("Wait for filename").present()
+        while True:
+            try:
+                x = recorder.udp.receive_queue.get_nowait()
+                x = x.string
+            except:
+                x = None
+            if x is not None and x.startswith(RcCmd.FEEDBACK):
+                filename = x.replace(RcCmd.FEEDBACK, "")
+                break
+            exp.keyboard.check()
+            sleep(0.01)
+
     else:
         stimuli.TextLine("Press key to start recording").present()
         exp.keyboard.wait()
+
+    recorder.open_data_file(filename, directory="data", suffix=".csv",
+                        time_stamp_filename=False, comment_line="")
 
     record_data(exp, recorder=recorder,
                     filename=filename,
