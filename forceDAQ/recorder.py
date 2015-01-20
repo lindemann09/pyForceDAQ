@@ -9,31 +9,9 @@ import os
 import atexit
 from time import localtime, strftime
 
-from daq import ForceData, SensorSettings, SensorProcess
-from misc import Timer, UDPData, UDPConnectionProcess
-
-
-class SoftTrigger(object):
-    """The SoftTrigger data class, used to store trigger
-
-    See Also
-    --------
-    DataRecorder.set_soft_trigger()
-
-    """
-
-    def __init__(self, time, code):
-        """Create a SoftTrigger object
-
-        Parameters
-        ----------
-        time : int
-        code : numerical or string
-
-        """
-        self.time = time
-        self.code = code
-
+from forceDAQ.types import ForceData, UDPData, SoftTrigger
+from daq import SensorSettings, SensorProcess
+from misc import Timer, UDPConnectionProcess
 
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""

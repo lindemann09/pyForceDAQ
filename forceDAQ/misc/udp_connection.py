@@ -4,7 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.2"
+__version__ = "0.3"
 
 import os
 from multiprocessing import Process, Event, Queue
@@ -13,7 +13,7 @@ from time import sleep, time
 import socket
 
 from timer import Timer
-
+from forceDAQ.types import UDPData
 
 if os.name != "nt":
     import fcntl
@@ -166,26 +166,6 @@ class UDPConnection(object):
             rtn = tmp
             tmp = self.poll()
         return rtn
-
-
-class UDPData(object):
-    """The UDP data class, used to store UDP DATA with timestamps
-
-    """
-
-    def __init__(self, string, time):
-        """Create a UDA_DATA object
-
-        Parameters
-        ----------
-        time : int
-        code : numerical or string
-
-        """
-        self.time = time
-        self.string = string
-
-
 
 
 class UDPConnectionProcess(Process):

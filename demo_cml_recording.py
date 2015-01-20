@@ -3,8 +3,10 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann"
-from forceDAQ.daq import ForceData, SensorSettings
-from forceDAQ.recorder import DataRecorder, SoftTrigger
+
+from forceDAQ.types import ForceData, SoftTrigger
+from forceDAQ.daq import SensorSettings
+from forceDAQ.recorder import DataRecorder
 from forceDAQ.misc import Timer
 
 if __name__  == "__main__":
