@@ -17,7 +17,8 @@ if __name__  == "__main__":
                              calibration_file="FT_demo.cal")
 
     # create a data recorder
-    recorder = DataRecorder(force_sensors = [sensor1],
+    recorder = DataRecorder(force_sensor_settings= [sensor1],
+                            timer=timer,
                             poll_udp_connection=False)
     recorder.open_data_file("outdata", directory="data", suffix=".csv",
                            time_stamp_filename=False,   comment_line="")

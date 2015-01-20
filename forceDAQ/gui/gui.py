@@ -118,17 +118,15 @@ def record_data(exp, recorder, filename, plot_indicator=False,
         udp = recorder.process_udp_events()
         while len(udp)>0:
             udp_event = udp.pop(0)
-            set_marker = True
 
             #remote control
             if remote_control and \
                     udp_event.string.startswith(RcCmd.COMMAND_STR):
+                set_marker = False
                 if udp_event.string == RcCmd.START:
                     pause_recording = False
-                    set_marker = False
                 elif udp_event.string == RcCmd.PAUSE:
                     pause_recording = True
-                    set_marker = False
                 elif udp_event.string == RcCmd.QUIT:
                     quit_recording = True
                 elif udp_event.string.startswith(RcCmd.THRESHOLDS):
@@ -159,6 +157,9 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                 elif udp_event.string == RcCmd.GET_TZ:
                     recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
                                                 dumps(sensor_process.Fz))
+            else:
+                # not remote control command
+                set_marker = True
 
 
         # show pause or recording screen
@@ -273,6 +274,11 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     recorder.pause_recording()
 
 def start(remote_control=None):
+    """start gui
+    remote_control should be None (ask) or True or False
+
+    """
+
     # expyriment
     control.defaults.initialize_delay = 0
     control.defaults.pause_key = None
@@ -291,7 +297,8 @@ def start(remote_control=None):
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
-    recorder = DataRecorder([sensor1], poll_udp_connection=True)
+    recorder = DataRecorder([sensor1], timer=timer,
+                            poll_udp_connection=True)
 
     stimuli.TextLine("Press key to determine bias").present()
     exp.keyboard.wait()

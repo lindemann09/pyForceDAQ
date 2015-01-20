@@ -16,23 +16,24 @@ from misc import Timer, UDPConnectionProcess
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensors, poll_udp_connection=False):
+    def __init__(self, force_sensor_settings, timer,
+                 poll_udp_connection=False):
 
 
         """queue_data will be saved
         see sensorprocess.__init__
         """
 
-        self.timer = Timer()
+        self.timer = timer
         #create sensor processes
-        if not isinstance(force_sensors, list):
-            force_sensors = [force_sensors]
+        if not isinstance(force_sensor_settings, list):
+            force_sensor_settings = [force_sensor_settings]
         self._force_sensor_processes =[]
 
         self.sample_counter = {}
-        for fs in force_sensors:
+        for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
-                RuntimeError("Recorder needs a list of ForceSensors!")
+                RuntimeError("Recorder needs a list of Force Sensor Settings!")
             else:
                 fst = SensorProcess(settings = fs,
                                     pipe_buffered_data_after_pause=True)

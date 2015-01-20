@@ -195,7 +195,7 @@ class UDPConnectionProcess(Process):
         # TODO
     """        # todo
 
-    def __init__(self, sync_timer=None):
+    def __init__(self, sync_timer):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -210,10 +210,7 @@ class UDPConnectionProcess(Process):
         """ # todo
 
         super(UDPConnectionProcess, self).__init__()
-        if sync_timer is None:
-            self._sync_timer = Timer()
-        else:
-            self._sync_timer = sync_timer
+        self._sync_timer = sync_timer
         self.receive_queue = Queue()
         self.send_queue = Queue()
         self.event_is_connected = Event()
