@@ -59,7 +59,7 @@ class ForceData(object):
 
     def __str__(self):
         """converts data to string. """
-        txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
+        txt = "%d,%d,%d, %.8f,%.8f,%.8f,%.8f,%.8f,%.8f" % (self.device_id,
                                                            self.time,
                                                            self.counter,
                                                            self.forces[0],
@@ -132,6 +132,12 @@ class ForceData(object):
         self.force = struct.forces
         self.trigger = struct.triger
 
+    @property
+    def array(self):
+        rtn = [self.device_id, self.time ,
+        self.counter, self.forces, self.trigger]
+        return rtn
+
 
 class SensorTest(Process):
 
@@ -164,7 +170,7 @@ class SensorTest(Process):
         self.event_sending_data.clear()
         data = []
         self._buffer_size.value = 0
-        for cnt in range(1000*60*5):
+        for cnt in xrange(1000*60*1):
             d = ForceData(time=8, counter=cnt,
                   forces=np.random.random(6),
                   trigger=(99,cnt+100))
@@ -199,7 +205,20 @@ if __name__=="__main__":
     b = []
     while len(b)==0:
         b = sensor.read_buffer()
-    print b[2345].forces
-    print "stop", timeit.default_timer() - tic, MB(b), len(b)
 
-    print sensor.stop()
+    sensor.stop()
+    bb = []
+    for x in b:
+        bb.append(x.ctypes_struct)
+    import pickle
+    import cPickle
+    print MB(b)
+
+    tic = timeit.default_timer()
+    print MB(cPickle.dumps(b))
+    print timeit.default_timer() -tic
+
+    tic = timeit.default_timer()
+    print MB(pickle.dumps(b))
+    print timeit.default_timer() -tic
+

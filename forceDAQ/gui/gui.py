@@ -9,10 +9,11 @@ import pygame
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
-from forceDAQ.misc import Timer, SensorHistory
 from forceDAQ.recorder import DataRecorder, SensorSettings
-from plotter import PlotterThread, level_indicator
+from forceDAQ.types import GUIRemoteControlCommands as RcCmd
+from forceDAQ.misc import Timer, SensorHistory
 
+from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
 def initialize(exp, remote_control=None, filename=None):
@@ -117,17 +118,17 @@ def record_data(exp, recorder, filename, plot_indicator=False,
             udp_event = udp.pop(0)
             set_marker = True
             if remote_control:
-                if udp_event.string == "start":
+                if udp_event.string == RcCmd.START:
                     pause_recording = False
                     set_marker = False
-                elif udp_event.string == "pause":
+                elif udp_event.string == RcCmd.PAUSE:
                     pause_recording = True
                     set_marker = False
-                elif udp_event.string == "quit":
+                elif udp_event.string == RcCmd.THRESHOLDS:
                     quit_recording = True
-                elif udp_event.string.startswith("thresholds"):
+                elif udp_event.string.startswith(RcCmd.THRESHOLDS):
                     try:
-                        tmp = udp_event.string.split("=")[1]
+                        tmp = udp_event.string[len(RcCmd.THRESHOLDS):]
                         tmp = eval(tmp)
                     except:
                         tmp = None
@@ -219,7 +220,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
             # counter
-            pos = (-300, 250)
+            pos = (-370, 250)
             stimuli.Canvas(position=pos, size=(400,60),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
