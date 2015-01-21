@@ -318,8 +318,8 @@ def start(remote_control=None):
                 x = x.string
             except:
                 x = None
-            if x is not None and x.startswith(RcCmd.FEEDBACK):
-                filename = x.replace(RcCmd.FEEDBACK, "")
+            if x is not None and x.startswith(RcCmd.FILENAME):
+                filename = x.replace(RcCmd.FILENAME, "")
                 break
             exp.keyboard.check()
             sleep(0.01)
