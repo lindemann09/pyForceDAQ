@@ -13,6 +13,9 @@ from types import ForceData, UDPData, SoftTrigger
 from daq import SensorSettings, SensorProcess
 from misc import Timer, UDPConnectionProcess
 
+CODE_SOFTTRIGGER = 88
+CODE_UDPDATA = 99
+
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
@@ -100,18 +103,18 @@ class DataRecorder(object):
         for d in data_buffer:
             if isinstance(d, ForceData):
                 self.sample_counter[d.device_id] += 1
-
+                
             if self._file is not None:
                 if isinstance(d, ForceData):
                     self._file.write("%d,%d,%d, %.4f,%.4f,%.4f\n" % \
                                  (d.device_id, d.time, d.counter,
                                   d.Fx, d.Fy, d.Fz)) # write ascii data to file todo does not write trigger or torque
                 elif isinstance(d, SoftTrigger):
-                     self._file.write("#T,%d,%d,0,0,0\n" % \
-                                 (d.time, d.code)) # write ascii data to fill todo: DOC output format
+                     self._file.write("%d,%d,%s,0,0,0\n" % \
+                                 (CODE_SOFTTRIGGER, d.time, str(d.code))) # write ascii data to fill todo: DOC output format
                 elif isinstance(d, UDPData):
-                    self._file.write("UDP,%d,%s,0,0,0\n" % \
-                                     (d.time, d.string)) # write ascii data to fill
+                    self._file.write("%d,%d,%s,0,0,0\n" % \
+                                     (CODE_UDPDATA, d.time, d.string)) # write ascii data to fill
 
 
     def write_soft_trigger(self, code, time=None):
@@ -250,7 +253,7 @@ class DataRecorder(object):
         if len(comment_line)>0:
             self._file.write("#" + comment_line + "\n")
         if varnames:
-            self._file.write("#device_tag, time, counter, Fx, Fy, Fz\n")
+            self._file.write("device_tag, time, counter, Fx, Fy, Fz\n")
         return self.filename
 
     def close_data_file(self):

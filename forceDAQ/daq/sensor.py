@@ -6,7 +6,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
-from multiprocessing import Process, Event, sharedctypes, Pipe, Pool
+from multiprocessing import Process, Event, sharedctypes, Pipe
 import atexit
 from time import sleep
 
@@ -14,7 +14,7 @@ import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ.types import ForceData
+from forceDAQ.types import ForceData, SoftTrigger
 from forceDAQ.misc import Timer
 
 
@@ -49,7 +49,7 @@ class Sensor(DAQReadAnalog):
         self._atidaq.setTorqueUnits("N-m")
         self.timer = Timer(sync_timer=settings.sync_timer)
 
-        self._last_sample_time_counter = (0, 0)  # time & cunter
+        self._last_sample_time_counter = (0, 0)  # time & counter
 
     def determine_bias(self, n_samples=100):
         """determines the bias
@@ -131,7 +131,6 @@ class SensorProcess(Process):
         self._event_sending_data = Event()
         self._event_new_data = Event()
         self.event_bias_is_available = Event()
-        self.daemon = True
 
         self._last_Fx = sharedctypes.RawValue(ct.c_float)
         self._last_Fy = sharedctypes.RawValue(ct.c_float)
@@ -208,11 +207,9 @@ class SensorProcess(Process):
             self._event_sending_data.clear() # stop sending
         return rtn
 
-    def stop(self): #FIXME deamon?
+    def stop(self):
         rtn = self.pause_polling_get_buffer()
         self.join()
-        #if self.is_alive():
-        #    self.terminate()
         return rtn
 
     def join(self, timeout=None):
@@ -229,7 +226,6 @@ class SensorProcess(Process):
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
-
         while not self._event_stop_request.is_set():
 
             if self._event_is_polling.is_set():
@@ -238,8 +234,12 @@ class SensorProcess(Process):
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    sensor.poll_force_data()
+                    if self._return_buffer:
+                        buffer.append(SoftTrigger(time=sensor.timer.time,
+                                    code=":started"+repr(sensor.device_id)))
+                        self._buffer_size.value = len(buffer)
                     is_polling = True
+
                 d = sensor.poll_force_data()
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
 				                     self._last_Tx.value, self._last_Ty.value, \
@@ -253,6 +253,10 @@ class SensorProcess(Process):
             else:
                 # pause: not polling
                 if is_polling:
+                    if self._return_buffer:
+                        buffer.append(SoftTrigger(time=sensor.timer.time,
+                                    code="pause:"+repr(sensor.device_id)))
+                        self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
                     is_polling = False
 
