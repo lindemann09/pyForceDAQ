@@ -49,8 +49,6 @@ class Sensor(DAQReadAnalog):
         self._atidaq.setTorqueUnits("N-m")
         self.timer = Timer(sync_timer=settings.sync_timer)
 
-        self._last_sample_time_counter = (0, 0)  # time & counter
-
     def determine_bias(self, n_samples=100):
         """determines the bias
 
@@ -86,22 +84,11 @@ class Sensor(DAQReadAnalog):
         """
 
         read_buffer, _read_samples = self.read_analog()
-        time = self.timer.time
-        data = ForceData(time=time, device_id=self.device_id,
+        return ForceData(time=self.timer.time, device_id=self.device_id,
                          forces=self._atidaq.convertToFT(
                              read_buffer[Sensor.SENSOR_CHANNELS]),
                          trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
-        # set counter if multiple sample in same millisecond
-        if data.time > self._last_sample_time_counter[0]:
-            self._last_sample_time_counter = (data.time, 0)
-        else:
-            self._last_sample_time_counter = (data.time,
-                                              self._last_sample_time_counter[
-                                                  1] + 1)
-        data.counter = self._last_sample_time_counter[1]
-
-        return data
 
 
 class SensorProcess(Process):

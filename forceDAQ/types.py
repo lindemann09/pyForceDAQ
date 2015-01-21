@@ -8,7 +8,6 @@ CTYPE_TRIGGER = ct.c_float * 2
 class CTypesForceData(ct.Structure):
     _fields_ = [("device_id", ct.c_int),
             ("time", ct.c_int),
-            ("counter", ct.c_uint64),
             ("forces", CTYPE_FORCES),
             ("trigger", CTYPE_TRIGGER)]
 
@@ -20,15 +19,14 @@ class ForceData(object):
         * Tx, Ty, & Tz
         * trigger1 & trigger2
         * time
-        * counter
 
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
-    str_variable_names = "device_id, time, counter, Fx, Fy, Fz, Tx, Ty, Tz, " + \
+    str_variable_names = "device_id, time, Fx, Fy, Fz, Tx, Ty, Tz, " + \
                      "trigger1, trigger2"
 
-    def __init__(self, time=0, counter=0, forces=[0] * 6, trigger=(0, 0),
+    def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
                  device_id=0):
         """Create a ForceData object
         Parameters
@@ -37,9 +35,6 @@ class ForceData(object):
             the id of the sensor device
         time: int, optional
             the timestamp
-        counter: int
-            sample counter; useful, for instance, if multiple samples are
-            received within one millisecond
         forces: array of six floats
             array of the force data defined as [Fx, Fy, Fz, Tx, Ty, Tz]
         trigger: array of two floats
@@ -49,15 +44,13 @@ class ForceData(object):
 
         self.time = time
         self.device_id = device_id
-        self.counter = counter
         self.forces = forces
         self.trigger = trigger
 
     def __str__(self):
         """converts data to string. """
-        txt = "%d,%d,%d, %.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
+        txt = "%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
                                                            self.time,
-                                                           self.counter,
                                                            self.forces[0],
                                                            self.forces[1],
                                                            self.forces[2],
@@ -117,14 +110,13 @@ class ForceData(object):
 
     @property
     def ctypes_struct(self):
-        return CTypesForceData(self.device_id, self.time, self.counter,
+        return CTypesForceData(self.device_id, self.time,
               CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
         self.device_id = struct.device_id
         self.time = struct.time
-        self.counter = struct.counter
         self.force = struct.forces
         self.trigger = struct.triger
 
