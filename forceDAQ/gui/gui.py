@@ -12,7 +12,7 @@ from expyriment import control, design, stimuli, io, misc
 
 from forceDAQ.recorder import DataRecorder, SensorSettings
 from forceDAQ.types import ForceData
-from forceDAQ.types import GUIRemoteControlCommands as RcCmd
+from forceDAQ.remote_control import GUIRemoteControlCommands as RcCmd
 from forceDAQ.misc import Timer, SensorHistory
 
 from plotter import PlotterThread, level_indicator

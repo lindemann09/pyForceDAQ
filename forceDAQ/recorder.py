@@ -9,7 +9,7 @@ import os
 import atexit
 from time import localtime, strftime
 
-from forceDAQ.types import ForceData, UDPData, SoftTrigger
+from types import ForceData, UDPData, SoftTrigger
 from daq import SensorSettings, SensorProcess
 from misc import Timer, UDPConnectionProcess
 
