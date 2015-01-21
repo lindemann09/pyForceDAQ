@@ -12,7 +12,7 @@ import atexit
 from time import sleep, time
 import socket
 
-from timer import Timer
+from timer import Timer, get_time
 from forceDAQ.types import UDPData
 
 if os.name != "nt":
@@ -71,6 +71,24 @@ class UDPConnection(object):
     def __str__(self):
         return "ip: {0} (port: {1}); peer: {2}".format(self.my_ip,
                                                        self.udp_port, self.peer_ip)
+
+    def receive(self, timeout):
+        """checks for received data and returns it
+
+        In contrast to poll the function keep polling until timeout if no new
+        data are available.
+
+        timeout in seconds
+
+        """
+
+        t = get_time()
+        while True:
+            rtn = self.poll()
+            if rtn is not None:
+                return rtn
+            if (get_time() - t) > timeout:
+                return None
 
     def poll(self):
         """returns data or None if no data found

@@ -127,7 +127,7 @@ class Timer(object):#
         return int((get_time() - self._init_time) * 1000)
 
     def wait(self, waiting_time, function=None):
-        """Wait for a certain amout of milliseconds.
+        """Wait for a certain amount of milliseconds.
         """
 
         start = self.time
