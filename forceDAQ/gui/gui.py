@@ -267,7 +267,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
     plotter_thread.stop()
     recorder.pause_recording()
 
-def start(remote_control=None, ask_filename=True):
+def start(remote_control, ask_filename, calibration_file):
     """start gui
     remote_control should be None (ask) or True or False
 
@@ -288,7 +288,7 @@ def start(remote_control=None, ask_filename=True):
     filename = "output.csv"
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
-                                    calibration_file="FT_demo.cal")
+                                    calibration_file=calibration_file)
 
     remote_control = initialize(exp, remote_control=remote_control)
 
