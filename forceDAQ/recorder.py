@@ -199,7 +199,7 @@ class DataRecorder(object):
                        time_stamp_filename=False,
                        varnames = True,
                        comment_line="",
-                       zipped=True):
+                       zipped=False):
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -218,7 +218,8 @@ class DataRecorder(object):
         comment_line : string, optional
             add some comments at the beginning of the data output file
         zippers : boolean, optional
-            are the data zipped or not
+            are the data zipped or not. Note: Saving zipped data after pause
+            takes much longer.
 
         Returns
         -------
@@ -230,18 +231,24 @@ class DataRecorder(object):
         if not os.path.isdir(directory):
             os.mkdir(directory)
         self.close_data_file()
+
+        if filename is None or len(filename) == 0:
+            filename = "daq_recording.csv"
+
         if zipped:
             suffix = ".gz"
         else:
             suffix = ""
 
-        if filename is None or len(filename) == 0:
-            filename = "daq_recording"
         cnt = 0
         while True:
             flname = filename
             if cnt>0:
-                flname += "_{0}".format(cnt)
+                x = flname.find(".")
+                if x<0:
+                    x = len(flname)
+                flname = flname[:x] + "_{0}".format(cnt) + flname[x:]
+
             if time_stamp_filename:
                 self.filename = flname + "_" + \
                         strftime("%Y%m%d%H%M", localtime()) + suffix

@@ -18,7 +18,7 @@ from forceDAQ.misc import Timer, SensorHistory
 from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
-def initialize(exp, remote_control=None, filename=None):
+def initialize(exp, remote_control=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
 
@@ -32,12 +32,7 @@ def initialize(exp, remote_control=None, filename=None):
         else:
             remote_control = False
 
-    if filename is None:
-        bkg = logo_text_line("")
-        filename = io.TextInput("Filename", background_stimulus=bkg).get()
-        filename = filename.replace(" ", "_")
-
-    return remote_control, filename
+    return remote_control
 
 
 def wait_for_start_recording_event(exp, udp_connection):
@@ -55,8 +50,7 @@ def wait_for_start_recording_event(exp, udp_connection):
         exp.keyboard.wait()
 
 
-def record_data(exp, recorder, filename, plot_indicator=False,
-                start_paused=True, remote_control=False):
+def record_data(exp, recorder, plot_indicator=False, remote_control=False):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -69,13 +63,13 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     maxVal = +70
     scaling_plotting = 2.3
 
-    pause_recording = start_paused
+    pause_recording = True
     last_recording_status = None
     set_marker = False
 
     gui_clock = misc.Clock()
     background = RecordingScreen(window_size = exp.screen.size,
-                                           filename=filename,
+                                           filename=recorder.filename,
                                            remote_control=remote_control)
     # plotter
     last_plotted_smpl = 0
@@ -246,12 +240,12 @@ def record_data(exp, recorder, filename, plot_indicator=False,
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
             # counter
-            pos = (-370, 250)
-            stimuli.Canvas(position=pos, size=(400,60),
+            pos = (-230, 250)
+            stimuli.Canvas(position=pos, size=(400,50),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
             txt = stimuli.TextBox(position= pos,
-                                size = (400, 60),
+                                size = (400, 50),
                                 #background_colour=(30,30,30),
                                 text_size=15,
                                 text = "n samples recorder: {0}\n".format(
@@ -273,7 +267,7 @@ def record_data(exp, recorder, filename, plot_indicator=False,
     plotter_thread.stop()
     recorder.pause_recording()
 
-def start(remote_control=None):
+def start(remote_control=None, ask_filename=True):
     """start gui
     remote_control should be None (ask) or True or False
 
@@ -287,16 +281,17 @@ def start(remote_control=None):
     control.defaults.fast_quit = True
     control.defaults.open_gl = False
     control.defaults.event_logging = 0
-    exp = design.Experiment()
+    exp = design.Experiment(text_font="freemono")
     exp.set_log_level(0)
 
     SENSOR_ID = 1  # i.e., NI-device id
-
-    remote_control, filename = initialize(exp, remote_control=remote_control,
-                                          filename="output.csv")
+    filename = "output.csv"
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
+
+    remote_control = initialize(exp, remote_control=remote_control)
+
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
 
@@ -309,32 +304,33 @@ def start(remote_control=None):
         stimuli.TextLine("Wait connecting peer").present()
         while not recorder.udp.event_is_connected.is_set():
             exp.keyboard.check()
-            sleep(0.01)
+            sleep(0.01)#
 
-        stimuli.TextLine("Wait for filename").present()
-        while True:
-            try:
-                x = recorder.udp.receive_queue.get_nowait()
-                x = x.string
-            except:
-                x = None
-            if x is not None and x.startswith(RcCmd.FILENAME):
-                filename = x.replace(RcCmd.FILENAME, "")
-                break
-            exp.keyboard.check()
-            sleep(0.01)
-
+        if ask_filename:
+            stimuli.TextLine("Wait for filename").present()
+            while True:
+                try:
+                    x = recorder.udp.receive_queue.get_nowait()
+                    x = x.string
+                except:
+                    x = None
+                if x is not None and x.startswith(RcCmd.FILENAME):
+                    filename = x.replace(RcCmd.FILENAME, "")
+                    break
+                exp.keyboard.check()
+                sleep(0.01)
     else:
-        stimuli.TextLine("Press key to start recording").present()
-        exp.keyboard.wait()
+        if ask_filename:
+            bkg = logo_text_line("")
+            filename = io.TextInput("Filename", background_stimulus=bkg).get()
+            filename = filename.replace(" ", "_")
 
-    recorder.open_data_file(filename, directory="data", zipped=True,
+
+    recorder.open_data_file(filename, directory="data", zipped=False,
                         time_stamp_filename=False, comment_line="")
 
     record_data(exp, recorder=recorder,
-                    filename=filename,
                     plot_indicator = True,
-                    start_paused=True,
                     remote_control=remote_control)
 
     recorder.quit()

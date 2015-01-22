@@ -170,14 +170,16 @@ class SensorProcess(Process):
                        n_samples=100):  # FIXME changing no samples. Does that work?
         """recording is paused after bias determination
 
+        Bias determination is only possible while pause.
         This process might take a while. Please use "wait_bias_available" to
         ensure that the process is finished and the sensor is again read for
         recording.
         """
 
-        self._bias_n_samples = n_samples
-        self.event_bias_is_available.clear()
-        self._determine_bias_flag.set()
+        if not self._event_is_polling.is_set():
+            self._bias_n_samples = n_samples
+            self.event_bias_is_available.clear()
+            self._determine_bias_flag.set()
 
     def start_polling(self):
         self._event_is_polling.set()
