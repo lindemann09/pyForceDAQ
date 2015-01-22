@@ -14,7 +14,7 @@ Dependencies
 * Python 2.7 (<3.0)
 * [NumPy](http://www.numpy.org/) 1.7 or higher
 * [PyDAQmx](https://pythonhosted.org/PyDAQmx/installation.html)
-* The GUI application (`pyForceGUI.py) depends furthermore on [Expyriment](http://www.expyriment.org) 0.7.0 or higher
+* The GUI application (`pyForceGUI.py`) depends furthermore on [Expyriment](http://www.expyriment.org) 0.7.0 or higher
 
 
 Installation
