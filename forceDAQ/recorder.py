@@ -8,6 +8,7 @@ __author__ = "Oliver Lindemann"
 import os
 import atexit
 from time import localtime, strftime
+import gzip
 
 from types import ForceData, UDPData, SoftTrigger
 from daq import SensorSettings, SensorProcess
@@ -194,10 +195,11 @@ class DataRecorder(object):
             self._force_sensor_processes)
         map(lambda x:x.event_bias_is_available.wait(), self._force_sensor_processes)
 
-    def open_data_file(self, filename, directory="data", suffix=".csv",
+    def open_data_file(self, filename, directory="data",
                        time_stamp_filename=False,
                        varnames = True,
-                       comment_line=""):
+                       comment_line="",
+                       zipped=True):
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -208,8 +210,6 @@ class DataRecorder(object):
             the filename
         directory : string, optional
             the data subdirectory
-        suffix : string, optional
-            the data filename suffix
         time_stamp_filename : boolean, optional
             if True all filename will contain a timestamp. This is usefull to
             ensure that data will not overwritten
@@ -217,6 +217,8 @@ class DataRecorder(object):
             write variable names in first line of data output
         comment_line : string, optional
             add some comments at the beginning of the data output file
+        zippers : boolean, optional
+            are the data zipped or not
 
         Returns
         -------
@@ -228,6 +230,10 @@ class DataRecorder(object):
         if not os.path.isdir(directory):
             os.mkdir(directory)
         self.close_data_file()
+        if zipped:
+            suffix = ".gz"
+        else:
+            suffix = ""
 
         if filename is None or len(filename) == 0:
             filename = "daq_recording"
@@ -248,7 +254,10 @@ class DataRecorder(object):
             else:
                 break
 
-        self._file = open(directory + os.path.sep + self.filename, 'w+')
+        if zipped:
+            self._file = gzip.open(directory + os.path.sep + self.filename, 'w+')
+        else:
+            self._file = open(directory + os.path.sep + self.filename, 'w+')
         print "Data file: ", self.filename
         if len(comment_line)>0:
             self._file.write("#" + comment_line + "\n")

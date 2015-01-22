@@ -293,7 +293,7 @@ def start(remote_control=None):
     SENSOR_ID = 1  # i.e., NI-device id
 
     remote_control, filename = initialize(exp, remote_control=remote_control,
-                                          filename="output")
+                                          filename="output.csv")
     timer = Timer()
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file="FT_demo.cal")
@@ -328,7 +328,7 @@ def start(remote_control=None):
         stimuli.TextLine("Press key to start recording").present()
         exp.keyboard.wait()
 
-    recorder.open_data_file(filename, directory="data", suffix=".csv",
+    recorder.open_data_file(filename, directory="data", zipped=True,
                         time_stamp_filename=False, comment_line="")
 
     record_data(exp, recorder=recorder,
