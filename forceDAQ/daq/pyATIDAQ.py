@@ -248,7 +248,7 @@ class ATI_CDLL(object):
          returns them in result
          Parameters:
            voltages: array of float
-                array of voltages acuired by DAQ system
+                array of voltages acquired by DAQ system
          Returns:
             array of force-torque values (typ. 6 elements)
         """

@@ -4,15 +4,16 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.1"
+__version__ = "0.3"
 
 import os
 from multiprocessing import Process, Event, Queue
 import atexit
-
-from clock import Clock
-from time import sleep
+from time import sleep, time
 import socket
+
+from timer import Timer, get_time
+from forceDAQ.types import UDPData
 
 if os.name != "nt":
     import fcntl
@@ -49,60 +50,15 @@ def get_lan_ip():
     return ip
 
 
-class UDPData(object):
-    """UDP Data object
-
-    This structure is used for all received data
-
-    """
-
-    COMMAND_CHAR = "$"
-    CONNECT_COMMAND = COMMAND_CHAR + "connect"
-    UNCONNECT_COMMAND = COMMAND_CHAR + "unconnect"
-    REPLY_COMMAND = COMMAND_CHAR + "ok"
-    PING_COMMAND = COMMAND_CHAR + "ping"
-
-    def __init__(self, string, sender, time=None):
-        """UDP Data object
-
-        Parameters
-        ----------
-        string: string
-            data string
-        sender: string
-            IP of the sender
-        time: int, optional
-            time stamp
-
-        """
-
-        self.string = string
-        self.sender = sender
-        self.time = time
-
-    def __str__(self):
-        return "at {0} form {1}: '{2}' ".format(self.time, self.sender, self.string)
-
-    @property
-    def is_connect_command(self):
-        return self.string == UDPData.CONNECT_COMMAND
-
-    @property
-    def is_unconnect_command(self):
-        return self.string == UDPData.UNCONNECT_COMMAND
-
-    @property
-    def is_ping_command(self):
-        return self.string == UDPData.PING_COMMAND
-
-    @property
-    def is_reply_command(self):
-        return self.string == UDPData.PING_COMMAND
-
-
 class UDPConnection(object):
+    # todo: document the usage "connecting" "unconecting"
+    COMMAND_CHAR = "$"
+    CONNECT = COMMAND_CHAR + "connect"
+    UNCONNECT = COMMAND_CHAR + "unconnect"
+    COMMAND_REPLY = COMMAND_CHAR + "ok"
+    PING = COMMAND_CHAR + "ping"
 
-    def __init__(self, udp_port=5005, timestamps=False, sync_clock=None):
+    def __init__(self, udp_port=5005):
         self.udp_port = udp_port
 
         self.socket = socket.socket(socket.AF_INET,  # Internet
@@ -111,49 +67,56 @@ class UDPConnection(object):
         self.socket.bind((self.my_ip, self.udp_port))
         self.socket.setblocking(False)
         self.peer_ip = None
-        self._clock = Clock(sync_clock=sync_clock)
-        self.timestamps = timestamps
 
     def __str__(self):
         return "ip: {0} (port: {1}); peer: {2}".format(self.my_ip,
                                                        self.udp_port, self.peer_ip)
 
+    def receive(self, timeout):
+        """checks for received data and returns it
+
+        In contrast to poll the function keep polling until timeout if no new
+        data are available.
+
+        timeout in seconds
+
+        """
+
+        t = get_time()
+        while True:
+            rtn = self.poll()
+            if rtn is not None:
+                return rtn
+            if (get_time() - t) > timeout:
+                return None
+
     def poll(self):
         """returns data or None if no data found
         process also commands
 
-        if if send is unkown input is ignored
+        if send is unkown input is ignored
         """
 
         try:
-            recv = self.socket.recvfrom(1024)
+            data, sender = self.socket.recvfrom(1024)
         except:
             return None
 
-        if self.timestamps:
-            data = UDPData(string=recv[0], sender=recv[1][0], time=self._clock.time)
-        else:
-            data = UDPData(string=recv[0], sender=recv[1][0])
-
         # process data
-        if data.is_connect_command:
+        if data == UDPConnection.CONNECT:
             #connection request
-            self.peer_ip = data.sender
-            if not self.send(UDPData.REPLY_COMMAND):
+            self.peer_ip = sender[0]
+            if not self.send(UDPConnection.COMMAND_REPLY):
                 self.peer_ip = None
-            return None
-        elif data.sender != self.peer_ip:
+        elif sender[0] != self.peer_ip:
             return None  # ignore data
-        elif data.is_ping_command:
-            self.send(UDPData.REPLY_COMMAND)
-            return None
-        elif data.is_unconnect_command:
+        elif data == UDPConnection.PING:
+            self.send(UDPConnection.COMMAND_REPLY)
+        elif data == self.UNCONNECT:
             self.unconnect_peer()
-            return None
-
         return data
 
-    def send(self, string, timeout=1.0):
+    def send(self, data, timeout=1.0):
         """returns if problems or not
         timeout in seconds (default = 1.0)
         return False if failed to send
@@ -161,36 +124,36 @@ class UDPConnection(object):
         """
         if self.peer_ip is None:
             return False
-        self._clock.reset_stopwatch()
-        while self._clock.stopwatch_time < timeout * 1000:
+        start = time()
+        while time() - start < timeout:
             try:
-                self.socket.sendto(string, (self.peer_ip, self.udp_port))
-                # print "send:", string, self.peer_ip
+                self.socket.sendto(data, (self.peer_ip, self.udp_port))
+                # print "send:", data, self.peer_ip
                 return True
             except:
                 sleep(0.001)  # wait 1 ms
         return False
 
-    def connect_peer(self, peer_ip, timeout=1.0):
+    def connect_peer(self, peer_ip, timeout=1):
         self.unconnect_peer()
         self.peer_ip = peer_ip
-        if self.send(UDPData.CONNECT_COMMAND, timeout=timeout) and \
-                self.wait_input(UDPData.REPLY_COMMAND, duration=timeout):
+        if self.send(UDPConnection.CONNECT, timeout=timeout) and \
+                self.wait_input(UDPConnection.COMMAND_REPLY, duration=timeout):
             return True
         self.peer_ip = None
         return False
 
-    def wait_input(self, input_string, duration=1.0):
+    def wait_input(self, input_string, duration=1):
         """poll the connection and waits for a specific input"""
-        self._clock.reset_stopwatch()
-        while self._clock.stopwatch_time < duration * 1000:
+        start = time()
+        while time() - start < duration:
             in_ = self.poll()
-            if in_ is not None and in_.string == input_string:
+            if in_ == UDPConnection.COMMAND_REPLY:
                 return True
         return False
 
     def unconnect_peer(self, timeout=1.0):
-        self.send(UDPData.UNCONNECT_COMMAND)
+        self.send(UDPConnection.UNCONNECT)
         self.peer_ip = None
 
     @property
@@ -201,18 +164,16 @@ class UDPConnection(object):
         """returns boolean if suceeded and ping time"""
         if self.peer_ip == None:
             return (False, None)
-        self._clock.reset_stopwatch()
-        if self.send(UDPData.PING_COMMAND, timeout=timeout) and \
-                self.wait_input(input_string=UDPData.REPLY_COMMAND, duration=timeout):
-            return (True, self._clock.stopwatch_time)
+        start = time()
+        if self.send(UDPConnection.PING, timeout=timeout) and \
+                self.wait_input(UDPConnection.COMMAND_REPLY, duration=timeout):
+            return (True, ((time() - start) * 1000))
         return (False, None)
 
     def clear_receive_buffer(self):
-        while True:
-            try:
-                self.socket.recvfrom(1024)
-            except:
-                return None
+        data = ""
+        while data is not None:
+            data = self.poll()
 
     def poll_last_data(self):
         """polls all data and returns only the last one
@@ -252,7 +213,7 @@ class UDPConnectionProcess(Process):
         # TODO
     """        # todo
 
-    def __init__(self, receive_queue, peer_ip=None, sync_clock=None):
+    def __init__(self, sync_timer):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -267,58 +228,51 @@ class UDPConnectionProcess(Process):
         """ # todo
 
         super(UDPConnectionProcess, self).__init__()
-        self.receive_queue = receive_queue
+        self._sync_timer = sync_timer
+        self.receive_queue = Queue()
         self.send_queue = Queue()
-        self.event_polling = Event()
         self.event_is_connected = Event()
-
         self._event_stop_request = Event()
-        self._peer_ip = peer_ip
-        self._sync_clock = sync_clock
-
+        self._event_is_polling = Event()
         atexit.register(self.stop)
-
-    def connect(self, timeout=2.0):
-        self.event_is_connected.clear()
-        self.send_queue.put_nowait(UDPData.CONNECT_COMMAND)
-        self.event_is_connected.wait(timeout=timeout)
-        return self.event_is_connected.is_set()
-
 
     def stop(self):
         self._event_stop_request.set()
+        if self.is_alive():
+            self.join()
 
+    def pause(self):
+        self._event_is_polling.clear()
+
+    def start_polling(self):
+        self._event_is_polling.set()
 
     def run(self):
-        udp_connection = UDPConnection(udp_port=5005, timestamps=True,
-                                       sync_clock=self._sync_clock)
-
+        udp_connection = UDPConnection(udp_port=5005)
+        print "UDP process started"
+        print udp_connection
+        self.start_polling()
+        timer = Timer(self._sync_timer)
         while not self._event_stop_request.is_set():
-            if self.event_polling.is_set():
+            if not self._event_is_polling.is_set():
+                self._event_is_polling.wait(timeout=0.1)
+            else:
                 data = udp_connection.poll()
                 if data is not None:
-                    self.receive_queue.put_nowait(data)
-
+                    self.receive_queue.put(UDPData(string=data,
+                                                    time=timer.time))
                 try:
                     send_data = self.send_queue.get_nowait()
                 except:
                     send_data = None
-
                 if send_data is not None:
-                    if not self.event_is_connected.is_set() and \
-                            send_data == UDPData.CONNECT_COMMAND and \
-                            self._peer_ip is not None:
-                        udp_connection.connect_peer(peer_ip=self._peer_ip)
-                    else:
-                        udp_connection.send(send_data)
+                    udp_connection.send(send_data)
 
+                # has connection changed?
                 if self.event_is_connected.is_set() != udp_connection.is_connected:
                     if udp_connection.is_connected:
                         self.event_is_connected.set()
                     else:
                         self.event_is_connected.clear()
-
-            else:
-                self.event_polling.wait(timeout=0.2)
 
         udp_connection.unconnect_peer()
