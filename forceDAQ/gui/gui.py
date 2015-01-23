@@ -23,14 +23,14 @@ def initialize(exp, remote_control=None):
     exp.mouse.show_cursor()
 
     if remote_control is None:
-        logo_text_line(text="Use remote control? (y/N)").present()
+        logo_text_line(text="Use remote control? (Y/n)").present()
         key = exp.keyboard.wait([ord("z"), ord("y"), ord("n"),
                                  misc.constants.K_SPACE,
                                  misc.constants.K_RETURN])[0]
-        if key == ord("y") or key == ord("z"):
-            remote_control = True
-        else:
+        if key == ord("n"):
             remote_control = False
+        else:
+            remote_control = True
 
     return remote_control
 
@@ -65,6 +65,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
     pause_recording = True
     last_recording_status = None
+    last_udp_data = None
     set_marker = False
 
     gui_clock = misc.Clock()
@@ -154,6 +155,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
             else:
                 # not remote control command
                 set_marker = True
+                last_udp_data = udp_event.string
 
 
         # show pause or recording screen
@@ -258,6 +260,20 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
+            # last_udp input
+            if last_udp_data is not None:
+                pos = (420, 250)
+                stimuli.Canvas(position=pos, size=(200, 300),
+                               colour=misc.constants.C_BLACK).present(
+                                        update=False, clear=False)
+                txt = stimuli.TextBox(position= pos, size = (200, 30),
+                                    #background_colour=(30,30,30),
+                                    text_size=15,
+                                    text = "UDP:" + str(last_udp_data),
+                                    text_colour=misc.constants.C_YELLOW,
+                                    text_justification = 0)
+                txt.present(update=False, clear=False)
+                update_rects.append(get_pygame_rect(txt, exp.screen.size))
             pygame.display.update(update_rects)
             # end refesh screen
 
