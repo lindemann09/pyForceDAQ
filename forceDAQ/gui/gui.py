@@ -61,8 +61,10 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
     indicator_grid = 70  # distance between indicator center
     minVal = -70
     maxVal = +70
-    scaling_plotting = 2.3
-
+    scaling_plotting = float(3)
+    plotter_yrange = (-250, 250)
+    plotter_width = 900
+    plotter_position = (0, -30)
     pause_recording = True
     last_recording_status = None
     last_udp_data = None
@@ -77,9 +79,9 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
     plotter_thread = PlotterThread(
                     n_data_rows=3,
                     data_row_colours=colours[:3],
-                    y_range=(-250, 250),
-                    width=900,
-                    position=(0,-30),
+                    y_range = plotter_yrange,
+                    width=plotter_width,
+                    position=plotter_position,
                     background_colour=[10,10,10],
                     axis_colour=misc.constants.C_YELLOW)
     plotter_thread.start()
@@ -102,12 +104,17 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
         key = exp.keyboard.check(check_for_control_keys=False)
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
             quit_recording = True
-        if key == misc.constants.K_v:
+        elif key == misc.constants.K_v:
             plot_indicator = not(plot_indicator)
             background.stimulus().present()
-        if key == misc.constants.K_p:
+        elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
+        elif key == misc.constants.K_KP_PLUS:
+            scaling_plotting = scaling_plotting + 0.3
+
+        elif key == misc.constants.K_KP_MINUS:
+            scaling_plotting = scaling_plotting - 0.3
 
         # process udp
         udp = recorder.process_udp_events()
@@ -240,6 +247,23 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 # plotter
                 update_rects.append(
                     plotter_thread.get_plotter_rect(exp.screen.size))
+
+                # axis labels
+                axis_labels = (int(plotter_yrange[0]/scaling_plotting),
+                               int(plotter_yrange[1]/scaling_plotting), 0)
+                xpos = plotter_position[0] - (plotter_width/2) - 20
+                for cnt, ypos in enumerate((plotter_position[1] + plotter_yrange[0]+10,
+                                            plotter_position[1] + plotter_yrange[1]-10,
+                                            plotter_position[1])):
+                    stimuli.Canvas(position=(xpos, ypos), size=(50, 30),
+                               colour=misc.constants.C_BLACK).present(
+                                        update=False, clear=False)
+                    txt = stimuli.TextLine(position = (xpos, ypos),
+                                text = str(axis_labels[cnt]),
+                                text_size=15, text_colour=misc.constants.C_YELLOW)
+                    txt.present(update=False, clear=False)
+                    update_rects.append(get_pygame_rect(txt, exp.screen.size))
+
 
             # counter
             pos = (-230, 250)

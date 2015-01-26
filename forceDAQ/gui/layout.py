@@ -47,6 +47,7 @@ class RecordingScreen(object):
                                 [self.left, self.top])
         self.add_text_line_left("p: pause/unpause", [self.left, self.bottom])
         self.add_text_line_left("v: switch view", [self.left + 200, self.bottom])
+        self.add_text_line_left("+/-: scaling", [self.left + 400, self.bottom])
         self.add_text_line_right("q: quit recording", [self.right, self.bottom])
         self.add_text_line_centered("file: " + filename, [0, self.top])
         if remote_control:
