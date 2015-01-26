@@ -59,10 +59,10 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
     refresh_interval = 200
     indicator_grid = 70  # distance between indicator center
-    minVal = -70
-    maxVal = +70
-    scaling_plotting = float(3)
+
+    data_range = (-50, 10)
     plotter_yrange = (-250, 250)
+    plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
     plotter_width = 900
     plotter_position = (0, -30)
     pause_recording = True
@@ -75,7 +75,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                            filename=recorder.filename,
                                            remote_control=remote_control)
     # plotter
-    last_plotted_smpl = 0
+    last_processed_smpl = 0
     plotter_thread = PlotterThread(
                     n_data_rows=3,
                     data_row_colours=colours[:3],
@@ -83,7 +83,8 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     width=plotter_width,
                     position=plotter_position,
                     background_colour=[10,10,10],
-                    axis_colour=misc.constants.C_YELLOW)
+                    axis_colour=misc.constants.C_YELLOW,
+                    plot_axis=False)
     plotter_thread.start()
 
     exp.keyboard.clear()
@@ -110,11 +111,24 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
+        elif key == misc.constants.K_KP_MINUS and plotter_scaling < 15:
+            data_range = (data_range[0] - 5, data_range[1] + 5)
+            plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
+            background.stimulus().present()
+            plotter_thread.clear_area()
         elif key == misc.constants.K_KP_PLUS:
-            scaling_plotting = scaling_plotting + 0.3
-
-        elif key == misc.constants.K_KP_MINUS:
-            scaling_plotting = scaling_plotting - 0.3
+            data_range = (data_range[0] + 5, data_range[1] - 5)
+            plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
+            background.stimulus().present()
+            plotter_thread.clear_area()
+        elif key == misc.constants.K_UP:
+            data_range = (data_range[0] + 5, data_range[1] + 5)
+            background.stimulus().present()
+            plotter_thread.clear_area()
+        elif key == misc.constants.K_DOWN:
+            data_range = (data_range[0] - 5, data_range[1] - 5)
+            background.stimulus().present()
+            plotter_thread.clear_area()
 
         # process udp
         udp = recorder.process_udp_events()
@@ -182,7 +196,8 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     recorder.udp.send_queue.put(RcCmd.FEEDBACK + "started")
 
         # process new samples
-        if last_plotted_smpl < sensor_process.sample_cnt: # new sample
+        if last_processed_smpl <= sensor_process.sample_cnt:
+            # new sample
             smpl = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz]
             # history
             history.update([ smpl[level_detection_parameter] ]) # TODO: single sensor only
@@ -192,14 +207,15 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 if tmp > 0:
                     recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
                                                 dumps(tmp))
+            last_processed_smpl = sensor_process.sample_cnt
 
-            # update plotter
-            if not plot_indicator:
+            # update plotter for every 10th sample
+            if not plot_indicator and (sensor_process.sample_cnt % 10)==0:
                 plotter_thread.add_values(
-                        values = np.array(smpl, dtype=float)  * scaling_plotting,
+                        values = (np.array(smpl, dtype=float)
+                                 - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
                         set_marker=set_marker)
                 set_marker = False
-                last_plotted_smpl = sensor_process.sample_cnt
 
 
         if not pause_recording and gui_clock.stopwatch_time >= refresh_interval:
@@ -214,7 +230,9 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
                     li = level_indicator(value=force_data_array[cnt],
                                          text=ForceData.forces_names[cnt],
-                                         minVal=minVal, maxVal=maxVal, width = 50,
+                                         minVal=data_range[0],
+                                         maxVal=data_range[1],
+                                         width = 50,
                                          position=(x_pos,0) )
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
@@ -230,7 +248,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position=pos, text = str(minVal),
+                txt = stimuli.TextLine(position=pos, text = str(data_range[0]),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -238,7 +256,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position= pos, text = str(maxVal),
+                txt = stimuli.TextLine(position= pos, text = str(data_range[1]),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -249,12 +267,11 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
                 # axis labels
-                axis_labels = (int(plotter_yrange[0]/scaling_plotting),
-                               int(plotter_yrange[1]/scaling_plotting), 0)
+                axis_labels = (int(data_range[0]), int(data_range[1]), 0)
                 xpos = plotter_position[0] - (plotter_width/2) - 20
                 for cnt, ypos in enumerate((plotter_position[1] + plotter_yrange[0]+10,
                                             plotter_position[1] + plotter_yrange[1]-10,
-                                            plotter_position[1])):
+                                            plotter_position[1] - plotter_scaling*(data_range[0] + data_range[1])/2.0)):
                     stimuli.Canvas(position=(xpos, ypos), size=(50, 30),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
@@ -341,7 +358,8 @@ def start(remote_control, ask_filename, calibration_file):
     recorder.determine_biases(n_samples=500)
 
     if remote_control:
-        stimuli.TextLine("Wait connecting peer").present()
+        stimuli.TextScreen("Waiting to connect with peer",
+                           "My IP: " +  recorder.udp.ip_address).present()
         while not recorder.udp.event_is_connected.is_set():
             exp.keyboard.check()
             sleep(0.01)#

@@ -127,7 +127,6 @@ class SensorProcess(Process):
         self._last_Tz = sharedctypes.RawValue(ct.c_float)
         self._buffer_size = sharedctypes.RawValue(ct.c_uint64)
         self._sample_cnt = sharedctypes.Value(ct.c_uint64)
-
         self._event_stop_request = Event()
         self._determine_bias_flag = Event()
 

@@ -46,8 +46,9 @@ class RecordingScreen(object):
         self.add_text_line_left("Force Recorder " + str(__version__),
                                 [self.left, self.top])
         self.add_text_line_left("p: pause/unpause", [self.left, self.bottom])
-        self.add_text_line_left("v: switch view", [self.left + 200, self.bottom])
-        self.add_text_line_left("+/-: scaling", [self.left + 400, self.bottom])
+        self.add_text_line_left("v: switch view", [self.left + 180, self.bottom])
+        self.add_text_line_left("+/-: axes scaling", [self.left + 350, self.bottom])
+        self.add_text_line_left("up/down: axes shift", [self.left + 550, self.bottom])
         self.add_text_line_right("q: quit recording", [self.right, self.bottom])
         self.add_text_line_centered("file: " + filename, [0, self.top])
         if remote_control:

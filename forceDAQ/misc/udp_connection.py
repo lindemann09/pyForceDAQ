@@ -7,7 +7,7 @@ __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 __version__ = "0.3"
 
 import os
-from multiprocessing import Process, Event, Queue
+from multiprocessing import Process, Event, Queue, sharedctypes
 import atexit
 from time import sleep, time
 import socket
@@ -234,7 +234,13 @@ class UDPConnectionProcess(Process):
         self.event_is_connected = Event()
         self._event_stop_request = Event()
         self._event_is_polling = Event()
+        self._ip_address = sharedctypes.Array('c', 'xxx.xxx.xxx.xxx')
+
         atexit.register(self.stop)
+
+    @property
+    def ip_address(self):
+        return self._ip_address.value
 
     def stop(self):
         self._event_stop_request.set()
@@ -251,6 +257,7 @@ class UDPConnectionProcess(Process):
         udp_connection = UDPConnection(udp_port=5005)
         print "UDP process started"
         print udp_connection
+        self._ip_address.value = str(udp_connection.my_ip)
         self.start_polling()
         timer = Timer(self._sync_timer)
         while not self._event_stop_request.is_set():

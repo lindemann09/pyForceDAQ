@@ -117,7 +117,9 @@ class Plotter(PGSurface):
                  background_colour=(180, 180, 180),
                  marker_colour=(200, 200, 200),
                  position=None,
-                 axis_colour=None):
+                 axis_colour=None,
+                 plot_axis = False):
+        self._plot_axis = plot_axis
         self.n_data_rows = n_data_rows
         self.data_row_colours = data_row_colours
         self.width = width
@@ -142,8 +144,19 @@ class Plotter(PGSurface):
         """tuple with lower and upper values"""
         self._y_range = values
         self._height = self._y_range[1] - self._y_range[0]
-        self._plot_axis = (self._y_range[0] <= 0 and \
-                           self._y_range[1] >= 0)
+        self.plot_axis = self._plot_axis
+
+    @property
+    def plot_axis(self):
+        return self._plot_axis
+
+    @plot_axis.setter
+    def plot_axis(self, value):
+        if value:
+            self._plot_axis = (self._y_range[0] <= 0 & self._y_range[1] >= 0)
+        else:
+            self._plot_axis = False
+
 
     @property
     def data_row_colours(self):
@@ -215,7 +228,8 @@ class PlotterThread(threading.Thread):
                  background_colour=(80, 80, 80),
                  marker_colour=(200, 200, 200),
                  position=None,
-                 axis_colour=None):
+                 axis_colour=None,
+                 plot_axis = False):
         super(PlotterThread, self).__init__()
         self._plotter = Plotter(n_data_rows=n_data_rows,
                                 data_row_colours=data_row_colours,
@@ -223,10 +237,12 @@ class PlotterThread(threading.Thread):
                                 background_colour=background_colour,
                                 marker_colour=marker_colour,
                                 position=position,
-                                axis_colour=axis_colour)
+                                axis_colour=axis_colour,
+                                plot_axis=plot_axis)
         self._new_values = []
         self._lock_new_values = threading.Lock()
         self._stop_request = threading.Event()
+        self._clear_area_event = threading.Event()
 
     def get_plotter_rect(self, screen_size):
             half_screen_size = (screen_size[0] / 2, screen_size[1] / 2)
@@ -235,6 +251,9 @@ class PlotterThread(threading.Thread):
             rect_pos = (pos[0] + half_screen_size[0] - stim_size[0] / 2,
                             - pos[1] + half_screen_size[1] - stim_size[1] / 2)
             return pygame.Rect(rect_pos, stim_size)
+
+    def clear_area(self):
+        self._clear_area_event.set()
 
     def stop(self):
         self.join()
@@ -248,6 +267,11 @@ class PlotterThread(threading.Thread):
         pixel_area"""
 
         while not self._stop_request.is_set():
+
+            if self._clear_area_event.is_set():
+                self._plotter.clear_area()
+                self._clear_area_event.clear()
+
             # get data
             if self._lock_new_values.acquire(False):
                 values = self._new_values
