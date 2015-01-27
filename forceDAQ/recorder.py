@@ -10,12 +10,10 @@ import atexit
 from time import localtime, strftime
 import gzip
 
-from types import ForceData, UDPData, SoftTrigger
+from remote_control import GUIRemoteControlCommands as RemoteCmd
+from types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
 from daq import SensorSettings, SensorProcess
 from misc import Timer, UDPConnectionProcess
-
-CODE_SOFTTRIGGER = 88
-CODE_UDPDATA = 99
 
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
@@ -99,6 +97,8 @@ class DataRecorder(object):
 
     def _write_data(self, data_buffer):
         """ writes data to disk and set counters
+
+        ignore UDP remote control commands
         """
 
         for d in data_buffer:
@@ -110,11 +110,12 @@ class DataRecorder(object):
                     self._file.write("%d,%d,%.4f,%.4f,%.4f\n" % \
                                  (d.device_id, d.time,
                                   d.Fx, d.Fy, d.Fz)) # write ascii data to file todo does not write trigger or torque
-                elif isinstance(d, SoftTrigger):
+                elif isinstance(d, DAQEvents):
                      self._file.write("%d,%d,%s,0,0\n" % \
                                  (CODE_SOFTTRIGGER, d.time, str(d.code))) # write ascii data to fill todo: DOC output format
                 elif isinstance(d, UDPData):
-                    self._file.write("%d,%d,%s,0,0\n" % \
+                    if not d.string.startswith(RemoteCmd.COMMAND_STR):
+                        self._file.write("%d,%d,%s,0,0\n" % \
                                      (CODE_UDPDATA, d.time, d.string)) # write ascii data to fill
 
 
@@ -126,7 +127,7 @@ class DataRecorder(object):
         """
         if time is None:
             time = self.timer.time
-        self._soft_trigger.append(SoftTrigger(time = time, code = code))
+        self._soft_trigger.append(DAQEvents(time = time, code = code))
 
 
     def start_recording(self, determine_bias=False):

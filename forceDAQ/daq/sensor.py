@@ -14,7 +14,7 @@ import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ.types import ForceData, SoftTrigger
+from forceDAQ.types import ForceData, DAQEvents
 from forceDAQ.misc import Timer
 
 
@@ -165,8 +165,7 @@ class SensorProcess(Process):
     def buffer_size(self):
         return self._buffer_size.value
 
-    def determine_bias(self,
-                       n_samples=100):  # FIXME changing no samples. Does that work?
+    def determine_bias(self, n_samples=100):  # TODO changing no samples. Does that work?
         """recording is paused after bias determination
 
         Bias determination is only possible while pause.
@@ -223,8 +222,8 @@ class SensorProcess(Process):
                     # ensure good timing
                     sensor.start_data_acquisition()
                     if self._return_buffer:
-                        buffer.append(SoftTrigger(time=sensor.timer.time,
-                                    code=":started"+repr(sensor.device_id)))
+                        buffer.append(DAQEvents(time=sensor.timer.time,
+                                    code="started:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     is_polling = True
 
@@ -242,7 +241,7 @@ class SensorProcess(Process):
                 # pause: not polling
                 if is_polling:
                     if self._return_buffer:
-                        buffer.append(SoftTrigger(time=sensor.timer.time,
+                        buffer.append(DAQEvents(time=sensor.timer.time,
                                     code="pause:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()

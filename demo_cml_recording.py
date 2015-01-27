@@ -4,7 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ.types import ForceData, SoftTrigger
+from forceDAQ.types import ForceData, DAQEvents
 from forceDAQ.daq import SensorSettings
 from forceDAQ.recorder import DataRecorder
 from forceDAQ.misc import Timer
@@ -46,7 +46,7 @@ if __name__  == "__main__":
             if counter % 100 == 1:
                 print d
                 pass
-        if isinstance(d, SoftTrigger):
+        if isinstance(d, DAQEvents):
             print d.time
 
     print "counter", counter

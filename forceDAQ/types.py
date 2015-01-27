@@ -2,6 +2,9 @@ __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 
+CODE_SOFTTRIGGER = 88
+CODE_UDPDATA = 99
+
 CTYPE_FORCES = ct.c_float * 600
 CTYPE_TRIGGER = ct.c_float * 2
 
@@ -141,8 +144,8 @@ class UDPData(object):
 
 
 
-class SoftTrigger(object):
-    """The SoftTrigger data class, used to store trigger
+class DAQEvents(object):
+    """The DAQEvents data class, used to store trigger
 
     See Also
     --------
@@ -151,7 +154,7 @@ class SoftTrigger(object):
     """
 
     def __init__(self, time, code):
-        """Create a SoftTrigger object
+        """Create a DAQEvents object
 
         Parameters
         ----------
