@@ -304,7 +304,7 @@ def record_data(exp, recorder, plot_indicator=False, remote_control=False):
             # last_udp input
             if last_udp_data is not None:
                 pos = (420, 250)
-                stimuli.Canvas(position=pos, size=(200, 300),
+                stimuli.Canvas(position=pos, size=(200, 30),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
                 txt = stimuli.TextBox(position= pos, size = (200, 30),
