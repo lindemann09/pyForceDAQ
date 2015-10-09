@@ -112,6 +112,7 @@ class DAQReadAnalog(PyDAQmx.Task):
                                 PyDAQmx.DAQmx_Val_GroupByScanNumber, # fillMode
                                 read_buffer,
                                 self.read_array_size_in_samples,
-                                ct.byref(read_samples), None) # TODO: process error?
+                                ct.byref(read_samples),
+                                None) # TODO: process error?
 
         return read_buffer, read_samples.value
