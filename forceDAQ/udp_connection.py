@@ -12,8 +12,8 @@ import atexit
 from time import sleep, time
 import socket
 
-from timer import Timer, get_time
-from forceDAQ.types import UDPData
+from forceDAQ.timer import Timer, get_time
+from forceDAQ.force_DAQ_types import UDPData
 
 if os.name != "nt":
     import fcntl

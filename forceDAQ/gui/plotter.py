@@ -295,6 +295,8 @@ class PlotterThread(threading.Thread):
                 lock_expyriment.acquire()
                 self._plotter.present(update=False, clear=False)
                 lock_expyriment.release()
+            else:
+                time.sleep(1) # to save resource
 
 
     def add_values(self, values, set_marker=False):

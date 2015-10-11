@@ -10,10 +10,11 @@ import atexit
 from time import localtime, strftime
 import gzip
 
-from remote_control import GUIRemoteControlCommands as RemoteCmd
-from types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
+from force_DAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
+from force_DAQ_types import GUIRemoteControlCommands as RemoteCmd
+from udp_connection import UDPConnectionProcess
 from daq import SensorSettings, SensorProcess
-from misc import Timer, UDPConnectionProcess
+
 
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""

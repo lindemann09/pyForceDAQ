@@ -8,17 +8,15 @@ from time import sleep
 import pygame
 from cPickle import dumps
 import numpy as np
+
 from expyriment import control, design, stimuli, io, misc
-
-from forceDAQ.recorder import DataRecorder, SensorSettings
-from forceDAQ.types import ForceData
-from forceDAQ.remote_control import GUIRemoteControlCommands as RcCmd
-from forceDAQ.misc import Timer, SensorHistory
-
+from forceDAQ import GUIRemoteControlCommands as RcCmd
+from forceDAQ import ForceData, Timer, SensorHistory, DataRecorder, SensorSettings
 from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
-def initialize(exp, remote_control=None):
+
+def _initialize(exp, remote_control=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
 
@@ -35,22 +33,22 @@ def initialize(exp, remote_control=None):
     return remote_control
 
 
-def wait_for_start_recording_event(exp, udp_connection):
-    if udp_connection is None:
-        udp_connection.poll_last_data()  #clear buffer
-        stimuli.TextLine(text="Waiting to UDP start trigger...").present()
-        s = None
-        while s is None or not s.lower().startswith('start'):
-            exp.keyboard.check()
-            s = udp_connection.poll()
-        udp_connection.send('confirm')
-    else:
-        stimuli.TextLine(text
-                         ="Press key to start recording").present()
-        exp.keyboard.wait()
+#def wait_for_start_recording_event(exp, udp_connection):
+#    if udp_connection is None:
+#        udp_connection.poll_last_data()  #clear buffer
+#        stimuli.TextLine(text="Waiting to UDP start trigger...").present()
+#        s = None
+#        while s is None or not s.lower().startswith('start'):
+#            exp.keyboard.check()
+#            s = udp_connection.poll()
+#        udp_connection.send('confirm')
+#    else:
+#        stimuli.TextLine(text
+#                         ="Press key to start recording").present()
+#        exp.keyboard.wait()
 
 
-def record_data(exp, recorder, plot_indicator=False, remote_control=False):
+def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -347,7 +345,7 @@ def start(remote_control, ask_filename, calibration_file):
     sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
                                     calibration_file=calibration_file)
 
-    remote_control = initialize(exp, remote_control=remote_control)
+    remote_control = _initialize(exp, remote_control=remote_control)
 
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
@@ -387,7 +385,7 @@ def start(remote_control, ask_filename, calibration_file):
     recorder.open_data_file(filename, directory="data", zipped=False,
                         time_stamp_filename=False, comment_line="")
 
-    record_data(exp, recorder=recorder,
+    _record_data(exp, recorder=recorder,
                     plot_indicator = True,
                     remote_control=remote_control)
 

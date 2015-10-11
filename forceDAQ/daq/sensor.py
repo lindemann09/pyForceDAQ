@@ -9,14 +9,11 @@ import ctypes as ct
 from multiprocessing import Process, Event, sharedctypes, Pipe
 import atexit
 from time import sleep
-
 import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ.types import ForceData, DAQEvents
-from forceDAQ.misc import Timer
-
+from forceDAQ import Timer, ForceData, DAQEvents
 
 class SensorSettings(DAQConfiguration):
     def __init__(self, calibration_file, sync_timer, device_id=1, channels="ai0:7",

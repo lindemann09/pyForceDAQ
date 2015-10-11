@@ -1,7 +1,7 @@
 # # Server
 import time
 
-from forceDAQ.misc.udp_connection import UDPConnection
+from forceDAQ import UDPConnection
 
 
 udp_connection = UDPConnection()
