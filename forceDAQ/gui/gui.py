@@ -6,12 +6,12 @@ __author__ = "Oliver Lindemann"
 
 from time import sleep
 import pygame
-from cPickle import dumps
+from cPickle import dumps, loads
 import numpy as np
 
 from expyriment import control, design, stimuli, io, misc
 from forceDAQ import GUIRemoteControlCommands as RcCmd
-from forceDAQ import ForceData, Timer, SensorHistory, DataRecorder, SensorSettings
+from forceDAQ import ForceData, Timer, SensorHistory, DataRecorder, SensorSettings, Thresholds
 from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
@@ -88,11 +88,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     exp.keyboard.clear()
 
     # TODO HARDCODED VARIABLES
-    # one sensor only, paramter for level detection
+    # one sensor only, paramater for level detection
     sensor_process = recorder._force_sensor_processes[0]
     level_detection_parameter = ForceData.forces_names.index("Fz")
     history = SensorHistory(history_size = 5, number_of_parameter=1)
-
+    threshold = None
     quit_recording = False
     while not quit_recording:
 
@@ -145,31 +145,29 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     quit_recording = True
                 elif udp_event.string.startswith(RcCmd.THRESHOLDS):
                     try:
-                        tmp = udp_event.string[len(RcCmd.THRESHOLDS):]
-                        tmp = eval(tmp)
+                        threshold = loads[len(RcCmd.THRESHOLDS):]
                     except:
-                        tmp = None
-                    if isinstance(tmp, list):
-                        history.level_thresholds = tmp
-                    else:
-                        history.level_thresholds = [] # stop level detection
+                        threshold = None
+                    if not isinstance(threshold, Thresholds): # ensure not strange type
+                        threshold = None
+
                 elif udp_event.string == RcCmd.GET_FX:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fx))
                 elif udp_event.string == RcCmd.GET_FY:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fy))
                 elif udp_event.string == RcCmd.GET_FZ:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fz))
                 elif udp_event.string == RcCmd.GET_TX:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fx))
                 elif udp_event.string == RcCmd.GET_TY:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fy))
                 elif udp_event.string == RcCmd.GET_TZ:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
+                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
                                                 dumps(sensor_process.Fz))
             else:
                 # not remote control command
@@ -197,15 +195,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         if last_processed_smpl <= sensor_process.sample_cnt:
             # new sample
             smpl = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz]
-            # history
-            history.update([ smpl[level_detection_parameter] ]) # TODO: single sensor only
-            # level detection
-            if len(history.level_thresholds) > 0:
-                tmp = history.levels[0]
-                if tmp > 0:
-                    recorder.udp.send_queue.put(RcCmd.PICKLED_VALUE +
-                                                dumps(tmp))
             last_processed_smpl = sensor_process.sample_cnt
+
+            if threshold is not None:
+                # threshold detection
+                history.update([ smpl[level_detection_parameter] ]) # TODO: single sensor only
+
+                tmp, level_change = threshold.get_level(history.moving_average)
+                if level_change:
+                        recorder.udp.send_queue.put(RcCmd.THRESHOLD_LEVEL+ dumps(tmp))
 
             # update plotter for every 10th sample
             if not plot_indicator and (sensor_process.sample_cnt % 10)==0:

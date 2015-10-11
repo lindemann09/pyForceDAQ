@@ -169,6 +169,7 @@ class DAQEvents(object):
 
 class GUIRemoteControlCommands(object):
     COMMAND_STR = "$cmd"
-    FEEDBACK, START, PAUSE, QUIT, THRESHOLDS, PICKLED_VALUE, FILENAME, \
+    FEEDBACK, START, PAUSE, QUIT, THRESHOLDS, THRESHOLD_LEVEL, \
+    DATA_POINT, FILENAME, \
     GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ \
     = map(lambda x: "$cmd" + str(x), range(13))
