@@ -84,6 +84,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     axis_colour=misc.constants.C_YELLOW,
                     plot_axis=False)
     plotter_thread.start()
+    plotter_thread.pause()
 
     exp.keyboard.clear()
 
@@ -106,6 +107,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_v:
             plot_indicator = not(plot_indicator)
             background.stimulus().present()
+            if plot_indicator:
+                plotter_thread.pause()
+            else:
+                plotter_thread.unpause()
+
         elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
@@ -214,7 +220,12 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 set_marker = False
 
 
-        if not pause_recording and gui_clock.stopwatch_time >= refresh_interval:
+        # threshold detection
+        if threshold is not None:
+            pass
+
+        #plotting
+        if not pause_recording and gui_clock.stopwatch_time >= refresh_interval: #do not give priority to visual output
             gui_clock.reset_stopwatch()
 
             update_rects = []
@@ -297,6 +308,25 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
+            # counter
+            pos = (200, 250)
+            stimuli.Canvas(position=pos, size=(400,50),
+                           colour=misc.constants.C_BLUE).present(
+                                    update=False, clear=False)
+            txt = stimuli.TextBox(position= pos,
+                                size = (400, 50),
+                                #background_colour=(30,30,30),
+                                text_size=15,
+                                text = "thresholds: {0}\n".format(
+                                                    sensor_process.sample_cnt) +
+                                       "n samples buffered: {0} ({1} seconds)".format(
+                                    sensor_process.buffer_size,
+                                    (gui_clock.time - start_recording_time)/1000),
+                                text_colour=misc.constants.C_YELLOW,
+                                text_justification = 0)
+            txt.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(txt, exp.screen.size))
+
             # last_udp input
             if last_udp_data is not None:
                 pos = (420, 250)
@@ -311,6 +341,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                     text_justification = 0)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
+
             pygame.display.update(update_rects)
             # end refesh screen
 

@@ -241,8 +241,10 @@ class PlotterThread(threading.Thread):
                                 plot_axis=plot_axis)
         self._new_values = []
         self._lock_new_values = threading.Lock()
+        self._running = threading.Event()
         self._stop_request = threading.Event()
         self._clear_area_event = threading.Event()
+        self.unpause()
 
     def get_plotter_rect(self, screen_size):
             half_screen_size = (screen_size[0] / 2, screen_size[1] / 2)
@@ -254,6 +256,12 @@ class PlotterThread(threading.Thread):
 
     def clear_area(self):
         self._clear_area_event.set()
+
+    def pause(self):
+        self._running.clear()
+
+    def unpause(self):
+        self._running.set()
 
     def stop(self):
         self.join()
@@ -267,6 +275,10 @@ class PlotterThread(threading.Thread):
         pixel_area"""
 
         while not self._stop_request.is_set():
+
+            if not self._running.is_set():
+                self._running.wait(timeout=1)
+                continue
 
             if self._clear_area_event.is_set():
                 self._plotter.clear_area()
@@ -295,8 +307,6 @@ class PlotterThread(threading.Thread):
                 lock_expyriment.acquire()
                 self._plotter.present(update=False, clear=False)
                 lock_expyriment.release()
-            else:
-                time.sleep(1) # to save resource
 
 
     def add_values(self, values, set_marker=False):
