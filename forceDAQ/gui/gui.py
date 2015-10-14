@@ -74,17 +74,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                            remote_control=remote_control)
     # plotter
     last_processed_smpl = 0
-    plotter_thread = PlotterThread(
-                    n_data_rows=3,
-                    data_row_colours=colours[:3],
-                    y_range = plotter_yrange,
-                    width=plotter_width,
-                    position=plotter_position,
-                    background_colour=[10,10,10],
-                    axis_colour=misc.constants.C_YELLOW,
-                    plot_axis=False)
-    plotter_thread.start()
-    plotter_thread.pause()
+    smpl = None
+    plotter_thread = None
 
     exp.keyboard.clear()
 
@@ -211,18 +202,6 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 if level_change:
                         recorder.udp.send_queue.put(RcCmd.THRESHOLD_LEVEL+ dumps(tmp))
 
-            # update plotter for every 10th sample
-            if not plot_indicator and (sensor_process.sample_cnt % 10)==0:
-                plotter_thread.add_values(
-                        values = (np.array(smpl, dtype=float)
-                                 - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
-                        set_marker=set_marker)
-                set_marker = False
-
-
-        # threshold detection
-        if threshold is not None:
-            pass
 
         #plotting
         if not pause_recording and gui_clock.stopwatch_time >= refresh_interval: #do not give priority to visual output
@@ -230,6 +209,10 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
             update_rects = []
             if plot_indicator:
+                if plotter_thread is not None:
+                    plotter_thread.stop()
+                    plotter_thread = None
+
                 ## indicator
                 force_data_array = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz,
                                     sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
@@ -270,6 +253,25 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 # end indicator
             else:
                 # plotter
+                if plotter_thread is None:
+                    plotter_thread = PlotterThread(
+                        n_data_rows=3,
+                        data_row_colours=colours[:3],
+                        y_range = plotter_yrange,
+                        width=plotter_width,
+                        position=plotter_position,
+                        background_colour=[10,10,10],
+                        axis_colour=misc.constants.C_YELLOW,
+                        plot_axis=False)
+                    plotter_thread.start()
+
+                if smpl is not None: # newsample
+                    plotter_thread.add_values(
+                        values = (np.array(smpl, dtype=float)
+                                 - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
+                        set_marker=set_marker)
+                    set_marker = False
+
                 update_rects.append(
                     plotter_thread.get_plotter_rect(exp.screen.size))
 
@@ -348,7 +350,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         # end while recording
 
     background.stimulus("Quitting").present()
-    plotter_thread.stop()
+    if plotter_thread is not None:
+        plotter_thread.stop()
     recorder.pause_recording()
 
 def start(remote_control, ask_filename, calibration_file):
