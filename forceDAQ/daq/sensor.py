@@ -13,7 +13,8 @@ import numpy as np
 
 from pyATIDAQ import ATI_CDLL
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ import Timer, ForceData, DAQEvents
+from forceDAQ import ForceData, DAQEvents
+from forceDAQ.timer import Timer
 
 class SensorSettings(DAQConfiguration):
     def __init__(self, calibration_file, sync_timer, device_id=1, channels="ai0:7",

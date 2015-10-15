@@ -10,8 +10,10 @@ from cPickle import dumps, loads
 import numpy as np
 
 from expyriment import control, design, stimuli, io, misc
-from forceDAQ import GUIRemoteControlCommands as RcCmd
-from forceDAQ import ForceData, Timer, SensorHistory, DataRecorder, SensorSettings, Thresholds
+from forceDAQ import Thresholds, ForceData, GUIRemoteControlCommands as RcCmd
+from forceDAQ.timer import Timer
+from forceDAQ.sensor_history import SensorHistory
+from forceDAQ.data_recorder import DataRecorder, SensorSettings
 from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
@@ -140,9 +142,9 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     pause_recording = True
                 elif udp_event.string == RcCmd.QUIT:
                     quit_recording = True
-                elif udp_event.string.startswith(RcCmd.THRESHOLDS):
+                elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
                     try:
-                        threshold = loads[len(RcCmd.THRESHOLDS):]
+                        threshold = loads[len(RcCmd.SET_THRESHOLDS):]
                     except:
                         threshold = None
                     if not isinstance(threshold, Thresholds): # ensure not strange type
@@ -200,7 +202,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
                 tmp, level_change = threshold.get_level(history.moving_average)
                 if level_change:
-                        recorder.udp.send_queue.put(RcCmd.THRESHOLD_LEVEL+ dumps(tmp))
+                        recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(tmp))
 
 
         #plotting

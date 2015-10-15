@@ -1,42 +1,5 @@
 """Sensor History with moving average filtering and distance, velocity"""
 
-import math
-
-class Thresholds(object):
-
-    def __init__(self, thresholds):
-        """Thresholds for a particular sensor"""
-        self._thresholds = list(thresholds)
-        self._thresholds.sort()
-        self._prev_level = None
-
-    def get_level(self, value):
-        """return [int, boolean]
-        int: the level of current sensor value depending of thresholds (array)
-        boolean is true if sensor level has been changed since last call
-
-        return:
-                0 below smallest threshold
-                1 large first but small second threshold
-                ..
-                x larger highest threshold (x=n thresholds)
-        """
-
-        level = None
-        for cnt, x in enumerate(self._thresholds):
-            if value < x:
-                level = cnt
-                break
-        if level is None:
-            level = cnt + 1
-        changed = (level != self._prev_level)
-        if changed:
-            self._prev_level = level
-        return (level, changed)
-
-
-
-
 class SensorHistory(object):
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).
@@ -109,6 +72,7 @@ class SensorHistory(object):
 
 if __name__ == "__main__":
     import random
+    from forceDAQ import Thresholds
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)
         thr = Thresholds([35, 20, 50, 80, 90])
