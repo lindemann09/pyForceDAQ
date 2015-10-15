@@ -18,6 +18,8 @@ from plotter import PlotterThread, level_indicator
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
 
+
+
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
@@ -85,17 +87,16 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
     exp.keyboard.clear()
 
-    # TODO HARDCODED VARIABLES
-    # one sensor only, paramater for level detection
-    sensor_process = recorder._force_sensor_processes[0]
+    # TODO one sensor only (Fz), parameter for level detection
     level_detection_parameter = ForceData.forces_names.index("Fz")
+    sensor_process = recorder._force_sensor_processes[0]
     history = SensorHistory(history_size = 5, number_of_parameter=3)
     thresholds = None
     quit_recording = False
     while not quit_recording:
 
         if pause_recording:
-            sleep(0.001)
+            sleep(0.01)
 
         # process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
@@ -112,38 +113,44 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
-        elif key == misc.constants.K_KP_MINUS and plotter_scaling < 15:
+        elif key == misc.constants.K_KP_MINUS and plotter_scaling < 15 \
+                and plotter_thread is not None:
             data_range = (data_range[0] - 5, data_range[1] + 5)
             plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
             background.stimulus().present()
             plotter_thread.clear_area()
-        elif key == misc.constants.K_KP_PLUS:
+        elif key == misc.constants.K_KP_PLUS and plotter_thread is not None:
             data_range = (data_range[0] + 5, data_range[1] - 5)
             plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
             background.stimulus().present()
             plotter_thread.clear_area()
-        elif key == misc.constants.K_UP:
+        elif key == misc.constants.K_UP and plotter_thread is not None:
             data_range = (data_range[0] + 5, data_range[1] + 5)
             background.stimulus().present()
             plotter_thread.clear_area()
-        elif key == misc.constants.K_DOWN:
+        elif key == misc.constants.K_DOWN and plotter_thread is not None:
             data_range = (data_range[0] - 5, data_range[1] - 5)
             background.stimulus().present()
             plotter_thread.clear_area()
         elif key == misc.constants.K_f:
             plot_filtered = not(plot_filtered)
 
-        elif key == misc.constants.K_t: ### FIXME just for debugging
-            if thresholds is None:
-                thresholds = Thresholds([-2, -10])
-                if plotter_thread is not None:
-                    plotter_thread.set_horizontal_lines(
-                            y_values = (np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
+        elif key == misc.constants.K_t:
+            tmp = _text2number_array(
+                        io.TextInput("Enter thresholds",
+                                    background_stimulus=logo_text_line("")).get())
+            background.stimulus().present()
+            if tmp is not None:
+                thresholds = Thresholds(tmp)
             else:
                 thresholds = None
-                if plotter_thread is not None:
-                    plotter_thread.set_horizontal_lines(y_values=None)
 
+            if plotter_thread is not None:
+                if thresholds is not None:
+                    plotter_thread.set_horizontal_lines(
+                            y_values = (np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
+                else:
+                    plotter_thread.set_horizontal_lines(y_values=None)
 
 
         # process udp
@@ -222,7 +229,6 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 if level_change:
                         recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(tmp))
 
-
         #plotting
         if not pause_recording and gui_clock.stopwatch_time >= refresh_interval: #do not give priority to visual output
             gui_clock.reset_stopwatch()
@@ -238,12 +244,18 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                     sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
+                    if thresholds is not None and cnt ==level_detection_parameter:
+                        thr = thresholds.thresholds
+                    else:
+                        thr = None
+
                     li = level_indicator(value=force_data_array[cnt],
                                          text=ForceData.forces_names[cnt],
                                          minVal=data_range[0],
                                          maxVal=data_range[1],
                                          width = 50,
-                                         position=(x_pos,0) )
+                                         position=(x_pos,0),
+                                         horizontal_lines=thr)
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
 
@@ -289,7 +301,6 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                             y_values = ( np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
 
 
-
                 if smpl is not None: # newsample
                     if plot_filtered:
                         tmp = np.array(history.moving_average, dtype=float)
@@ -301,8 +312,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                         set_marker=set_marker)
                     set_marker = False
 
-                update_rects.append(
-                    plotter_thread.get_plotter_rect(exp.screen.size))
+                update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
                 # axis labels
                 axis_labels = (int(data_range[0]), int(data_range[1]), 0)
@@ -449,3 +459,15 @@ def start(remote_control, ask_filename, calibration_file):
                     remote_control=remote_control)
 
     recorder.quit()
+
+
+#### helper
+def _text2number_array(txt):
+    """helper function"""
+    rtn = []
+    try:
+        for x in txt.split(","):
+            rtn.append(float(x))
+        return rtn
+    except:
+        return None

@@ -50,6 +50,7 @@ class RecordingScreen(object):
         self.add_text_line_left("(f) switch filtered", [self.left + 160, self.bottom])
         self.add_text_line_left("(+/-): axes scaling", [self.left + 340, self.bottom + 20])
         self.add_text_line_left("(up/down): axes shift", [self.left + 340, self.bottom])
+        self.add_text_line_left("(t): change thresholds", [self.left + 560, self.bottom])
         self.add_text_line_right("(q) quit recording", [self.right, self.bottom ])
         self.add_text_line_centered("file: " + filename, [0, self.top], text_size=15)
         if remote_control:

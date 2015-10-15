@@ -202,7 +202,7 @@ class Plotter(PGSurface):
 
         if self._horizontal_lines is not None:
             for c in (self._y_range[1] - self._horizontal_lines):
-                self.pixel_array[:, c:c+1] =  self.marker_colour
+                self.pixel_array[:, c:c+1] = self.marker_colour
 
         if self._plot_axis and self.axis_colour != self._background_colour:
             self.pixel_array[position, self._y_range[1]:self._y_range[1] + 1] = \
@@ -339,7 +339,7 @@ class PlotterThread(threading.Thread):
 
 
 def level_indicator(value, text, minVal=-100, maxVal=100, width=20, height=300,
-                    text_size=14, text_gap=20,  position=(0,0),
+                    text_size=14, text_gap=20,  position=(0,0), horizontal_lines = None,
                     colour=constants.C_EXPYRIMENT_ORANGE):
     """make an level indicator in for of an Expyriment stimulus
 
@@ -355,16 +355,33 @@ def level_indicator(value, text, minVal=-100, maxVal=100, width=20, height=300,
         value = minVal
     elif value > maxVal:
         value = maxVal
-
+    ## FIXME INCORRECT SCALING
     # indicator
     indicator_size = [width + 2, height + 2]
     indicator = Canvas(size=indicator_size,
                                colour=(30, 30, 30))
     px_level = value * height / float(maxVal - minVal)
     bar = Rectangle(size=(width, abs(px_level)),
-                            position=(0, int((px_level + 1) / 2.0)),
+                            position=(0, int((px_level + 1) / 2)),
                             colour=colour)
     bar.plot(indicator)
+
+    # levels & horizontal lines
+    try:
+        px_horizontal_lines = map(lambda x:x * height / float(maxVal - minVal),
+                                  horizontal_lines)
+    except:
+        px_horizontal_lines = None
+    if px_horizontal_lines is not None:
+        for px_level in px_horizontal_lines:
+            level = Rectangle(size=(width+6, 2),
+                            position=(0, int(px_level/2)),
+                            colour=constants.C_WHITE)
+            level.plot(indicator)
+
+
+
+
     # text
     txt = TextLine(text=text, text_size=text_size,
                            position=(0, -1 * (int(height / 2.0) + text_gap)),
