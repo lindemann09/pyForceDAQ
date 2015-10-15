@@ -135,9 +135,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
         elif key == misc.constants.K_t: ### FIXME just for debugging
             if thresholds is None:
-                thresholds = Thresholds([2, 10])
+                thresholds = Thresholds([-2, -10])
+                if plotter_thread is not None:
+                    plotter_thread.set_horizontal_lines(
+                            y_values = (np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
             else:
                 thresholds = None
+                if plotter_thread is not None:
+                    plotter_thread.set_horizontal_lines(y_values=None)
+
 
 
         # process udp
@@ -278,12 +284,18 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                         axis_colour=misc.constants.C_YELLOW,
                         plot_axis=False)
                     plotter_thread.start()
+                    if thresholds is not None:
+                        plotter_thread.set_horizontal_lines(
+                            y_values = ( np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
+
+
 
                 if smpl is not None: # newsample
                     if plot_filtered:
                         tmp = np.array(history.moving_average, dtype=float)
                     else:
                         tmp = np.array(smpl, dtype=float)
+
                     plotter_thread.add_values(
                         values = (tmp - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
                         set_marker=set_marker)

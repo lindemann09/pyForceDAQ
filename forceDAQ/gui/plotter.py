@@ -126,6 +126,8 @@ class Plotter(PGSurface):
         self.y_range = y_range
         self._background_colour = background_colour
         self.marker_colour = marker_colour
+        self._horizontal_lines = None
+
         if axis_colour is None:
             self.axis_colour = background_colour
         else:
@@ -182,11 +184,26 @@ class Plotter(PGSurface):
             self.pixel_array[:, self._y_range[1]:self._y_range[1] + 1] = \
                 self.axis_colour
 
+    def set_horizontal_line(self, y_values):
+        try:
+            self._horizontal_lines = np.array(y_values, dtype=int)
+        except:
+            self._horizontal_lines = None
+
     def write_values(self, position, values, set_marker=False):
+        """
+        horizontal_line: list or None
+        """
+
         if set_marker:
             self.pixel_array[position, :] = self.marker_colour
         else:
             self.pixel_array[position, :] = self._background_colour
+
+        if self._horizontal_lines is not None:
+            for c in (self._y_range[1] - self._horizontal_lines):
+                self.pixel_array[:, c:c+1] =  self.marker_colour
+
         if self._plot_axis and self.axis_colour != self._background_colour:
             self.pixel_array[position, self._y_range[1]:self._y_range[1] + 1] = \
                 self.axis_colour
@@ -308,6 +325,11 @@ class PlotterThread(threading.Thread):
                 self._plotter.present(update=False, clear=False)
                 lock_expyriment.release()
 
+    def set_horizontal_lines(self, y_values):
+        """adds new values to the plotter"""
+        self._lock_new_values.acquire()
+        self._plotter.set_horizontal_line(y_values=y_values)
+        self._lock_new_values.release()
 
     def add_values(self, values, set_marker=False):
         """adds new values to the plotter"""

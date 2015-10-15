@@ -185,6 +185,10 @@ class Thresholds(object):
         self._thresholds.sort()
         self._prev_level = None
 
+    @property
+    def thresholds(self):
+        return self._thresholds
+
     def get_level(self, value):
         """return [int, boolean]
         int: the level of current sensor value depending of thresholds (array)
@@ -199,7 +203,7 @@ class Thresholds(object):
 
         level = None
         for cnt, x in enumerate(self._thresholds):
-            if abs(value) < x:
+            if value < x:
                 level = cnt
                 break
         if level is None:
