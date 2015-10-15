@@ -36,7 +36,7 @@ def logo_text_line(text):
 class RecordingScreen(object):
     def __init__(self, window_size, filename, remote_control):
         """Expyriment has to be intialized"""
-        margin = 50
+        margin = 30
         self.left = -1*window_size[0]/2 + margin
         self.right = window_size[0]/2 - margin
         self.top = window_size[1]/2 - margin
@@ -44,32 +44,33 @@ class RecordingScreen(object):
 
         self.elements = []
         self.add_text_line_left("Force Recorder " + str(__version__),
-                                [self.left, self.top])
-        self.add_text_line_left("p: pause/unpause", [self.left, self.bottom])
-        self.add_text_line_left("v: switch view", [self.left + 180, self.bottom])
-        self.add_text_line_left("+/-: axes scaling", [self.left + 350, self.bottom])
-        self.add_text_line_left("up/down: axes shift", [self.left + 550, self.bottom])
-        self.add_text_line_right("q: quit recording", [self.right, self.bottom])
-        self.add_text_line_centered("file: " + filename, [0, self.top])
+                                [self.left, self.top], text_size=15)
+        self.add_text_line_left("(p) pause/unpause", [self.left, self.bottom])
+        self.add_text_line_left("(v) switch view", [self.left + 160, self.bottom +20])
+        self.add_text_line_left("(f) switch filtered", [self.left + 160, self.bottom])
+        self.add_text_line_left("(+/-): axes scaling", [self.left + 340, self.bottom + 20])
+        self.add_text_line_left("(up/down): axes shift", [self.left + 340, self.bottom])
+        self.add_text_line_right("(q) quit recording", [self.right, self.bottom ])
+        self.add_text_line_centered("file: " + filename, [0, self.top], text_size=15)
         if remote_control:
-            self.add_text_line_centered("REMOTE CONTROL", [0, self.top-20])
+            self.add_text_line_centered("REMOTE CONTROL", [0, self.top-20], text_size=15)
         self.add_text_line_right("date: {0}".format(strftime("%d/%m/%Y")),
-                                [self.right, self.top])
+                                [self.right, self.top], text_size=15)
 
     @staticmethod
-    def _text_line(text, position, text_size=15, text_colour=(255, 150, 50)):
+    def _text_line(text, position, text_size=12, text_colour=(255, 150, 50)):
         """helper function"""
         return stimuli.TextLine(text, position=position,
                                 text_size=text_size,
                                 text_colour=text_colour)
 
-    def add_text_line_centered(self, text, position, text_size=15,
+    def add_text_line_centered(self, text, position, text_size=12,
                                text_colour=(255, 150, 50)):
         self.elements.append(RecordingScreen._text_line(text, position,
                                                        text_size,
                                                        text_colour))
 
-    def add_text_line_right(self, text, position, text_size=15,
+    def add_text_line_right(self, text, position, text_size=12,
                             text_colour=(255, 150, 50)):
         """text_line right aligned"""
         txt = RecordingScreen._text_line(text, position, text_size,
@@ -77,7 +78,7 @@ class RecordingScreen(object):
         txt.move((-1 * (txt.surface_size[0] / 2), 0))
         self.elements.append(txt)
 
-    def add_text_line_left(self, text, position, text_size=15,
+    def add_text_line_left(self, text, position, text_size=12,
                            text_colour=(255, 150, 50)):
         """text line left aligned"""
         txt = RecordingScreen._text_line(text, position, text_size,

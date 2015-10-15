@@ -199,7 +199,7 @@ class Thresholds(object):
 
         level = None
         for cnt, x in enumerate(self._thresholds):
-            if value < x:
+            if abs(value) < x:
                 level = cnt
                 break
         if level is None:
@@ -208,4 +208,7 @@ class Thresholds(object):
         if changed:
             self._prev_level = level
         return (level, changed)
+
+    def __str__(self):
+        return str(self._thresholds)
 

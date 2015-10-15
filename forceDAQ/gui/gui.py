@@ -57,7 +57,9 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             "thresholds stop" : stop level detection
     """
 
-    refresh_interval = 200
+    refresh_interval_plotter = 10
+    refresh_interval_indicator = 300
+    refresh_interval = refresh_interval_indicator
     indicator_grid = 70  # distance between indicator center
 
     data_range = (-50, 10)
@@ -65,9 +67,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
     plotter_width = 900
     plotter_position = (0, -30)
+    plot_filtered = True
     pause_recording = True
     last_recording_status = None
     last_udp_data = None
+    current_level = None
     set_marker = False
 
     gui_clock = misc.Clock()
@@ -85,8 +89,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     # one sensor only, paramater for level detection
     sensor_process = recorder._force_sensor_processes[0]
     level_detection_parameter = ForceData.forces_names.index("Fz")
-    history = SensorHistory(history_size = 5, number_of_parameter=1)
-    threshold = None
+    history = SensorHistory(history_size = 5, number_of_parameter=3)
+    thresholds = None
     quit_recording = False
     while not quit_recording:
 
@@ -101,9 +105,9 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             plot_indicator = not(plot_indicator)
             background.stimulus().present()
             if plot_indicator:
-                plotter_thread.pause()
+                refresh_interval = refresh_interval_indicator
             else:
-                plotter_thread.unpause()
+                refresh_interval = refresh_interval_plotter
 
         elif key == misc.constants.K_p:
             # pause
@@ -126,6 +130,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             data_range = (data_range[0] - 5, data_range[1] - 5)
             background.stimulus().present()
             plotter_thread.clear_area()
+        elif key == misc.constants.K_f:
+            plot_filtered = not(plot_filtered)
+
+        elif key == misc.constants.K_t: ### FIXME just for debugging
+            if thresholds is None:
+                thresholds = Thresholds([2, 10])
+            else:
+                thresholds = None
+
 
         # process udp
         udp = recorder.process_udp_events()
@@ -144,11 +157,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     quit_recording = True
                 elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
                     try:
-                        threshold = loads[len(RcCmd.SET_THRESHOLDS):]
+                        thresholds = loads[len(RcCmd.SET_THRESHOLDS):]
                     except:
-                        threshold = None
-                    if not isinstance(threshold, Thresholds): # ensure not strange type
-                        threshold = None
+                        thresholds = None
+                    if not isinstance(thresholds, Thresholds): # ensure not strange type
+                        thresholds = None
 
                 elif udp_event.string == RcCmd.GET_FX:
                     recorder.udp.send_queue.put(RcCmd.DATA_POINT +
@@ -195,12 +208,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             # new sample
             smpl = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz]
             last_processed_smpl = sensor_process.sample_cnt
+            history.update(smpl ) # TODO: single sensor only
 
-            if threshold is not None:
+            if thresholds is not None:
                 # threshold detection
-                history.update([ smpl[level_detection_parameter] ]) # TODO: single sensor only
-
-                tmp, level_change = threshold.get_level(history.moving_average)
+                current_level, level_change = thresholds.get_level(history.moving_average[level_detection_parameter])
                 if level_change:
                         recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(tmp))
 
@@ -268,9 +280,12 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.start()
 
                 if smpl is not None: # newsample
+                    if plot_filtered:
+                        tmp = np.array(history.moving_average, dtype=float)
+                    else:
+                        tmp = np.array(smpl, dtype=float)
                     plotter_thread.add_values(
-                        values = (np.array(smpl, dtype=float)
-                                 - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
+                        values = (tmp - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
                         set_marker=set_marker)
                     set_marker = False
 
@@ -312,24 +327,22 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
-            # counter
+            # Infos
             pos = (200, 250)
-            stimuli.Canvas(position=pos, size=(400,50),
-                           colour=misc.constants.C_BLUE).present(
-                                    update=False, clear=False)
-            txt = stimuli.TextBox(position= pos,
+            tmp = stimuli.Canvas(position=pos, size=(400,50),
+                                 colour=misc.constants.C_BLACK)
+            tmp.present(update=False, clear=False)
+            if thresholds is not None:
+                txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
-                                #background_colour=(30,30,30),
-                                text_size=15,
-                                text = "thresholds: {0}\n".format(
-                                                    sensor_process.sample_cnt) +
-                                       "n samples buffered: {0} ({1} seconds)".format(
-                                    sensor_process.buffer_size,
-                                    (gui_clock.time - start_recording_time)/1000),
+                                text_size = 15,
+                                text = "T: {0} L: {1}".format(thresholds,
+                                                              current_level),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
-            txt.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(txt, exp.screen.size))
+
+                txt.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
 
             # last_udp input
             if last_udp_data is not None:
