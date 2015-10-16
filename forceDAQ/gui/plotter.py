@@ -15,41 +15,68 @@ class Scaling(object):
     """littel helper object function to handle plotter scaling"""
     step_size = 5 # for increasing/decreasing
 
-    def __init__(self, min_data, max_data, min_plotter_px, max_plotter_px):
+    def __init__(self, min, max):
         """xy-value arrays"""
-        self.min_data = min_data
-        self.max_data = max_data
-        self.min_plotter_px = min_plotter_px
-        self.max_plotter_px = max_plotter_px
+        self._min = min
+        self._max = max
+        self._update()
 
     @property
-    def factor(self):
-        return (self.max_plotter_px - self.min_plotter_px) / \
-               float(self.max_data - self.min_data)
+    def max(self):
+        return self._max
+
+    @max.setter
+    def max(self, value):
+        self._max = value
+        self._update()
+
+    @property
+    def min(self):
+        return self._min
+
+    @min.setter
+    def min(self, value):
+        self._min = value
+        self._update()
+
+    def _update(self):
+        self._zero_shift = (self._min + self._max)/2.0
+        self._range = float(self._max - self._min)
+
+    def get_pixel_factor(self, pixel_min_max):
+        return (pixel_min_max[1] - pixel_min_max[0]) / self._range
 
     def increase_data_range(self):
-        self.min_data += Scaling.step_size
-        self.max_data -= Scaling.step_size
-        if self.min_data >= self.max_data:
+        self.min += Scaling.step_size
+        self.max -= Scaling.step_size
+        if self.min >= self.max:
             self.decrease_data_range()
 
     def decrease_data_range(self):
-        self.min_data -= Scaling.step_size
-        self.max_data += Scaling.step_size
+        self.min -= Scaling.step_size
+        self.max += Scaling.step_size
 
     def data_range_up(self):
-         self.min_data += Scaling.step_size
-         self.max_data += Scaling.step_size
+         self.min += Scaling.step_size
+         self.max += Scaling.step_size
 
     def data_range_down(self):
-        self.min_data -= Scaling.step_size
-        self.max_data -= Scaling.step_size
+        self.min -= Scaling.step_size
+        self.max -= Scaling.step_size
 
-    def data2pxiel(self, values):
-        """ values: numeric or numpy array"""
-        return (values - (self.min_data + self.max_data)/2.0) * \
-               (self.max_plotter_px - self.min_plotter_px) / float(self.max_data - self.min_data) # scaling factor
+    def data2pixel(self, values, pixel_min_max):
+        """ values: numeric or numpy array
+        pixel_min_max: 2D array"""
+        return (values - self._zero_shift) * \
+               (pixel_min_max[1] - pixel_min_max[0]) / self._range # pixel_factor
 
+    def trim(self, value):
+        """trims value to the range, ie. set to min or max if <min or > max """
+        if value < self.min:
+            return self.min
+        elif value > self.max:
+            return self.max
+        return value
 
 class PGSurface(Canvas):
     """PyGame Surface: Expyriment Stimulus for direct Pygame operations and
@@ -392,48 +419,48 @@ def level_indicator(value, text, scaling, width=20, height=300,
 
     """
 
-    if value < scaling.min_data:
-        value = scaling.min_data
-    elif value > scaling.max_data:
-        value = scaling.max_data
+    value = scaling.trim(value)
 
-    ## FIXME INCORRECT SCALING
     # indicator
-    indicator_size = [width + 2, height + 2]
-    indicator = Canvas(size=indicator_size,
+    indicator = Canvas(size=[width + 2, height + 2],
                                colour=(30, 30, 30))
-    px_bar_height = value * height / float(scaling.max_data - scaling.min_data)
+
+    pixel_range = [-height/2, height/2]
+    zero = scaling.data2pixel(0, pixel_range)
+    px_bar_height = scaling.data2pixel(value, pixel_range) - zero
     bar = Rectangle(size=(width, abs(px_bar_height)),
-                            position=(0, int((px_bar_height + 1) / 2)),
+                            position=(0, zero + int((px_bar_height + 1) / 2)),
                             colour=colour)
     bar.plot(indicator)
 
     # levels & horizontal lines
     try:
-        px_horizontal_lines = map(lambda x:x * height / float(scaling.max_data - scaling.min_data),
-                                  thresholds.thresholds)
+        px_horizontal_lines = scaling.data2pixel(values=np.array(thresholds.thresholds),
+                                                 pixel_min_max = pixel_range)
     except:
         px_horizontal_lines = None
     if px_horizontal_lines is not None:
-        for px_bar_height in px_horizontal_lines:
+        for px in px_horizontal_lines:
             level = Rectangle(size=(width+6, 2),
-                            position=(0, int(px_bar_height/2)),
+                            position=(0, px),
                             colour=constants.C_WHITE)
             level.plot(indicator)
 
 
 
 
-    # text
+    # text labels
     txt = TextLine(text=text, text_size=text_size,
                            position=(0, -1 * (int(height / 2.0) + text_gap)),
                            text_colour=constants.C_YELLOW)
 
     # make return canvas
-    w = max(txt.surface_size[0], indicator_size[0])
+    w = max(txt.surface_size[0], indicator.size[0])
     h = height + 2 * (txt.surface_size[1]) + text_gap
     rtn = Canvas(size=(w, h), colour=(0, 0, 0), position=position)
     indicator.plot(rtn)
     txt.plot(rtn)
     return rtn
 
+if __name__ == "__main__":
+    pass

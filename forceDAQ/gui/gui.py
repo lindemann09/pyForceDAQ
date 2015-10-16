@@ -63,9 +63,10 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     refresh_interval_indicator = 300
     refresh_interval = refresh_interval_indicator
     indicator_grid = 70  # distance between indicator center
+    level_indicator_height = 300
 
-    scaling = Scaling(min_data =-50, max_data = 10,
-                      min_plotter_px=-250, max_plotter_px=250)
+    scaling = Scaling(min=-50, max= 10)
+    plotter_range = (-250,250)
     plotter_width = 900
     plotter_position = (0, -30)
     plot_filtered = True
@@ -145,7 +146,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             if plotter_thread is not None:
                 if thresholds is not None:
                     plotter_thread.set_horizontal_lines(
-                            y_values = scaling.data2pxiel(np.array(thresholds.thresholds)))
+                            y_values = scaling.data2pixel(np.array(thresholds.thresholds),
+                                                          plotter_range))
                 else:
                     plotter_thread.set_horizontal_lines(y_values=None)
 
@@ -232,6 +234,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
             update_rects = []
             if plot_indicator:
+                ############################################  plot_indicator
                 if plotter_thread is not None:
                     plotter_thread.stop()
                     plotter_thread = None
@@ -242,18 +245,24 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
 
+                    if cnt == level_detection_parameter:
+                        thr = thresholds
+                    else:
+                        thr = None
                     li = level_indicator(value=force_data_array[cnt],
                                          text=ForceData.forces_names[cnt],
                                          scaling=scaling,
                                          width = 50,
                                          position=(x_pos,0),
-                                         thresholds=thresholds)
+                                         height=level_indicator_height,
+                                         thresholds=thr)
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
 
 
                 #line
-                rect = stimuli.Line(start_point=(-200,0), end_point=(200,0),
+                zero = scaling.data2pixel(scaling.trim(0), [-level_indicator_height/2, level_indicator_height/2])
+                rect = stimuli.Line(start_point=(-200,zero), end_point=(200,zero),
                                     line_width=1, colour=misc.constants.C_YELLOW)
                 rect.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(rect, exp.screen.size))
@@ -263,7 +272,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position=pos, text = str(scaling.min_data),
+                txt = stimuli.TextLine(position=pos, text = str(scaling.min),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -271,18 +280,18 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position= pos, text = str(scaling.max_data),
+                txt = stimuli.TextLine(position= pos, text = str(scaling.max),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
                 # end indicator
             else:
-                # plotter
+                ############################################  plotter
                 if plotter_thread is None:
                     plotter_thread = PlotterThread(
                         n_data_rows=3,
                         data_row_colours=colours[:3],
-                        y_range = [scaling.min_plotter_px, scaling.max_plotter_px],
+                        y_range = plotter_range,
                         width=plotter_width,
                         position=plotter_position,
                         background_colour=[10,10,10],
@@ -291,7 +300,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.start()
                     if thresholds is not None:
                         plotter_thread.set_horizontal_lines(
-                            y_values = scaling.data2pxiel(np.array(thresholds.thresholds)))
+                            y_values = scaling.data2pixel(np.array(thresholds.thresholds),
+                                                          plotter_range))
 
                 if clear_screen:
                     plotter_thread.clear_area()
@@ -304,18 +314,18 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                         tmp = np.array(smpl, dtype=float)
 
                     plotter_thread.add_values(
-                        values = scaling.data2pxiel(tmp),
+                        values = scaling.data2pixel(tmp, plotter_range),
                         set_marker=set_marker)
                     set_marker = False
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
                 # axis labels
-                axis_labels = (int(scaling.min_data), int(scaling.max_data), 0)
+                axis_labels = (int(scaling.min), int(scaling.max), 0)
                 xpos = plotter_position[0] - (plotter_width/2) - 20
-                for cnt, ypos in enumerate((plotter_position[1] + scaling.min_plotter_px+10,
-                                            plotter_position[1] + scaling.max_plotter_px-10,
-                                            scaling.data2pxiel(plotter_position[1]))):
+                for cnt, ypos in enumerate((plotter_position[1] + plotter_range[0] + 10,
+                                            plotter_position[1] + plotter_range[1] - 10,
+                                            plotter_position[1] + scaling.data2pixel(0, plotter_range))):
                     stimuli.Canvas(position=(xpos, ypos), size=(50, 30),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
