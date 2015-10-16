@@ -14,7 +14,7 @@ from forceDAQ import Thresholds, ForceData, GUIRemoteControlCommands as RcCmd
 from forceDAQ.timer import Timer
 from forceDAQ.sensor_history import SensorHistory
 from forceDAQ.data_recorder import DataRecorder, SensorSettings
-from plotter import PlotterThread, level_indicator
+from plotter import PlotterThread, level_indicator, Scaling
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
 
@@ -64,9 +64,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     refresh_interval = refresh_interval_indicator
     indicator_grid = 70  # distance between indicator center
 
-    data_range = (-50, 10)
-    plotter_yrange = (-250, 250)
-    plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
+    scaling = Scaling(min_data =-50, max_data = 10,
+                      min_plotter_px=-250, max_plotter_px=250)
     plotter_width = 900
     plotter_position = (0, -30)
     plot_filtered = True
@@ -75,6 +74,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     last_udp_data = None
     current_level = None
     set_marker = False
+    clear_screen = False
 
     gui_clock = misc.Clock()
     background = RecordingScreen(window_size = exp.screen.size,
@@ -113,25 +113,22 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
-        elif key == misc.constants.K_KP_MINUS and plotter_scaling < 15 \
-                and plotter_thread is not None:
-            data_range = (data_range[0] - 5, data_range[1] + 5)
-            plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
+        elif key == misc.constants.K_KP_MINUS:
+            scaling.increase_data_range()
             background.stimulus().present()
-            plotter_thread.clear_area()
-        elif key == misc.constants.K_KP_PLUS and plotter_thread is not None:
-            data_range = (data_range[0] + 5, data_range[1] - 5)
-            plotter_scaling = (plotter_yrange[1] - plotter_yrange[0]) / float(data_range[1] - data_range[0])
+            clear_screen = True
+        elif key == misc.constants.K_KP_PLUS:
+            scaling.decrease_data_range()
             background.stimulus().present()
-            plotter_thread.clear_area()
-        elif key == misc.constants.K_UP and plotter_thread is not None:
-            data_range = (data_range[0] + 5, data_range[1] + 5)
+            clear_screen = True
+        elif key == misc.constants.K_UP:
+            scaling.data_range_up()
             background.stimulus().present()
-            plotter_thread.clear_area()
-        elif key == misc.constants.K_DOWN and plotter_thread is not None:
-            data_range = (data_range[0] - 5, data_range[1] - 5)
+            clear_screen = True
+        elif key == misc.constants.K_DOWN:
+            scaling.data_range_down()
             background.stimulus().present()
-            plotter_thread.clear_area()
+            clear_screen = True
         elif key == misc.constants.K_f:
             plot_filtered = not(plot_filtered)
 
@@ -148,7 +145,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             if plotter_thread is not None:
                 if thresholds is not None:
                     plotter_thread.set_horizontal_lines(
-                            y_values = (np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
+                            y_values = scaling.data2pxiel(np.array(thresholds.thresholds)))
                 else:
                     plotter_thread.set_horizontal_lines(y_values=None)
 
@@ -227,7 +224,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 # threshold detection
                 current_level, level_change = thresholds.get_level(history.moving_average[level_detection_parameter])
                 if level_change:
-                        recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(tmp))
+                        recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(current_level))
 
         #plotting
         if not pause_recording and gui_clock.stopwatch_time >= refresh_interval: #do not give priority to visual output
@@ -244,20 +241,16 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                     sensor_process.Tx, sensor_process.Ty, sensor_process.Tz]
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
-                    if thresholds is not None and cnt ==level_detection_parameter:
-                        thr = thresholds.thresholds
-                    else:
-                        thr = None
 
                     li = level_indicator(value=force_data_array[cnt],
                                          text=ForceData.forces_names[cnt],
-                                         minVal=data_range[0],
-                                         maxVal=data_range[1],
+                                         scaling=scaling,
                                          width = 50,
                                          position=(x_pos,0),
-                                         horizontal_lines=thr)
+                                         thresholds=thresholds)
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
+
 
                 #line
                 rect = stimuli.Line(start_point=(-200,0), end_point=(200,0),
@@ -270,7 +263,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position=pos, text = str(data_range[0]),
+                txt = stimuli.TextLine(position=pos, text = str(scaling.min_data),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -278,7 +271,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position= pos, text = str(data_range[1]),
+                txt = stimuli.TextLine(position= pos, text = str(scaling.max_data),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -289,7 +282,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread = PlotterThread(
                         n_data_rows=3,
                         data_row_colours=colours[:3],
-                        y_range = plotter_yrange,
+                        y_range = [scaling.min_plotter_px, scaling.max_plotter_px],
                         width=plotter_width,
                         position=plotter_position,
                         background_colour=[10,10,10],
@@ -298,8 +291,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.start()
                     if thresholds is not None:
                         plotter_thread.set_horizontal_lines(
-                            y_values = ( np.array(thresholds.thresholds)- (data_range[0] + data_range[1])/2.0) * plotter_scaling)
+                            y_values = scaling.data2pxiel(np.array(thresholds.thresholds)))
 
+                if clear_screen:
+                    plotter_thread.clear_area()
+                    clear_screen = False
 
                 if smpl is not None: # newsample
                     if plot_filtered:
@@ -308,18 +304,18 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                         tmp = np.array(smpl, dtype=float)
 
                     plotter_thread.add_values(
-                        values = (tmp - (data_range[0] + data_range[1])/2.0) * plotter_scaling,
+                        values = scaling.data2pxiel(tmp),
                         set_marker=set_marker)
                     set_marker = False
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
                 # axis labels
-                axis_labels = (int(data_range[0]), int(data_range[1]), 0)
+                axis_labels = (int(scaling.min_data), int(scaling.max_data), 0)
                 xpos = plotter_position[0] - (plotter_width/2) - 20
-                for cnt, ypos in enumerate((plotter_position[1] + plotter_yrange[0]+10,
-                                            plotter_position[1] + plotter_yrange[1]-10,
-                                            plotter_position[1] - plotter_scaling*(data_range[0] + data_range[1])/2.0)):
+                for cnt, ypos in enumerate((plotter_position[1] + scaling.min_plotter_px+10,
+                                            plotter_position[1] + scaling.max_plotter_px-10,
+                                            scaling.data2pxiel(plotter_position[1]))):
                     stimuli.Canvas(position=(xpos, ypos), size=(50, 30),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)

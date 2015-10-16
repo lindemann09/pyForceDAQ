@@ -1,4 +1,4 @@
-__version__ = "0.1"
+__version__ = "0.2"
 
 import threading
 import numpy as np
@@ -10,6 +10,46 @@ from expyriment.misc import constants
 lock_expyriment = threading.Lock()
 
 Numpy_array_type = type(np.array([]))
+
+class Scaling(object):
+    """littel helper object function to handle plotter scaling"""
+    step_size = 5 # for increasing/decreasing
+
+    def __init__(self, min_data, max_data, min_plotter_px, max_plotter_px):
+        """xy-value arrays"""
+        self.min_data = min_data
+        self.max_data = max_data
+        self.min_plotter_px = min_plotter_px
+        self.max_plotter_px = max_plotter_px
+
+    @property
+    def factor(self):
+        return (self.max_plotter_px - self.min_plotter_px) / \
+               float(self.max_data - self.min_data)
+
+    def increase_data_range(self):
+        self.min_data += Scaling.step_size
+        self.max_data -= Scaling.step_size
+        if self.min_data >= self.max_data:
+            self.decrease_data_range()
+
+    def decrease_data_range(self):
+        self.min_data -= Scaling.step_size
+        self.max_data += Scaling.step_size
+
+    def data_range_up(self):
+         self.min_data += Scaling.step_size
+         self.max_data += Scaling.step_size
+
+    def data_range_down(self):
+        self.min_data -= Scaling.step_size
+        self.max_data -= Scaling.step_size
+
+    def data2pxiel(self, values):
+        """ values: numeric or numpy array"""
+        return (values - (self.min_data + self.max_data)/2.0) * \
+               (self.max_plotter_px - self.min_plotter_px) / float(self.max_data - self.min_data) # scaling factor
+
 
 class PGSurface(Canvas):
     """PyGame Surface: Expyriment Stimulus for direct Pygame operations and
@@ -338,12 +378,13 @@ class PlotterThread(threading.Thread):
         self._lock_new_values.release()
 
 
-def level_indicator(value, text, minVal=-100, maxVal=100, width=20, height=300,
-                    text_size=14, text_gap=20,  position=(0,0), horizontal_lines = None,
+def level_indicator(value, text, scaling, width=20, height=300,
+                    text_size=14, text_gap=20,  position=(0,0), thresholds = None,
                     colour=constants.C_EXPYRIMENT_ORANGE):
     """make an level indicator in for of an Expyriment stimulus
 
     text_gap: gap between indicator and text
+    scaling: Scaling object
 
     Returns
     --------
@@ -351,31 +392,32 @@ def level_indicator(value, text, minVal=-100, maxVal=100, width=20, height=300,
 
     """
 
-    if value < minVal:
-        value = minVal
-    elif value > maxVal:
-        value = maxVal
+    if value < scaling.min_data:
+        value = scaling.min_data
+    elif value > scaling.max_data:
+        value = scaling.max_data
+
     ## FIXME INCORRECT SCALING
     # indicator
     indicator_size = [width + 2, height + 2]
     indicator = Canvas(size=indicator_size,
                                colour=(30, 30, 30))
-    px_level = value * height / float(maxVal - minVal)
-    bar = Rectangle(size=(width, abs(px_level)),
-                            position=(0, int((px_level + 1) / 2)),
+    px_bar_height = value * height / float(scaling.max_data - scaling.min_data)
+    bar = Rectangle(size=(width, abs(px_bar_height)),
+                            position=(0, int((px_bar_height + 1) / 2)),
                             colour=colour)
     bar.plot(indicator)
 
     # levels & horizontal lines
     try:
-        px_horizontal_lines = map(lambda x:x * height / float(maxVal - minVal),
-                                  horizontal_lines)
+        px_horizontal_lines = map(lambda x:x * height / float(scaling.max_data - scaling.min_data),
+                                  thresholds.thresholds)
     except:
         px_horizontal_lines = None
     if px_horizontal_lines is not None:
-        for px_level in px_horizontal_lines:
+        for px_bar_height in px_horizontal_lines:
             level = Rectangle(size=(width+6, 2),
-                            position=(0, int(px_level/2)),
+                            position=(0, int(px_bar_height/2)),
                             colour=constants.C_WHITE)
             level.plot(indicator)
 
