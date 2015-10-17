@@ -71,9 +71,9 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     plotter_position = (0, -30)
     plot_filtered = True
     pause_recording = True
+    start_recording_time = 0
     last_recording_status = None
     last_udp_data = None
-    current_level = None
     set_marker = False
     clear_screen = False
 
@@ -83,28 +83,27 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                            remote_control=remote_control)
     # plotter
     last_processed_smpl = 0
-    smpl = None
     plotter_thread = None
 
     exp.keyboard.clear()
 
     # TODO one sensor only (Fz), parameter for level detection
     level_detection_parameter = ForceData.forces_names.index("Fz")
-    sensor_process = recorder._force_sensor_processes[0]
+    sensor_process = recorder.force_sensor_process(0)
     history = SensorHistory(history_size = 5, number_of_parameter=3)
     thresholds = None
     quit_recording = False
-    while not quit_recording:
+    while not quit_recording:  ######## process loop
 
         if pause_recording:
             sleep(0.01)
 
-        # process keyboard
+        ################################ process keyboard
         key = exp.keyboard.check(check_for_control_keys=False)
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
             quit_recording = True
         elif key == misc.constants.K_v:
-            plot_indicator = not(plot_indicator)
+            plot_indicator = not plot_indicator
             background.stimulus().present()
             if plot_indicator:
                 refresh_interval = refresh_interval_indicator
@@ -131,7 +130,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             background.stimulus().present()
             clear_screen = True
         elif key == misc.constants.K_f:
-            plot_filtered = not(plot_filtered)
+            plot_filtered = not plot_filtered
 
         elif key == misc.constants.K_t:
             tmp = _text2number_array(
@@ -152,7 +151,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.set_horizontal_lines(y_values=None)
 
 
-        # process udp
+        ##############################  process udp
         udp = recorder.process_udp_events()
         while len(udp)>0:
             udp_event = udp.pop(0)
@@ -167,6 +166,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     pause_recording = True
                 elif udp_event.string == RcCmd.QUIT:
                     quit_recording = True
+
+                # thresholds
                 elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
                     try:
                         thresholds = loads[len(RcCmd.SET_THRESHOLDS):]
@@ -174,24 +175,35 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                         thresholds = None
                     if not isinstance(thresholds, Thresholds): # ensure not strange type
                         thresholds = None
+                elif udp_event.string.startswith(RcCmd.GET_THRESHOLD_LEVEL):
+                    if thresholds is not None:
+                        tmp = thresholds.get_level(
+                                    history.moving_average[level_detection_parameter])
+                        recorder.udp.send_queue.put(RcCmd.VALUE + dumps(tmp))
+                    else:
+                        recorder.udp.send_queue.put(RcCmd.VALUE + dumps(None))
+                elif udp_event.string.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION):
+                    if thresholds is not None:
+                        thresholds.set_level_change_detection(
+                            history.moving_average[level_detection_parameter])
 
                 elif udp_event.string == RcCmd.GET_FX:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fx))
                 elif udp_event.string == RcCmd.GET_FY:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fy))
                 elif udp_event.string == RcCmd.GET_FZ:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fz))
                 elif udp_event.string == RcCmd.GET_TX:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fx))
                 elif udp_event.string == RcCmd.GET_TY:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fy))
                 elif udp_event.string == RcCmd.GET_TZ:
-                    recorder.udp.send_queue.put(RcCmd.DATA_POINT +
+                    recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fz))
             else:
                 # not remote control command
@@ -199,7 +211,20 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 last_udp_data = udp_event.string
 
 
-        # show pause or recording screen
+        ########################### process new samples
+        if last_processed_smpl <= sensor_process.sample_cnt:
+            # new sample
+            last_processed_smpl = sensor_process.sample_cnt
+            history.update([sensor_process.Fx, sensor_process.Fy, sensor_process.Fz])
+
+            if thresholds is not None and thresholds.is_change_detecting:
+                # level change detection
+                level_change, tmp  = thresholds.get_level_change(
+                                history.moving_average[level_detection_parameter])
+                if level_change:
+                        recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+
+        ######################## show pause or recording screen
         if pause_recording != last_recording_status:
             last_recording_status = pause_recording
             if pause_recording:
@@ -215,20 +240,10 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 if remote_control:
                     recorder.udp.send_queue.put(RcCmd.FEEDBACK + "started")
 
-        # process new samples
-        if last_processed_smpl <= sensor_process.sample_cnt:
-            # new sample
-            smpl = [sensor_process.Fx, sensor_process.Fy, sensor_process.Fz]
-            last_processed_smpl = sensor_process.sample_cnt
-            history.update(smpl ) # TODO: single sensor only
+        ###########################
+        ########################### plotting
+        ###########################
 
-            if thresholds is not None:
-                # threshold detection
-                current_level, level_change = thresholds.get_level(history.moving_average[level_detection_parameter])
-                if level_change:
-                        recorder.udp.send_queue.put(RcCmd.GET_THRESHOLD_LEVEL+ dumps(current_level))
-
-        #plotting
         if not pause_recording and gui_clock.stopwatch_time >= refresh_interval: #do not give priority to visual output
             gui_clock.reset_stopwatch()
 
@@ -307,16 +322,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     plotter_thread.clear_area()
                     clear_screen = False
 
-                if smpl is not None: # newsample
-                    if plot_filtered:
-                        tmp = np.array(history.moving_average, dtype=float)
-                    else:
-                        tmp = np.array(smpl, dtype=float)
+                if plot_filtered:
+                    tmp = np.array(history.moving_average, dtype=float)
+                else:
+                    tmp = np.array([sensor_process.Fx, sensor_process.Fy, sensor_process.Fz], dtype=float)
 
-                    plotter_thread.add_values(
-                        values = scaling.data2pixel(tmp, plotter_range),
-                        set_marker=set_marker)
-                    set_marker = False
+                plotter_thread.add_values(
+                    values = scaling.data2pixel(tmp, plotter_range),
+                    set_marker=set_marker)
+                set_marker = False
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
@@ -361,11 +375,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                  colour=misc.constants.C_BLACK)
             tmp.present(update=False, clear=False)
             if thresholds is not None:
+                tmp = thresholds.get_level(history.moving_average[level_detection_parameter])
                 txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
                                 text_size = 15,
-                                text = "T: {0} L: {1}".format(thresholds,
-                                                              current_level),
+                                text = "T: {0} L: {1}".format(thresholds, tmp),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
 
@@ -388,14 +402,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
             pygame.display.update(update_rects)
-            # end refesh screen
+            # end plotting screen
 
-        # end while recording
+        ##### end main while loop
 
     background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.stop()
     recorder.pause_recording()
+
 
 def start(remote_control, ask_filename, calibration_file):
     """start gui

@@ -57,6 +57,10 @@ class DataRecorder(object):
         atexit.register(self.quit)
 
 
+    def force_sensor_process(self, sensor_id):
+        if 0 <= sensor_id < len(self._force_sensor_processes):
+            return self._force_sensor_processes[sensor_id]
+
     @property
     def is_recording(self):
         """Property indicates whether the recording is started or paused"""

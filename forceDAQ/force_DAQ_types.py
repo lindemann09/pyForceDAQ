@@ -166,15 +166,14 @@ class DAQEvents(object):
         self.code = code
 
 
-
 class GUIRemoteControlCommands(object):
     COMMAND_STR = "$cmd"
     FEEDBACK, START, PAUSE, QUIT, \
     SET_THRESHOLDS, GET_THRESHOLD_LEVEL, \
-    DATA_POINT, FILENAME, \
+    SET_LEVEL_CHANGE_DETECTION, CHANGED_LEVEL,\
+    VALUE, FILENAME, \
     GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ \
-    = map(lambda x: "$cmd" + str(x), range(14))
-
+    = map(lambda x: "$cmd" + str(x), range(16))
 
 
 class Thresholds(object):
@@ -186,13 +185,16 @@ class Thresholds(object):
         self._prev_level = None
 
     @property
+    def is_change_detecting(self):
+        return self._prev_level is not None
+
+    @property
     def thresholds(self):
         return self._thresholds
 
     def get_level(self, value):
-        """return [int, boolean]
+        """return [int]
         int: the level of current sensor value depending of thresholds (array)
-        boolean is true if sensor level has been changed since last call
 
         return:
                 0 below smallest threshold
@@ -208,10 +210,31 @@ class Thresholds(object):
                 break
         if level is None:
             level = cnt + 1
-        changed = (level != self._prev_level)
+        return level
+
+    def set_level_change_detection(self, value):
+        """sets level change detection
+        returns: current level
+        """
+        self._prev_level  = self.get_level(value)
+        return self._prev_level
+
+    def get_level_change(self, value):
+        """return tuple with level_change (boolean) and current level (int)
+
+        Note: after detected level change, change detection is switched off!
+        """
+
+        if self._prev_level is None:
+            return None, None
+
+        current = self.get_level(value)
+        changed = (current != self._prev_level)
         if changed:
-            self._prev_level = level
-        return (level, changed)
+            self._prev_level = None
+        return changed, current
+
+
 
     def __str__(self):
         return str(self._thresholds)
