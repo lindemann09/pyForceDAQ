@@ -113,6 +113,11 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_p:
             # pause
             pause_recording = not pause_recording
+        elif key == misc.constants.K_b and pause_recording:
+            background.stimulus("Recording baseline").present()
+            recorder.determine_biases(n_samples=500)
+            background.stimulus("Paused recording").present()
+
         elif key == misc.constants.K_KP_MINUS:
             scaling.increase_data_range()
             background.stimulus().present()
@@ -231,7 +236,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             if pause_recording:
                 background.stimulus("writing data...").present()
                 recorder.pause_recording()
-                background.stimulus("Paused recording").present()
+                background.stimulus("Paused recording ('b' for baseline determination)").present()
                 if remote_control:
                     recorder.udp.send_queue.put(RcCmd.FEEDBACK + "paused")
             else:
