@@ -170,7 +170,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 # thresholds
                 elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
                     try:
-                        thresholds = loads[len(RcCmd.SET_THRESHOLDS):]
+                        thresholds = loads(
+                            udp_event.string[len(RcCmd.SET_THRESHOLDS):])
                     except:
                         thresholds = None
                     if not isinstance(thresholds, Thresholds): # ensure not strange type
@@ -416,6 +417,7 @@ def start(remote_control, ask_filename, calibration_file):
     """start gui
     remote_control should be None (ask) or True or False
 
+    returns False only if quited by key while waiting for remote control
     """
 
     # expyriment
@@ -436,35 +438,36 @@ def start(remote_control, ask_filename, calibration_file):
                                     calibration_file=calibration_file)
 
     remote_control = _initialize(exp, remote_control=remote_control)
+    stimuli.TextScreen(heading="Initializing Force Recording", text="").present()
 
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
-
-    stimuli.TextLine("Press key to determine bias").present()
-    exp.keyboard.wait()
-    stimuli.BlankScreen().present()
+    sleep(0.1) # wait for recorder init
     recorder.determine_biases(n_samples=500)
 
     if remote_control:
         stimuli.TextScreen("Waiting to connect with peer",
                            "My IP: " +  recorder.udp.ip_address).present()
         while not recorder.udp.event_is_connected.is_set():
-            exp.keyboard.check()
+            key = exp.keyboard.check(check_for_control_keys=False)
+            if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
+                recorder.quit()
+                control.end()
+                return False
             sleep(0.01)#
 
-        if ask_filename:
-            stimuli.TextLine("Wait for filename").present()
-            while True:
-                try:
-                    x = recorder.udp.receive_queue.get_nowait()
-                    x = x.string
-                except:
-                    x = None
-                if x is not None and x.startswith(RcCmd.FILENAME):
-                    filename = x.replace(RcCmd.FILENAME, "")
-                    break
-                exp.keyboard.check()
-                sleep(0.01)
+        stimuli.TextLine("Wait for filename").present()
+        while True:
+            try:
+                x = recorder.udp.receive_queue.get_nowait()
+                x = x.string
+            except:
+                x = None
+            if x is not None and x.startswith(RcCmd.FILENAME):
+                filename = x.replace(RcCmd.FILENAME, "")
+                break
+            exp.keyboard.check()
+            sleep(0.01)
     else:
         if ask_filename:
             bkg = logo_text_line("")
@@ -480,6 +483,8 @@ def start(remote_control, ask_filename, calibration_file):
                     remote_control=remote_control)
 
     recorder.quit()
+    control.end()
+    return True
 
 
 #### helper
