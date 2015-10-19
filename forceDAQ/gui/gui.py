@@ -374,6 +374,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             tmp = stimuli.Canvas(position=pos, size=(400,50),
                                  colour=misc.constants.C_BLACK)
             tmp.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
             if thresholds is not None:
                 tmp = thresholds.get_level(history.moving_average[level_detection_parameter])
                 txt = stimuli.TextBox(position= pos,
@@ -384,7 +385,6 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                                 text_justification = 0)
 
                 txt.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
 
             # last_udp input
             if last_udp_data is not None:

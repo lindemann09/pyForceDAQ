@@ -234,8 +234,6 @@ class Thresholds(object):
             self._prev_level = None
         return changed, current
 
-
-
     def __str__(self):
         return str(self._thresholds)
 
