@@ -7,7 +7,7 @@ __author__ = "Oliver Lindemann"
 
 import os
 import atexit
-from time import localtime, strftime
+from time import localtime, strftime,asctime
 import gzip
 
 from forceDAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
@@ -275,7 +275,7 @@ class DataRecorder(object):
         print "Data file: ", self.filename
 
         self._file.write("# Recorded at {0} with pyForceDAQ {1}\n".format(
-            strftime("%d-%m-%Y% %H:%M", localtime()), forceDAQVersion))
+            asctime(localtime()), forceDAQVersion))
 
         if len(comment_line)>0:
             self._file.write("#" + comment_line + "\n")
