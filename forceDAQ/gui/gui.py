@@ -11,6 +11,7 @@ import numpy as np
 
 from expyriment import control, design, stimuli, io, misc
 from forceDAQ import Thresholds, ForceData, GUIRemoteControlCommands as RcCmd
+from forceDAQ import __version__ as forceDAQVersion
 from forceDAQ.timer import Timer
 from forceDAQ.sensor_history import SensorHistory
 from forceDAQ.data_recorder import DataRecorder, SensorSettings
@@ -442,7 +443,8 @@ def start(remote_control, ask_filename, calibration_file):
                                     calibration_file=calibration_file)
 
     remote_control = _initialize(exp, remote_control=remote_control)
-    stimuli.TextScreen(heading="Initializing Force Recording", text="").present()
+    stimuli.TextScreen(heading="PyForceDAQ {0}".format(forceDAQVersion),
+                       text="Initializing Force Recording").present()
 
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
@@ -450,7 +452,8 @@ def start(remote_control, ask_filename, calibration_file):
     recorder.determine_biases(n_samples=500)
 
     if remote_control:
-        stimuli.TextScreen("Waiting to connect with peer",
+        stimuli.TextScreen(heading="PyForceDAQ {0}".format(forceDAQVersion),
+                           text = "Waiting to connect with peer \n" +
                            "My IP: " +  recorder.udp.ip_address).present()
         while not recorder.udp.event_is_connected.is_set():
             key = exp.keyboard.check(check_for_control_keys=False)
