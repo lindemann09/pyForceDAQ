@@ -10,10 +10,11 @@ import atexit
 from time import localtime, strftime
 import gzip
 
-from force_DAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
-from force_DAQ_types import GUIRemoteControlCommands as RemoteCmd
+from forceDAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
+from forceDAQ_types import GUIRemoteControlCommands as RemoteCmd
 from udp_connection import UDPConnectionProcess
 from daq import SensorSettings, SensorProcess
+from forceDAQ import __version__ as forceDAQVersion
 
 
 class DataRecorder(object):
@@ -272,6 +273,10 @@ class DataRecorder(object):
         else:
             self._file = open(directory + os.path.sep + self.filename, 'w+')
         print "Data file: ", self.filename
+
+        self._file.write("# Recorded at {0} with pyForceDAQ {1}\n".format(
+            strftime("%d-%m-%Y% %H:%M", localtime()), forceDAQVersion))
+
         if len(comment_line)>0:
             self._file.write("#" + comment_line + "\n")
         if varnames:

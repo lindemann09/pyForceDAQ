@@ -168,13 +168,17 @@ class DAQEvents(object):
 
 class GUIRemoteControlCommands(object):
     COMMAND_STR = "$cmd"
+
     FEEDBACK, START, PAUSE, QUIT, \
     SET_THRESHOLDS, GET_THRESHOLD_LEVEL, \
     SET_LEVEL_CHANGE_DETECTION, CHANGED_LEVEL,\
     VALUE, FILENAME, \
-    GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ \
-    = map(lambda x: "$cmd" + str(x), range(16))
+    GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ, \
+    PING \
+    = map(lambda x: "$cmd" + str(x), range(17))
 
+    FEEDBACK_PAUSED = FEEDBACK + "paused"
+    FEEDBACK_STARTED = FEEDBACK + "started"
 
 class Thresholds(object):
 

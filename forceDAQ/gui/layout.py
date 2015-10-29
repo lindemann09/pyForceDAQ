@@ -3,10 +3,12 @@ __author__ = 'Oliver Lindemann'
 # helper functions
 from time import strftime
 import pygame
+
 from expyriment import stimuli
 from expyriment.misc import constants
 
-from forceDAQ import __version__
+from forceDAQ import __version__ as forceDAQVersion
+
 
 colours = [constants.C_RED,
                constants.C_GREEN,
@@ -14,7 +16,6 @@ colours = [constants.C_RED,
                constants.C_BLUE,
                constants.C_EXPYRIMENT_ORANGE,
                constants.C_EXPYRIMENT_PURPLE]
-
 
 def get_pygame_rect(stimulus, screen_size):
     """little helper function that returns the pygame rect from stimuli"""
@@ -27,7 +28,7 @@ def get_pygame_rect(stimulus, screen_size):
 
 def logo_text_line(text):
     blank = stimuli.Canvas(size=(600, 400))
-    stimuli.TextLine(text="Version " + __version__, position=(0, 80),
+    stimuli.TextLine(text="Version " + forceDAQVersion, position=(0, 80),
                      text_size=14,
                      text_colour=constants.C_EXPYRIMENT_ORANGE).plot(blank)
     stimuli.TextLine(text=text).plot(blank)
@@ -43,7 +44,7 @@ class RecordingScreen(object):
         self.bottom = -1*window_size[1]/2 + margin
 
         self.elements = []
-        self.add_text_line_left("Force Recorder " + str(__version__),
+        self.add_text_line_left("Force Recorder " + str(forceDAQVersion),
                                 [self.left, self.top], text_size=15)
         self.add_text_line_left("(p) pause/unpause", [self.left, self.bottom])
         self.add_text_line_left("(v) switch view", [self.left + 160, self.bottom +20])

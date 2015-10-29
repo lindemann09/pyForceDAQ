@@ -18,8 +18,6 @@ from plotter import PlotterThread, level_indicator, Scaling
 from layout import logo_text_line, RecordingScreen, colours, get_pygame_rect
 
 
-
-
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
@@ -116,7 +114,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
         elif key == misc.constants.K_b and pause_recording:
             background.stimulus("Recording baseline").present()
             recorder.determine_biases(n_samples=500)
-            background.stimulus("Paused recording").present()
+            background.stimulus("Paused").present()
 
         elif key == misc.constants.K_KP_MINUS:
             scaling.increase_data_range()
@@ -171,9 +169,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                     pause_recording = True
                 elif udp_event.string == RcCmd.QUIT:
                     quit_recording = True
-
-                # thresholds
                 elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
+                    # thresholds
                     try:
                         thresholds = loads(
                             udp_event.string[len(RcCmd.SET_THRESHOLDS):])
@@ -211,6 +208,8 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
                 elif udp_event.string == RcCmd.GET_TZ:
                     recorder.udp.send_queue.put(RcCmd.VALUE +
                                                 dumps(sensor_process.Fz))
+                elif udp_event.string == RcCmd.PING:
+                    recorder.udp.send_queue.put(RcCmd.PING)
             else:
                 # not remote control command
                 set_marker = True
@@ -236,15 +235,15 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
             if pause_recording:
                 background.stimulus("writing data...").present()
                 recorder.pause_recording()
-                background.stimulus("Paused recording ('b' for baseline determination)").present()
+                background.stimulus("Paused ('b' for baseline)").present()
                 if remote_control:
-                    recorder.udp.send_queue.put(RcCmd.FEEDBACK + "paused")
+                    recorder.udp.send_queue.put(RcCmd.FEEDBACK_PAUSED)
             else:
                 recorder.start_recording()
                 start_recording_time = gui_clock.time
                 background.stimulus().present()
                 if remote_control:
-                    recorder.udp.send_queue.put(RcCmd.FEEDBACK + "started")
+                    recorder.udp.send_queue.put(RcCmd.FEEDBACK_STARTED)
 
         ###########################
         ########################### plotting

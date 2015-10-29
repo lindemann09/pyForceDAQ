@@ -13,7 +13,7 @@ from time import sleep, time
 import socket
 
 from timer import Timer, get_time
-from force_DAQ_types import UDPData
+from forceDAQ_types import UDPData
 
 if os.name != "nt":
     import fcntl
