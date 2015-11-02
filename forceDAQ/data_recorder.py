@@ -88,7 +88,7 @@ class DataRecorder(object):
 
         return buffer
 
-    def process_udp_events(self):
+    def process_and_write_udp_events(self):
         """process udp events and return them"""
         buffer = []
         while True:
@@ -101,13 +101,15 @@ class DataRecorder(object):
         self._write_data(buffer)
         return buffer
 
-    def _write_data(self, data_buffer):
+    def _write_data(self, data_buffer, recording_screen=None):
         """ writes data to disk and set counters
 
         ignore UDP remote control commands
         """
 
-        for d in data_buffer:
+        l = len(data_buffer)
+        blocksize = 10000 # for recording screen feedback only
+        for c, d in enumerate(data_buffer):
             if isinstance(d, ForceData):
                 self.sample_counter[d.device_id] += 1
 
@@ -123,6 +125,11 @@ class DataRecorder(object):
                     if not d.string.startswith(RemoteCmd.COMMAND_STR):
                         self._file.write("%d,%d,%s,0,0\n" % \
                                      (CODE_UDPDATA, d.time, d.string)) # write ascii data to fill
+            if recording_screen is not None and c % blocksize == 0:
+                recording_screen.stimulus(
+                    "Writing {0} of {1} blocks".format(c/blocksize,l/blocksize)).present()
+
+
 
 
     def write_soft_trigger(self, code, time=None):
@@ -156,7 +163,7 @@ class DataRecorder(object):
         map(lambda x:x.start_polling(), self._force_sensor_processes)
         self._is_recording = True
 
-    def pause_recording(self):
+    def pause_recording(self, recording_screen=None):
         """Pauses all polling processes and process data
 
         returns
@@ -169,12 +176,14 @@ class DataRecorder(object):
         data = []
         #sensors
         for fsp in self._force_sensor_processes:
+            if recording_screen is not None:
+                recording_screen.stimulus("Getting data").present()
             buffer = fsp.pause_polling_get_buffer()
-            self._write_data(buffer)
+            self._write_data(buffer, recording_screen)
             data.extend(buffer)
 
         # udp event
-        buffer = self.process_udp_events()
+        buffer = self.process_and_write_udp_events()
         data.extend(buffer)
         # soft trigger
         self._write_data(self._soft_trigger)

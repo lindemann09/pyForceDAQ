@@ -156,7 +156,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
 
 
         ##############################  process udp
-        udp = recorder.process_udp_events()
+        udp = recorder.process_and_write_udp_events()
         while len(udp)>0:
             udp_event = udp.pop(0)
 
@@ -415,7 +415,7 @@ def _record_data(exp, recorder, plot_indicator=False, remote_control=False):
     background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.stop()
-    recorder.pause_recording()
+    recorder.pause_recording(background)
 
 
 def start(remote_control, ask_filename, calibration_file):
