@@ -15,10 +15,13 @@ class Scaling(object):
     """littel helper object function to handle plotter scaling"""
     step_size = 5 # for increasing/decreasing
 
-    def __init__(self, min, max):
+    def __init__(self, min, max,
+                 pixel_min, pixel_max):
         """xy-value arrays"""
         self._min = min
         self._max = max
+        self.pixel_min = pixel_min
+        self.pixel_max = pixel_max
         self._update()
 
     @property
@@ -43,8 +46,8 @@ class Scaling(object):
         self._zero_shift = (self._min + self._max)/2.0
         self._range = float(self._max - self._min)
 
-    def get_pixel_factor(self, pixel_min_max):
-        return (pixel_min_max[1] - pixel_min_max[0]) / self._range
+    def get_pixel_factor(self):
+        return (self.pixel_max - self.pixel_min) / self._range
 
     def increase_data_range(self):
         self.min += Scaling.step_size
@@ -64,11 +67,11 @@ class Scaling(object):
         self.min -= Scaling.step_size
         self.max -= Scaling.step_size
 
-    def data2pixel(self, values, pixel_min_max):
+    def data2pixel(self, values):
         """ values: numeric or numpy array
         pixel_min_max: 2D array"""
         return (values - self._zero_shift) * \
-               (pixel_min_max[1] - pixel_min_max[0]) / self._range # pixel_factor
+               (self.pixel_max - self.pixel_min) / self._range # pixel_factor
 
     def trim(self, value):
         """trims value to the range, ie. set to min or max if <min or > max """
