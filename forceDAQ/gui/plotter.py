@@ -408,7 +408,7 @@ class PlotterThread(threading.Thread):
         self._lock_new_values.release()
 
 
-def level_indicator(value, text, scaling, width=20, height=300,
+def level_indicator(value, text, scaling, width=20,
                     text_size=14, text_gap=20,  position=(0,0), thresholds = None,
                     colour=constants.C_EXPYRIMENT_ORANGE):
     """make an level indicator in for of an Expyriment stimulus
@@ -425,12 +425,12 @@ def level_indicator(value, text, scaling, width=20, height=300,
     value = scaling.trim(value)
 
     # indicator
+    height = scaling.pixel_max - scaling.pixel_min
     indicator = Canvas(size=[width + 2, height + 2],
                                colour=(30, 30, 30))
 
-    pixel_range = [-height/2, height/2]
-    zero = scaling.data2pixel(0, pixel_range)
-    px_bar_height = scaling.data2pixel(value, pixel_range) - zero
+    zero = scaling.data2pixel(0)
+    px_bar_height = scaling.data2pixel(value) - zero
     bar = Rectangle(size=(width, abs(px_bar_height)),
                             position=(0, zero + int((px_bar_height + 1) / 2)),
                             colour=colour)
@@ -438,8 +438,7 @@ def level_indicator(value, text, scaling, width=20, height=300,
 
     # levels & horizontal lines
     try:
-        px_horizontal_lines = scaling.data2pixel(values=np.array(thresholds.thresholds),
-                                                 pixel_min_max = pixel_range)
+        px_horizontal_lines = scaling.data2pixel(values=np.array(thresholds.thresholds))
     except:
         px_horizontal_lines = None
     if px_horizontal_lines is not None:

@@ -2,8 +2,6 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
-# FIXME: overriding files
-
 __author__ = "Oliver Lindemann"
 
 from time import sleep
@@ -19,7 +17,7 @@ from forceDAQ.sensor_history import SensorHistory
 from plotter import PlotterThread, level_indicator, Scaling
 from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
 
-MOVING_AVERAGE_SIZE = 15
+MOVING_AVERAGE_SIZE = 5
 
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
@@ -75,9 +73,11 @@ class GUIStatus(object):
                                           filename=recorder.filename,
                                           remote_control=remote_control)
         self.scaling_plotter = Scaling(min=data_min_max[0], max= data_min_max[1],
-                      pixel_min=plotter_pixel_min_max[0], pixel_max=plotter_pixel_min_max[1])
+                      pixel_min=plotter_pixel_min_max[0],
+                      pixel_max=plotter_pixel_min_max[1])
         self.scaling_indicator = Scaling(min=data_min_max[0], max= data_min_max[1],
-                                pixel_min = indicator_pixel_min_max[0], pixel_max = indicator_pixel_min_max[1])
+                                pixel_min = indicator_pixel_min_max[0],
+                                pixel_max = indicator_pixel_min_max[1])
 
 
         self.history = SensorHistory(history_size = MOVING_AVERAGE_SIZE,
@@ -273,7 +273,7 @@ def _gui_main_loop(exp, recorder, remote_control=False):
                        remote_control=remote_control,
                        level_detection_parameter = ForceData.forces_names.index("Fz"),  # only one dimension
                        screen_size = exp.screen.size,
-                       data_min_max=[-50, -10],
+                       data_min_max=[-30, 5],
                        plotter_pixel_min_max=[-250, 250],
                        indicator_pixel_min_max=[-150, 150])
 
@@ -349,7 +349,6 @@ def _gui_main_loop(exp, recorder, remote_control=False):
                                          scaling=status.scaling_indicator,
                                          width = 50,
                                          position=(x_pos,0),
-                                         height=status.scaling_indicator.pixel_max - status.scaling_indicator.pixel_min,
                                          thresholds=thr)
                     li.present(update=False, clear=False)
                     update_rects.append(get_pygame_rect(li, exp.screen.size))
