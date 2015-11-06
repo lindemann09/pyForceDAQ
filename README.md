@@ -21,7 +21,7 @@ Installation
 ------------
 
 * Create the shared library `atidaq.dll` (or `atidaq.so` for Linux) using `Makefile` in the folder `atidaq_cdll`. A complied version of `atidaq.dll` can be also found in the `Windows` subfolder
-* Make the library avaiable by coping it in your system folder 
+* Make the library available by coping it in your system folder 
 
 Development
 -----------
