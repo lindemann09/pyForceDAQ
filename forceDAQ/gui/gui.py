@@ -4,6 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
+import os
 from time import sleep
 import pygame
 from cPickle import dumps, loads
@@ -299,7 +300,7 @@ def _gui_main_loop(exp, recorder, remote_control=False):
 
             if status.thresholds is not None and status.thresholds.is_change_detecting:
                 # level change detection
-                level_change, tmp  = status.thresholds.get_level_change(status.moving_average)
+                level_change, tmp = status.thresholds.get_level_change(status.moving_average)
                 if level_change:
                         recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
 
@@ -465,6 +466,20 @@ def _gui_main_loop(exp, recorder, remote_control=False):
 
                 txt.present(update=False, clear=False)
 
+            pos = (400, 250)
+            tmp = stimuli.Canvas(position=pos, size=(400,50),
+                                 colour=misc.constants.C_BLACK)
+            tmp.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
+            if status.plot_filtered:
+                txt = stimuli.TextBox(position= pos,
+                                size = (400, 50),
+                                text_size = 15,
+                                text = "Filtered data!",
+                                text_colour=misc.constants.C_YELLOW,
+                                text_justification = 0)
+                txt.present(update=False, clear=False)
+
             # last_udp input
             if status.last_udp_data is not None:
                 pos = (420, 250)
@@ -489,6 +504,19 @@ def _gui_main_loop(exp, recorder, remote_control=False):
     if plotter_thread is not None:
         plotter_thread.stop()
     recorder.pause_recording(status.background)
+
+
+def _logo_text_line(text):
+    blank = stimuli.Canvas(size=(600, 400))
+    logo = stimuli.Picture(filename=os.path.join(os.path.dirname(__file__),
+                            "forceDAQ_logo.png"), position = (0, 150))
+    logo.scale(0.6)
+    stimuli.TextLine(text="Version " + forceDAQVersion, position=(0,80),
+                     text_size = 14,
+                     text_colour=misc.constants.C_EXPYRIMENT_ORANGE).plot(blank)
+    logo.plot(blank)
+    stimuli.TextLine(text=text).plot(blank)
+    return blank
 
 
 def start(remote_control, ask_filename, calibration_file):
@@ -516,8 +544,7 @@ def start(remote_control, ask_filename, calibration_file):
                                     calibration_file=calibration_file)
 
     remote_control = _initialize(exp, remote_control=remote_control)
-    stimuli.TextScreen(heading="PyForceDAQ {0}".format(forceDAQVersion),
-                       text="Initializing Force Recording").present()
+    _logo_text_line("Initializing Force Recording").present()
 
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
@@ -525,9 +552,8 @@ def start(remote_control, ask_filename, calibration_file):
     recorder.determine_biases(n_samples=500)
 
     if remote_control:
-        stimuli.TextScreen(heading="PyForceDAQ {0}".format(forceDAQVersion),
-                           text = "Waiting to connect with peer \n" +
-                           "My IP: " +  recorder.udp.ip_address).present()
+        _logo_text_line( "Waiting to connect (my IP: {0})".format(
+                    recorder.udp.ip_address)).present()
         while not recorder.udp.event_is_connected.is_set():
             key = exp.keyboard.check(check_for_control_keys=False)
             if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
@@ -536,7 +562,7 @@ def start(remote_control, ask_filename, calibration_file):
                 return False
             sleep(0.01)#
 
-        stimuli.TextLine("Wait for filename").present()
+        _logo_text_line("Wait for filename").present()
         while True:
             try:
                 x = recorder.udp.receive_queue.get_nowait()
