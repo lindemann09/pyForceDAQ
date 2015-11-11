@@ -167,15 +167,32 @@ class DAQEvents(object):
 
 
 class GUIRemoteControlCommands(object):
+    """
+    SET_THRESHOLDS needs to be followed by a threshold object
+    SET_RESPONSE_MINMAX_DETECTION needs to be followed an integer representing number_of_samples
+
+    feedback:
+        CHANGED_LEVEL+int from SET_LEVEL_CHANGE_DETECTION
+        RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
+        VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
+    """
+
     COMMAND_STR = "$cmd"
 
-    FEEDBACK, START, PAUSE, QUIT, \
-    SET_THRESHOLDS, GET_THRESHOLD_LEVEL, \
-    SET_LEVEL_CHANGE_DETECTION, CHANGED_LEVEL,\
+    FEEDBACK, \
+    START, \
+    PAUSE, \
+    QUIT, \
+    SET_THRESHOLDS,  \
+    GET_THRESHOLD_LEVEL, \
+    SET_LEVEL_CHANGE_DETECTION, \
+    CHANGED_LEVEL,\
     VALUE, FILENAME, \
     GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ, \
-    PING \
-    = map(lambda x: "$cmd" + str(x), range(17))
+    PING,\
+    SET_RESPONSE_MINMAX_DETECTION, \
+    RESPONSE_MINMAX \
+    = map(lambda x: "$cmd" + str(x), range(19))
 
     FEEDBACK_PAUSED = FEEDBACK + "paused"
     FEEDBACK_STARTED = FEEDBACK + "started"
@@ -187,10 +204,15 @@ class Thresholds(object):
         self._thresholds = list(thresholds)
         self._thresholds.sort()
         self._prev_level = None
+        self._minmax = None
 
     @property
     def is_change_detecting(self):
         return self._prev_level is not None
+
+    @property
+    def is_response_minmax_detecting(self):
+        return self._minmax is not None
 
     @property
     def thresholds(self):
@@ -221,12 +243,14 @@ class Thresholds(object):
         returns: current level
         """
         self._prev_level  = self.get_level(value)
+        self._minmax = None
         return self._prev_level
 
     def get_level_change(self, value):
         """return tuple with level_change (boolean) and current level (int)
+        if level change detection is switch on
 
-        Note: after detected level change, change detection is switched off!
+        Note: after detected level change detection is switched off!
         """
 
         if self._prev_level is None:
@@ -240,4 +264,71 @@ class Thresholds(object):
 
     def __str__(self):
         return str(self._thresholds)
+
+    def set_response_minmax_detection(self, value, number_of_samples):
+        """Start response detection
+        Parameters detects minimum and maximum of the response
+            after first level change (length =number_of_samples)
+
+        value: start level
+        polled samples need to feed via get_response_minmax()
+
+        returns: current level
+        """
+
+        lv = self.get_level(value)
+        self._minmax = MinMaxDetector(start_value=lv,
+                                     number_of_samples=number_of_samples)
+        self._prev_level = None
+        return lv
+
+
+    def get_response_minmax(self, value):
+        """checks for response minimum and maximum if set_response_minmax_detection is switch on
+        With this function you add a sample and check if the response can be classified. If so,
+        it returns a tuple with the minimum and maximum response level during the response period
+        otherwise
+            returns None
+
+        tuple with level_change (boolean) and current level (int)
+
+        Note: after response minmax has been determined once response_minmax_detection is switched off!
+        """
+
+        if self._minmax is None:
+            return None
+
+        rtn = self._minmax.process(self.get_level(value))
+        if rtn is not None:
+            # minmax detected
+            self._minmax = None # switch off
+        return rtn
+
+
+class MinMaxDetector(object):
+
+    def __init__(self, start_value, number_of_samples):
+        self._minmax = [start_value, start_value]
+        self._cnt = number_of_samples
+        self._level_change_occurred = False
+
+    def process(self, value):
+        """Returns minmax (tuple) if number of samples after the first
+        level change is reached, otherwise None"""
+
+        if self._cnt <= 0:
+            return tuple(self._minmax)
+
+        if self._level_change_occurred:
+            if value > self._minmax[1]:
+                self._minmax[1] = value
+            elif value < self._minmax[0]:
+                self._minmax[0] = value
+            self._cnt -= 1
+
+        elif self._minmax[0] != value: # level change just occurred
+            self._level_change_occurred = True
+            return self.process(value)
+
+        return None
 

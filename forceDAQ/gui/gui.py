@@ -126,7 +126,7 @@ class GUIStatus(object):
         return False
 
     def check_new_samples(self):
-        """returns only onces true if not changed between calls"""
+        """returns only true if not changed between calls"""
         current_cnt = self.sensor_process.sample_cnt
         if self._last_processed_smpl <= current_cnt:
             # new sample
@@ -135,7 +135,7 @@ class GUIStatus(object):
         return False
 
     def check_thresholds_changed(self):
-        """returns only onces true if not changed between calls"""
+        """returns only true if not changed between calls"""
         if self.thresholds != self._last_thresholds:
             # new sample
             self._last_thresholds = self.thresholds
@@ -191,7 +191,11 @@ class GUIStatus(object):
                 self.thresholds = None
 
     def process_udp_event(self, udp_event):
-        #remote control
+        """remote control
+
+        See commands in forceDAQ_type.GUIRemoteControlCommands
+        """
+
         if self.remote_control and \
                 udp_event.string.startswith(RcCmd.COMMAND_STR):
             self.set_marker = False
@@ -201,27 +205,36 @@ class GUIStatus(object):
                 self.pause_recording = True
             elif udp_event.string == RcCmd.QUIT:
                 self.quit_recording = True
-            elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS):
-                # thresholds
+            elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS): # thresholds
                 try:
                     self.thresholds = loads(
                         udp_event.string[len(RcCmd.SET_THRESHOLDS):])
+                    if not isinstance(self.thresholds, Thresholds): # ensure not strange types
+                        self.thresholds = None
                 except:
-                    self.thresholds = None
-                if not isinstance(self.thresholds, Thresholds): # ensure not strange type
                     self.thresholds = None
 
             elif udp_event.string.startswith(RcCmd.GET_THRESHOLD_LEVEL):
                 if self.thresholds is not None:
-                    tmp = self.thresholds.get_level(
-                                self.history.moving_average[self.level_detection_parameter])
+                    tmp = self.thresholds.get_level(self.moving_average)
                     self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(tmp))
                 else:
                     self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(None))
             elif udp_event.string.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION):
                 if self.thresholds is not None:
-                    self.thresholds.set_level_change_detection(
-                        self.history.moving_average[self.level_detection_parameter])
+                    self.thresholds.set_level_change_detection(self.moving_average)
+
+            elif udp_event.string.startswith(RcCmd.SET_RESPONSE_MINMAX_DETECTION):
+                try:
+                    number_of_samples =  int(loads(
+                        udp_event.string[len(RcCmd.SET_RESPONSE_MINMAX_DETECTION):]))
+                except:
+                    number_of_samples = None
+
+                if self.thresholds is not None and number_of_samples is not None:
+                    self.thresholds.set_response_minmax_detection(
+                        value=self.moving_average,
+                        number_of_samples = number_of_samples)
 
             elif udp_event.string == RcCmd.GET_FX:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
@@ -298,11 +311,16 @@ def _gui_main_loop(exp, recorder, remote_control=False):
         if status.check_new_samples():
             status.update_history()
 
-            if status.thresholds is not None and status.thresholds.is_change_detecting:
+            if status.thresholds is not None:
                 # level change detection
                 level_change, tmp = status.thresholds.get_level_change(status.moving_average)
                 if level_change:
-                        recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+                    recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+                # minmax detection
+                tmp = status.thresholds.get_response_minmax(status.moving_average)
+                if tmp is not None:
+                    recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX + dumps(tmp))
+
 
         ######################## show pause or recording screen
         if status.check_recording_status_change():
@@ -612,3 +630,4 @@ def _draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
                     y_values = scaling.data2pixel(np.array(thresholds.thresholds)))
         else:
             plotter_thread.set_horizontal_lines(y_values=None)
+
