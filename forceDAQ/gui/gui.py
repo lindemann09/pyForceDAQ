@@ -126,7 +126,7 @@ class GUIStatus(object):
         return False
 
     def check_new_samples(self):
-        """returns only onces true if not changed between calls"""
+        """returns only true if not changed between calls"""
         current_cnt = self.sensor_process.sample_cnt
         if self._last_processed_smpl <= current_cnt:
             # new sample
@@ -135,7 +135,7 @@ class GUIStatus(object):
         return False
 
     def check_thresholds_changed(self):
-        """returns only onces true if not changed between calls"""
+        """returns only true if not changed between calls"""
         if self.thresholds != self._last_thresholds:
             # new sample
             self._last_thresholds = self.thresholds
@@ -298,11 +298,15 @@ def _gui_main_loop(exp, recorder, remote_control=False):
         if status.check_new_samples():
             status.update_history()
 
-            if status.thresholds is not None and status.thresholds.is_change_detecting:
-                # level change detection
-                level_change, tmp = status.thresholds.get_level_change(status.moving_average)
-                if level_change:
-                        recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+            if status.thresholds is not None:
+                if status.thresholds.is_change_detecting:
+                    # level change detection
+                    level_change, tmp = status.thresholds.get_level_change(status.moving_average)
+                    if level_change:
+                            recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+                elif status.is_force_response_detection:
+                    status.minmax_detect.process(status.thresholds.get_level(status.moving_average))
+
 
         ######################## show pause or recording screen
         if status.check_recording_status_change():
@@ -612,3 +616,4 @@ def _draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
                     y_values = scaling.data2pixel(np.array(thresholds.thresholds)))
         else:
             plotter_thread.set_horizontal_lines(y_values=None)
+

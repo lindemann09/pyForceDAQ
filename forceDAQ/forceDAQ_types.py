@@ -241,3 +241,33 @@ class Thresholds(object):
     def __str__(self):
         return str(self._thresholds)
 
+    def set_response_detection(self, value, number_of_samples):
+        """
+        Parameters detects minimum & maximum of the response between
+            first level change and
+            the return to the
+        ----------
+        value
+
+        Returns
+        -------
+
+        """
+        self.minmax = MinMaxDetector(self, )
+
+
+
+class MinMaxDetector(object):
+
+    def __inti__(self, start_value, number_of_samples):
+        self.minimum = start_value
+        self.maximum = start_value
+        self._cnt = number_of_samples
+
+    def process(self, value):
+        if self._cnt <= 0:
+
+        if value > self.maximum:
+            self.maximum == value
+        elif value < self.minimum:
+            self.minimum = value
