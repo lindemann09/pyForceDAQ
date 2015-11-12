@@ -176,6 +176,7 @@ class GUIRemoteControlCommands(object):
         RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
         VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
     """
+    #FIXME DOCU REMOTECONTROL
 
     COMMAND_STR = "$cmd"
 

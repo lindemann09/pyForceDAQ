@@ -3,18 +3,18 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
-__author__ = "Oliver Lindemann"
-
-import os
 import atexit
-from time import localtime, strftime,asctime
 import gzip
+import os
+from time import localtime, strftime,asctime
 
+from .. import __version__ as forceDAQVersion
+from ..daq.sensor import SensorSettings, SensorProcess
 from forceDAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
 from forceDAQ_types import GUIRemoteControlCommands as RemoteCmd
 from udp_connection import UDPConnectionProcess
-from daq import SensorSettings, SensorProcess
-from forceDAQ import __version__ as forceDAQVersion
+
+__author__ = "Oliver Lindemann"
 
 
 class DataRecorder(object):

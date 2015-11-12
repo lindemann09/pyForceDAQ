@@ -5,18 +5,20 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import os
-from time import sleep
-import pygame
 from cPickle import dumps, loads
+from time import sleep
+
 import numpy as np
+import pygame
 from expyriment import control, design, stimuli, io, misc
-from forceDAQ import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
-from forceDAQ import __version__ as forceDAQVersion
-from forceDAQ.timer import Timer
-from forceDAQ.data_recorder import DataRecorder, SensorSettings
-from forceDAQ.sensor_history import SensorHistory
-from plotter import PlotterThread, level_indicator, Scaling
+
+from .. import __version__ as forceDAQVersion
+from ..base.data_recorder import DataRecorder, SensorSettings
+from ..base.forceDAQ_types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
+from ..base.sensor_history import SensorHistory
+from ..base.timer import Timer
 from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
+from plotter import PlotterThread, level_indicator, Scaling
 
 MOVING_AVERAGE_SIZE = 5
 
@@ -457,7 +459,7 @@ def _gui_main_loop(exp, recorder, remote_control=False):
                                 size = (400, 50),
                                 #background_colour=(30,30,30),
                                 text_size=15,
-                                text = "n samples recorder: {0}\n".format(
+                                text = "n samples base: {0}\n".format(
                                                     status.sensor_process.sample_cnt) +
                                        "n samples buffered: {0} ({1} seconds)".format(
                                     status.sensor_process.buffer_size,
@@ -566,7 +568,7 @@ def start(remote_control, ask_filename, calibration_file):
 
     recorder = DataRecorder([sensor1], timer=timer,
                             poll_udp_connection=True)
-    sleep(0.1) # wait for recorder init
+    sleep(0.1) # wait for base init
     recorder.determine_biases(n_samples=500)
 
     if remote_control:

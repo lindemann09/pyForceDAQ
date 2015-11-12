@@ -6,14 +6,14 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 __version__ = "0.3"
 
-import os
-from multiprocessing import Process, Event, Queue, sharedctypes
 import atexit
-from time import sleep, time
+import os
 import socket
+from multiprocessing import Process, Event, Queue, sharedctypes
+from time import sleep, time
 
-from timer import Timer, get_time
 from forceDAQ_types import UDPData
+from timer import Timer, get_time
 
 if os.name != "nt":
     import fcntl
