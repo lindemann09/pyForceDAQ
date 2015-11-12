@@ -211,12 +211,17 @@ class Thresholds(object):
         self._minmax = None
 
     @property
-    def is_change_detecting(self):
+    def is_detecting(self):
+        return self._minmax is not None or self._prev_level is not None
+
+    @property
+    def is_level_change_detecting(self):
         return self._prev_level is not None
 
     @property
     def is_response_minmax_detecting(self):
         return self._minmax is not None
+
 
     @property
     def thresholds(self):
@@ -307,9 +312,3 @@ class Thresholds(object):
             # minmax just detected
             self._minmax = None # switch off
         return rtn
-
-    def debug_foo(self):
-        try:
-            return self._minmax.is_sampling_for_minmax
-        except:
-            return False

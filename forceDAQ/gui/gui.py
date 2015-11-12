@@ -49,10 +49,12 @@ class GUIStatus(object):
                  data_min_max,
                  plotter_pixel_min_max,
                  indicator_pixel_min_max,
-                 screen_size):
+                 screen_size,
+                 plot_axis):
 
         self.screen_refresh_interval_indicator = screen_refresh_interval_indicator
         self.screen_refresh_interval_plotter = screen_refresh_interval_plotter
+        self.plot_axis = plot_axis
         self.recorder = recorder
         self.remote_control = remote_control
         self.level_detection_parameter = level_detection_parameter
@@ -184,7 +186,6 @@ class GUIStatus(object):
 
         if self.remote_control and \
                 udp_event.string.startswith(RcCmd.COMMAND_STR):
-            self.set_marker = False
             if udp_event.string == RcCmd.START:
                 self.pause_recording = False
             elif udp_event.string == RcCmd.PAUSE:
@@ -278,7 +279,8 @@ def _main_loop(exp, recorder, remote_control=False):
                        screen_size = exp.screen.size,
                        data_min_max=[-30, 5],
                        plotter_pixel_min_max=[-250, 250],
-                       indicator_pixel_min_max=[-150, 150])
+                       indicator_pixel_min_max=[-150, 150],
+                       plot_axis = True)
 
     # plotter
     plotter_thread = None
@@ -397,12 +399,17 @@ def _main_loop(exp, recorder, remote_control=False):
                         width=plotter_width,
                         position=plotter_position,
                         background_colour=[10,10,10],
-                        axis_colour=misc.constants.C_YELLOW,
-                        plot_axis=False)
+                        axis_colour=misc.constants.C_YELLOW)
                     plotter_thread.start()
+
+                    if status.plot_axis:
+                        plotter_thread.set_horizontal_lines(
+                            y_values = [status.scaling_plotter.data2pixel(0)])
+
                     if status.thresholds is not None:
                         plotter_thread.set_horizontal_lines(
-                            y_values = status.scaling_plotter.data2pixel(np.array(status.thresholds.thresholds)))
+                            y_values = status.scaling_plotter.data2pixel(
+                                np.array(status.thresholds.thresholds)))
 
                 if status.clear_screen:
                     plotter_thread.clear_area()
@@ -415,13 +422,15 @@ def _main_loop(exp, recorder, remote_control=False):
                                     status.sensor_process.Fz], dtype=float)
 
                 if status.thresholds is not None:
-                    status.set_marker = status.thresholds.debug_foo() #DEBUG FIXME
+                    point_marker = status.thresholds.is_detecting
+                else:
+                    point_marker = False
 
                 plotter_thread.add_values(
                     values = status.scaling_plotter.data2pixel(tmp),
-                    set_marker=status.set_marker)
+                    set_marker=status.set_marker,
+                    set_point_marker=point_marker)
                 status.set_marker = False
-
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 

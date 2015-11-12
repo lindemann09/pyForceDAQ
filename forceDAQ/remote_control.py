@@ -23,11 +23,12 @@ def init_udp_connection():
         remote_control.udp
 
     REQUIRED BEFORE USING OTHER FUNCTIONS
+
+    returns udp connection
     """
     global udp
     udp = UDPConnection()
-    print udp
-
+    return udp
 
 def quit():
     global udp
