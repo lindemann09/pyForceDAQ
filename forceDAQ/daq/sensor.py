@@ -101,7 +101,7 @@ class SensorProcess(Process):
 
         """
 
-        # todo: explain usage
+        # todo: docu explain usage
 
         # type checks
         if not isinstance(settings, SensorSettings):

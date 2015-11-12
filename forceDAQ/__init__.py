@@ -1,4 +1,4 @@
-__version__ = "0.5.4"
+__version__ = "0.6"
 __author__ = "Oliver Lindemann"
 
 """
@@ -16,9 +16,9 @@ import relevant stuff to program your own recorder:
     from forceDAQ import recorder
 ``
 
-import relevant stuff for remote control:
+import relevant stuff for remote control of the GUI recorder:
 ``
-    from forceDAQ import remote_control as daq
+    from forceDAQ import remote_control
 ``
 """
 

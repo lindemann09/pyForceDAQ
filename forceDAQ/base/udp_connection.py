@@ -211,7 +211,7 @@ class UDPConnectionProcess(Process):
 
         # connecting to a server
         # TODO
-    """        # todo
+    """        # todo docu
 
     def __init__(self, sync_timer):
         """Initialize UDPConnectionProcess
@@ -225,7 +225,7 @@ class UDPConnectionProcess(Process):
         sync_clock : Clock
             the internal clock for timestamps will synchronized with this clock
 
-        """ # todo
+        """ # todo docu
 
         super(UDPConnectionProcess, self).__init__()
         self._sync_timer = sync_timer

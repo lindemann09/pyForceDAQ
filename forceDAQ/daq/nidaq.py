@@ -113,6 +113,6 @@ class DAQReadAnalog(PyDAQmx.Task):
                                 read_buffer,
                                 self.read_array_size_in_samples,
                                 ct.byref(read_samples),
-                                None) # TODO: process error?
+                                None)
 
         return read_buffer, read_samples.value

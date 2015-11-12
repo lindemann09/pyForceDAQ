@@ -117,7 +117,7 @@ class DataRecorder(object):
                 if isinstance(d, ForceData):
                     self._file.write("%d,%d,%.4f,%.4f,%.4f\n" % \
                                  (d.device_id, d.time,
-                                  d.Fx, d.Fy, d.Fz)) # write ascii data to file todo does not write trigger or torque
+                                  d.Fx, d.Fy, d.Fz))
                 elif isinstance(d, DAQEvents):
                      self._file.write("%d,%d,%s,0,0\n" % \
                                  (CODE_SOFTTRIGGER, d.time, str(d.code))) # write ascii data to fill todo: DOC output format

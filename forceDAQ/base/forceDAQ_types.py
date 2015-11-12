@@ -1,6 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
+from misc import MinMaxDetector
 
 CODE_SOFTTRIGGER = 88
 CODE_UDPDATA = 99
@@ -169,14 +170,14 @@ class DAQEvents(object):
 class GUIRemoteControlCommands(object):
     """
     SET_THRESHOLDS needs to be followed by a threshold object
-    SET_RESPONSE_MINMAX_DETECTION needs to be followed an integer representing number_of_samples
+    SET_RESPONSE_MINMAX_DETECTION needs to be followed an integer representing duration of sampling
 
     feedback:
         CHANGED_LEVEL+int from SET_LEVEL_CHANGE_DETECTION
         RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
         VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
     """
-    #FIXME DOCU REMOTECONTROL
+    #TODO DOCU REMOTECONTROL
 
     COMMAND_STR = "$cmd"
 
@@ -192,11 +193,13 @@ class GUIRemoteControlCommands(object):
     GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ, \
     PING,\
     SET_RESPONSE_MINMAX_DETECTION, \
-    RESPONSE_MINMAX \
-    = map(lambda x: "$cmd" + str(x), range(19))
+    RESPONSE_MINMAX,\
+    GET_VERSION \
+    = map(lambda x: "$cmd{0:02d}".format(x), range(20))
 
     FEEDBACK_PAUSED = FEEDBACK + "paused"
     FEEDBACK_STARTED = FEEDBACK + "started"
+
 
 class Thresholds(object):
 
@@ -266,7 +269,7 @@ class Thresholds(object):
     def __str__(self):
         return str(self._thresholds)
 
-    def set_response_minmax_detection(self, value, number_of_samples):
+    def set_response_minmax_detection(self, value, duration):
         """Start response detection
         Parameters detects minimum and maximum of the response
             after first level change (length =number_of_samples)
@@ -279,7 +282,7 @@ class Thresholds(object):
 
         lv = self.get_level(value)
         self._minmax = MinMaxDetector(start_value=lv,
-                                     number_of_samples=number_of_samples)
+                                     duration=duration)
         self._prev_level = None
         return lv
 
@@ -301,35 +304,12 @@ class Thresholds(object):
 
         rtn = self._minmax.process(self.get_level(value))
         if rtn is not None:
-            # minmax detected
+            # minmax just detected
             self._minmax = None # switch off
         return rtn
 
-
-class MinMaxDetector(object):
-
-    def __init__(self, start_value, number_of_samples):
-        self._minmax = [start_value, start_value]
-        self._cnt = number_of_samples
-        self._level_change_occurred = False
-
-    def process(self, value):
-        """Returns minmax (tuple) if number of samples after the first
-        level change is reached, otherwise None"""
-
-        if self._cnt <= 0:
-            return tuple(self._minmax)
-
-        if self._level_change_occurred:
-            if value > self._minmax[1]:
-                self._minmax[1] = value
-            elif value < self._minmax[0]:
-                self._minmax[0] = value
-            self._cnt -= 1
-
-        elif self._minmax[0] != value: # level change just occurred
-            self._level_change_occurred = True
-            return self.process(value)
-
-        return None
-
+    def debug_foo(self):
+        try:
+            return self._minmax.is_sampling_for_minmax
+        except:
+            return False

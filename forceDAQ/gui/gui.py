@@ -38,21 +38,6 @@ def _initialize(exp, remote_control=None):
 
     return remote_control
 
-
-#def wait_for_start_recording_event(exp, udp_connection):
-#    if udp_connection is None:
-#        udp_connection.poll_last_data()  #clear buffer
-#        stimuli.TextLine(text="Waiting to UDP start trigger...").present()
-#        s = None
-#        while s is None or not s.lower().startswith('start'):
-#            exp.keyboard.check()
-#            s = udp_connection.poll()
-#        udp_connection.send('confirm')
-#    else:
-#        stimuli.TextLine(text
-#                         ="Press key to start recording").present()
-#        exp.keyboard.wait()
-
 class GUIStatus(object):
 
     def __init__(self,
@@ -129,10 +114,9 @@ class GUIStatus(object):
 
     def check_new_samples(self):
         """returns only true if not changed between calls"""
-        current_cnt = self.sensor_process.sample_cnt
-        if self._last_processed_smpl <= current_cnt:
+        if self._last_processed_smpl < self.sensor_process.sample_cnt:
             # new sample
-            self._last_processed_smpl = current_cnt
+            self._last_processed_smpl = self.sensor_process.sample_cnt
             return True
         return False
 
@@ -207,6 +191,7 @@ class GUIStatus(object):
                 self.pause_recording = True
             elif udp_event.string == RcCmd.QUIT:
                 self.quit_recording = True
+
             elif udp_event.string.startswith(RcCmd.SET_THRESHOLDS): # thresholds
                 try:
                     self.thresholds = loads(
@@ -228,16 +213,18 @@ class GUIStatus(object):
 
             elif udp_event.string.startswith(RcCmd.SET_RESPONSE_MINMAX_DETECTION):
                 try:
-                    number_of_samples =  int(loads(
+                    duration =  int(loads(
                         udp_event.string[len(RcCmd.SET_RESPONSE_MINMAX_DETECTION):]))
                 except:
-                    number_of_samples = None
+                    duration = None
 
-                if self.thresholds is not None and number_of_samples is not None:
+                if self.thresholds is not None and duration is not None:
                     self.thresholds.set_response_minmax_detection(
-                        value=self.moving_average,
-                        number_of_samples = number_of_samples)
+                        value = self.moving_average, duration = duration)
 
+            elif udp_event.string == RcCmd.GET_VERSION:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                            dumps(forceDAQVersion))
             elif udp_event.string == RcCmd.GET_FX:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
                                             dumps(self.sensor_process.Fx))
@@ -272,7 +259,7 @@ class GUIStatus(object):
         return self.history.moving_average[self.level_detection_parameter]
 
 
-def _gui_main_loop(exp, recorder, remote_control=False):
+def _main_loop(exp, recorder, remote_control=False):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -284,7 +271,7 @@ def _gui_main_loop(exp, recorder, remote_control=False):
     plotter_position = (0, -30)
 
     status = GUIStatus(screen_refresh_interval_indicator= 300,
-                       screen_refresh_interval_plotter= 10,
+                       screen_refresh_interval_plotter= 50,
                        recorder = recorder,
                        remote_control=remote_control,
                        level_detection_parameter = ForceData.forces_names.index("Fz"),  # only one dimension
@@ -427,10 +414,14 @@ def _gui_main_loop(exp, recorder, remote_control=False):
                     tmp = np.array([status.sensor_process.Fx, status.sensor_process.Fy,
                                     status.sensor_process.Fz], dtype=float)
 
+                if status.thresholds is not None:
+                    status.set_marker = status.thresholds.debug_foo() #DEBUG FIXME
+
                 plotter_thread.add_values(
                     values = status.scaling_plotter.data2pixel(tmp),
                     set_marker=status.set_marker)
                 status.set_marker = False
+
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
@@ -606,8 +597,8 @@ def start(remote_control, ask_filename, calibration_file):
                             time_stamp_filename=False,
                             comment_line="")
 
-    _gui_main_loop(exp, recorder=recorder,
-                    remote_control=remote_control)
+    _main_loop(exp, recorder=recorder,
+               remote_control=remote_control)
 
     recorder.quit()
     control.end()
