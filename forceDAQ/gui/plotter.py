@@ -187,9 +187,7 @@ class Plotter(PGSurface):
                  background_colour=(180, 180, 180),
                  marker_colour=(200, 200, 200),
                  position=None,
-                 axis_colour=None,
-                 plot_axis = False):
-        self._plot_axis = plot_axis
+                 axis_colour=None):
         self.n_data_rows = n_data_rows
         self.data_row_colours = data_row_colours
         self.width = width
@@ -216,19 +214,6 @@ class Plotter(PGSurface):
         """tuple with lower and upper values"""
         self._y_range = values
         self._height = self._y_range[1] - self._y_range[0]
-        self.plot_axis = self._plot_axis
-
-    @property
-    def plot_axis(self):
-        return self._plot_axis
-
-    @plot_axis.setter
-    def plot_axis(self, value):
-        if value:
-            self._plot_axis = (self._y_range[0] <= 0 & self._y_range[1] >= 0)
-        else:
-            self._plot_axis = False
-
 
     @property
     def data_row_colours(self):
@@ -250,19 +235,19 @@ class Plotter(PGSurface):
 
     def clear_area(self):
         self.pixel_array[:, :] = self._background_colour
-        if self._plot_axis:
-            self.pixel_array[:, self._y_range[1]:self._y_range[1] + 1] = \
-                self.axis_colour
+
 
     def set_horizontal_line(self, y_values):
+        """y_values: array"""
         try:
             self._horizontal_lines = np.array(y_values, dtype=int)
         except:
             self._horizontal_lines = None
 
-    def write_values(self, position, values, set_marker=False):
+    def write_values(self, position, values, set_marker=False,
+                     set_point_marker=False):
         """
-        horizontal_line: list or None
+        additional points: np.array
         """
 
         if set_marker:
@@ -270,13 +255,13 @@ class Plotter(PGSurface):
         else:
             self.pixel_array[position, :] = self._background_colour
 
+        if set_point_marker:
+            self.pixel_array[position, 0:2] = self.marker_colour
+
+
         if self._horizontal_lines is not None:
             for c in (self._y_range[1] - self._horizontal_lines):
                 self.pixel_array[:, c:c+1] = self.marker_colour
-
-        if self._plot_axis and self.axis_colour != self._background_colour:
-            self.pixel_array[position, self._y_range[1]:self._y_range[1] + 1] = \
-                self.axis_colour
 
         for c, plot_value in enumerate(self._y_range[1] - \
                 np.array(values, dtype=int)):
@@ -294,7 +279,8 @@ class Plotter(PGSurface):
             self._previous[c] = plot_value
 
     def add_values(self, values, set_marker=False):
-        """
+        """ high level function of write values with type check and shifting to left
+        not used by plotter thread
         """
         if type(values) is not Numpy_array_type and \
                 not isinstance(values, tuple) and \
@@ -315,8 +301,7 @@ class PlotterThread(threading.Thread):
                  background_colour=(80, 80, 80),
                  marker_colour=(200, 200, 200),
                  position=None,
-                 axis_colour=None,
-                 plot_axis = False):
+                 axis_colour=None):
         super(PlotterThread, self).__init__()
         self._plotter = Plotter(n_data_rows=n_data_rows,
                                 data_row_colours=data_row_colours,
@@ -324,8 +309,7 @@ class PlotterThread(threading.Thread):
                                 background_colour=background_colour,
                                 marker_colour=marker_colour,
                                 position=position,
-                                axis_colour=axis_colour,
-                                plot_axis=plot_axis)
+                                axis_colour=axis_colour)
         self._new_values = []
         self._lock_new_values = threading.Lock()
         self._running = threading.Event()
@@ -389,22 +373,25 @@ class PlotterThread(threading.Thread):
                 for x in range(-1 * n, 0):
                     self._plotter.write_values(position=x,
                                                values=values[x][0],
-                                               set_marker=values[x][1])
+                                               set_marker=values[x][1],
+                                               set_point_marker=values[x][2])
                 # Expyriment present
                 lock_expyriment.acquire()
                 self._plotter.present(update=False, clear=False)
                 lock_expyriment.release()
 
     def set_horizontal_lines(self, y_values):
-        """adds new values to the plotter"""
+        """adds new values to the plotter
+        y_values has to be an array
+        """
         self._lock_new_values.acquire()
         self._plotter.set_horizontal_line(y_values=y_values)
         self._lock_new_values.release()
 
-    def add_values(self, values, set_marker=False):
+    def add_values(self, values, set_marker=False, set_point_marker=False):
         """adds new values to the plotter"""
         self._lock_new_values.acquire()
-        self._new_values.append((values, set_marker))
+        self._new_values.append((values, set_marker, set_point_marker))
         self._lock_new_values.release()
 
 

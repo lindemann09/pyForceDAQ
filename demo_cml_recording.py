@@ -4,7 +4,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ import ForceData, DAQEvents, Timer, DataRecorder, SensorSettings
+from forceDAQ.recorder import ForceData, DAQEvents, Timer, DataRecorder, SensorSettings
 
 if __name__  == "__main__":
     timer = Timer()
@@ -13,7 +13,7 @@ if __name__  == "__main__":
     sensor1 = SensorSettings(device_id=1, sync_timer=timer,
                              calibration_file="FT_demo.cal")
 
-    # create a data recorder
+    # create a data base
     recorder = DataRecorder(force_sensor_settings= [sensor1],
                             timer=timer,
                             poll_udp_connection=False)

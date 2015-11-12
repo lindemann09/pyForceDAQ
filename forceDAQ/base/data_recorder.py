@@ -3,18 +3,18 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
-__author__ = "Oliver Lindemann"
-
-import os
 import atexit
-from time import localtime, strftime,asctime
 import gzip
+import os
+from time import localtime, strftime,asctime
 
+from .. import __version__ as forceDAQVersion
+from ..daq.sensor import SensorSettings, SensorProcess
 from forceDAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
 from forceDAQ_types import GUIRemoteControlCommands as RemoteCmd
 from udp_connection import UDPConnectionProcess
-from daq import SensorSettings, SensorProcess
-from forceDAQ import __version__ as forceDAQVersion
+
+__author__ = "Oliver Lindemann"
 
 
 class DataRecorder(object):
@@ -117,7 +117,7 @@ class DataRecorder(object):
                 if isinstance(d, ForceData):
                     self._file.write("%d,%d,%.4f,%.4f,%.4f\n" % \
                                  (d.device_id, d.time,
-                                  d.Fx, d.Fy, d.Fz)) # write ascii data to file todo does not write trigger or torque
+                                  d.Fx, d.Fy, d.Fz))
                 elif isinstance(d, DAQEvents):
                      self._file.write("%d,%d,%s,0,0\n" % \
                                  (CODE_SOFTTRIGGER, d.time, str(d.code))) # write ascii data to fill todo: DOC output format

@@ -5,16 +5,17 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = 'Oliver Lindemann'
 
+import atexit
 import ctypes as ct
 from multiprocessing import Process, Event, sharedctypes, Pipe
-import atexit
 from time import sleep
+
 import numpy as np
 
-from pyATIDAQ import ATI_CDLL
+from ..base.forceDAQ_types import ForceData, DAQEvents
+from ..base.timer import Timer
 from nidaq import DAQConfiguration, DAQReadAnalog
-from forceDAQ import ForceData, DAQEvents
-from forceDAQ.timer import Timer
+from pyATIDAQ import ATI_CDLL
 
 
 class SensorSettings(DAQConfiguration):
@@ -100,7 +101,7 @@ class SensorProcess(Process):
 
         """
 
-        # todo: explain usage
+        # todo: docu explain usage
 
         # type checks
         if not isinstance(settings, SensorSettings):
