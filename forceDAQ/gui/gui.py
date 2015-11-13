@@ -549,7 +549,8 @@ def start(remote_control,
           write_Ty = False,
           write_Tz = False,
           write_trigger1 = True,
-          write_trigger2 = False):
+          write_trigger2 = False,
+          zip_data=False):
     """start gui
     remote_control should be None (ask) or True or False
 
@@ -622,7 +623,8 @@ def start(remote_control,
 
 
     recorder.open_data_file(filename,
-                            directory="data", zipped=False,
+                            directory="data",
+                            zipped=zip_data,
                             time_stamp_filename=False,
                             comment_line="")
 
