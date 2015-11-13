@@ -245,7 +245,7 @@ class UDPConnectionProcess(Process):
         self._ip_address = sharedctypes.Array('c', 'xxx.xxx.xxx.xxx')
         self._event_ignore_tag = event_ignore_tag
 
-        if isinstance(event_trigger, Event):
+        if isinstance(event_trigger, type(Event)  ):
             event_trigger = (event_trigger)
         try:
             self._event_trigger = tuple(event_trigger)
@@ -286,7 +286,7 @@ class UDPConnectionProcess(Process):
                     self.receive_queue.put(UDPData(string=data,
                                                     time=timer.time))
 
-                    if not data.string.startswith(self._event_ignore_tag):
+                    if not data.startswith(self._event_ignore_tag):
                         for ev in self._event_trigger: # set trigger
                             ev.set()
                 try:

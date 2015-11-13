@@ -135,12 +135,17 @@ class DataRecorder(object):
             if self._file is not None:
                 if isinstance(d, ForceData):
                     line = "{0},".format(d.time)
-                    if self._write_deviceid: line += "{0},".format(d.device_id)
+                    if self._write_deviceid:
+                        line += "{0},".format(d.device_id)
                     for x in range(6):
                         if self._write_forces[x]:
                             line += float_format.format(d.forces[x])
-                    if self._write_trigger[0]: line += float_format.format(d.trigger[0])
-                    if self._write_trigger[1]: line += float_format.format(d.trigger[1])
+                    for x in range(2):
+                        if self._write_trigger[x]:
+                            if isinstance(d.trigger[x], int):
+                                line += "{0},".format(d.trigger[x])
+                            else:
+                                line += float_format.format(d.trigger[x])
                     self._file.write(line[:-1] + NEWLINE)
 
                 elif isinstance(d, DAQEvents):
@@ -318,10 +323,10 @@ class DataRecorder(object):
             if self._write_deviceid: line += "device_tag,"
             for x in range(6):
                 if self._write_forces[x]:
-                    line += ForceData.forces_names[x]
+                    line += ForceData.forces_names[x] + ","
             if self._write_trigger[0]: line += "trigger1,"
             if self._write_trigger[1]: line += "trigger2,"
-            self._file.write(line + NEWLINE)
+            self._file.write(line[:-1] + NEWLINE)
 
         return self.filename
 
