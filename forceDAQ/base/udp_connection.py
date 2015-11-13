@@ -210,20 +210,28 @@ class UDPConnectionProcess(Process):
     Example::
 
         # connecting to a server
-        # TODO
     """        # todo docu
 
-    def __init__(self, sync_timer):
+    def __init__(self, sync_timer, event_trigger = (), event_ignore_tag = None):
         """Initialize UDPConnectionProcess
 
         Parameters
         ----------
         receive_queue: multiprocessing.Queue
             the queue to which the received data should be put
+
         peer_ip : string
             the IP of the peer to which the connection should be established
+
         sync_clock : Clock
             the internal clock for timestamps will synchronized with this clock
+
+        event_trigger: multiprocessing.Event() (or list of..)
+            event trigger(s) to be set id udp event (not command) is received
+            typically from a sensor recording processes
+
+        event_ignore_tag:
+            udp data that start with this tag will be ignored for event triggering
 
         """ # todo docu
 
@@ -235,6 +243,15 @@ class UDPConnectionProcess(Process):
         self._event_stop_request = Event()
         self._event_is_polling = Event()
         self._ip_address = sharedctypes.Array('c', 'xxx.xxx.xxx.xxx')
+        self._event_ignore_tag = event_ignore_tag
+
+        if isinstance(event_trigger, type(Event)  ):
+            event_trigger = (event_trigger)
+        try:
+            self._event_trigger = tuple(event_trigger)
+        except:
+            self._event_trigger = ()
+
 
         atexit.register(self.stop)
 
@@ -268,12 +285,14 @@ class UDPConnectionProcess(Process):
                 if data is not None:
                     self.receive_queue.put(UDPData(string=data,
                                                     time=timer.time))
+
+                    if not data.startswith(self._event_ignore_tag):
+                        for ev in self._event_trigger: # set trigger
+                            ev.set()
                 try:
-                    send_data = self.send_queue.get_nowait()
+                    udp_connection.send(self.send_queue.get_nowait())
                 except:
-                    send_data = None
-                if send_data is not None:
-                    udp_connection.send(send_data)
+                    pass
 
                 # has connection changed?
                 if self.event_is_connected.is_set() != udp_connection.is_connected:

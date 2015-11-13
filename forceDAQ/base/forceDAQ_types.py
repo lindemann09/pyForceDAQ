@@ -3,8 +3,10 @@ __author__ = 'Oliver Lindemann'
 import ctypes as ct
 from misc import MinMaxDetector
 
-CODE_SOFTTRIGGER = 88
-CODE_UDPDATA = 99
+# tag in data output
+TAG_COMMENTS = "#"
+TAG_SOFTTRIGGER = TAG_COMMENTS + "T"
+TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
 CTYPE_FORCES = ct.c_float * 600
 CTYPE_TRIGGER = ct.c_float * 2
@@ -22,16 +24,13 @@ class ForceData(object):
         * Fx,  Fy, & Fz
         * Tx, Ty, & Tz
         * trigger1 & trigger2
-        * time
 
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
-    str_variable_names = "device_id, time, Fx, Fy, Fz, Tx, Ty, Tz, " + \
-                     "trigger1, trigger2"
 
     def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
-                 device_id=0):
+                 device_id=0, trigger_threshold=0.4):
         """Create a ForceData object
         Parameters
         ----------
@@ -44,12 +43,20 @@ class ForceData(object):
         trigger: array of two floats
             two trigger values: [trigger1, trigger2]
 
+        trigger_threshold: float (default = 0.4)
+            if abs(trigger1/2) < trigger_threshold the threshold it will considered as noise
+            and set to zero
+
         """
 
         self.time = time
         self.device_id = device_id
         self.forces = forces
-        self.trigger = trigger
+        self.trigger = list(trigger)
+        if abs(self.trigger[0]) < trigger_threshold:
+            self.trigger[0] = 0
+        if abs(self.trigger[1]) < trigger_threshold:
+            self.trigger[1] = 0
 
     def __str__(self):
         """converts data to string. """
@@ -106,11 +113,11 @@ class ForceData(object):
 
     @property
     def Tz(self):
-        return self.forces[3]
+        return self.forces[5]
 
     @Tz.setter
     def Tz(self, value):
-        self.forces[3] = value
+        self.forces[5] = value
 
     @property
     def ctypes_struct(self):
@@ -122,7 +129,7 @@ class ForceData(object):
         self.device_id = struct.device_id
         self.time = struct.time
         self.force = struct.forces
-        self.trigger = struct.triger
+        self.trigger = struct.trigger
 
 
 
@@ -142,6 +149,10 @@ class UDPData(object):
         """
         self.time = time
         self.string = string
+
+    @property
+    def is_remote_control_command(self):
+        return self.string.startswith(GUIRemoteControlCommands.COMMAND_STR)
 
 
 
@@ -176,7 +187,10 @@ class GUIRemoteControlCommands(object):
         CHANGED_LEVEL+int from SET_LEVEL_CHANGE_DETECTION
         RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
         VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
+
+    see also UDPConnection constants!
     """
+
     #TODO DOCU REMOTECONTROL
 
     COMMAND_STR = "$cmd"

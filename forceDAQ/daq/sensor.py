@@ -118,6 +118,7 @@ class SensorProcess(Process):
         self._event_sending_data = Event()
         self._event_new_data = Event()
         self.event_bias_is_available = Event()
+        self.event_trigger = Event()
 
         self._last_Fx = sharedctypes.RawValue(ct.c_float)
         self._last_Fy = sharedctypes.RawValue(ct.c_float)
@@ -234,6 +235,10 @@ class SensorProcess(Process):
                 self._sample_cnt.value += 1
 
                 if self._return_buffer:
+                    if self.event_trigger.is_set():
+                        self.event_trigger.clear()
+                        d.trigger[0] = 1
+
                     buffer.append(d)
                     self._buffer_size.value = len(buffer)
 
@@ -248,6 +253,7 @@ class SensorProcess(Process):
                     is_polling = False
 
                 if self._return_buffer and self._buffer_size.value>0:
+                    # sending data to recorder
                     self._event_sending_data.set()
                     chks = self._chunk_size
                     while len(buffer)>0:
