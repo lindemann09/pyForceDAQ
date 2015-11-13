@@ -184,8 +184,7 @@ class GUIStatus(object):
         See commands in forceDAQ_type.GUIRemoteControlCommands
         """
 
-        if self.remote_control and \
-                udp_event.string.startswith(RcCmd.COMMAND_STR):
+        if self.remote_control and udp_event.is_remote_control_command:
             if udp_event.string == RcCmd.START:
                 self.pause_recording = False
             elif udp_event.string == RcCmd.PAUSE:
@@ -549,8 +548,8 @@ def start(remote_control,
           write_Tx = False,
           write_Ty = False,
           write_Tz = False,
-          write_hardware_trigger1 = False,
-          write_hardware_trigger2 = False):
+          write_trigger1 = True,
+          write_trigger2 = False):
     """start gui
     remote_control should be None (ask) or True or False
 
@@ -586,8 +585,8 @@ def start(remote_control,
                  write_Tx = write_Tx,
                  write_Ty = write_Ty,
                  write_Tz = write_Tz,
-                 write_hardware_trigger1 = write_hardware_trigger1,
-                 write_hardware_trigger2 = write_hardware_trigger2)
+                 write_trigger1= write_trigger1,
+                 write_trigger2= write_trigger2)
 
     sleep(0.1) # wait for base init
     recorder.determine_biases(n_samples=500)

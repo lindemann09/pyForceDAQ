@@ -87,7 +87,7 @@ class Sensor(DAQReadAnalog):
         return ForceData(time=self.timer.time, device_id=self.device_id,
                          forces=self._atidaq.convertToFT(
                              read_buffer[Sensor.SENSOR_CHANNELS]),
-                         hardware_trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
+                         trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
 
 
@@ -118,6 +118,7 @@ class SensorProcess(Process):
         self._event_sending_data = Event()
         self._event_new_data = Event()
         self.event_bias_is_available = Event()
+        self.event_trigger = Event()
 
         self._last_Fx = sharedctypes.RawValue(ct.c_float)
         self._last_Fy = sharedctypes.RawValue(ct.c_float)
@@ -234,6 +235,10 @@ class SensorProcess(Process):
                 self._sample_cnt.value += 1
 
                 if self._return_buffer:
+                    if self.event_trigger.is_set():
+                        self.event_trigger.clear()
+                        d.trigger[0] = 1
+
                     buffer.append(d)
                     self._buffer_size.value = len(buffer)
 

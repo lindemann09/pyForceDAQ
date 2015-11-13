@@ -23,14 +23,13 @@ class ForceData(object):
         * device_id
         * Fx,  Fy, & Fz
         * Tx, Ty, & Tz
-        * trigger1 & trigger2  (hardware trigger)
-        * time
+        * trigger1 & trigger2
 
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
-    def __init__(self, time=0, forces=[0] * 6, hardware_trigger=(0, 0),
+    def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
                  device_id=0):
         """Create a ForceData object
         Parameters
@@ -49,7 +48,7 @@ class ForceData(object):
         self.time = time
         self.device_id = device_id
         self.forces = forces
-        self.hardware_trigger = hardware_trigger
+        self.trigger = trigger
 
     def __str__(self):
         """converts data to string. """
@@ -61,7 +60,7 @@ class ForceData(object):
                                                            self.forces[3],
                                                            self.forces[4],
                                                            self.forces[5])
-        txt += ",%.4f,%.4f" % (self.hardware_trigger[0], self.hardware_trigger[1])
+        txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
         return txt
 
     @property
@@ -115,14 +114,14 @@ class ForceData(object):
     @property
     def ctypes_struct(self):
         return CTypesForceData(self.device_id, self.time,
-              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.hardware_trigger))
+              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
         self.device_id = struct.device_id
         self.time = struct.time
         self.force = struct.forces
-        self.hardware_trigger = struct.trigger
+        self.trigger = struct.trigger
 
 
 
@@ -142,6 +141,10 @@ class UDPData(object):
         """
         self.time = time
         self.string = string
+
+    @property
+    def is_remote_control_command(self):
+        return self.string.startswith(GUIRemoteControlCommands.COMMAND_STR)
 
 
 
@@ -176,7 +179,10 @@ class GUIRemoteControlCommands(object):
         CHANGED_LEVEL+int from SET_LEVEL_CHANGE_DETECTION
         RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
         VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
+
+    see also UDPConnection constants!
     """
+
     #TODO DOCU REMOTECONTROL
 
     COMMAND_STR = "$cmd"
