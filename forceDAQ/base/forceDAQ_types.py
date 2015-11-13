@@ -3,8 +3,10 @@ __author__ = 'Oliver Lindemann'
 import ctypes as ct
 from misc import MinMaxDetector
 
-CODE_SOFTTRIGGER = 88
-CODE_UDPDATA = 99
+# tag in data output
+TAG_COMMENTS = "#"
+TAG_SOFTTRIGGER = TAG_COMMENTS + "T"
+TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
 CTYPE_FORCES = ct.c_float * 600
 CTYPE_TRIGGER = ct.c_float * 2
@@ -21,16 +23,14 @@ class ForceData(object):
         * device_id
         * Fx,  Fy, & Fz
         * Tx, Ty, & Tz
-        * trigger1 & trigger2
+        * trigger1 & trigger2  (hardware trigger)
         * time
 
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
-    str_variable_names = "device_id, time, Fx, Fy, Fz, Tx, Ty, Tz, " + \
-                     "trigger1, trigger2"
 
-    def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
+    def __init__(self, time=0, forces=[0] * 6, hardware_trigger=(0, 0),
                  device_id=0):
         """Create a ForceData object
         Parameters
@@ -49,7 +49,7 @@ class ForceData(object):
         self.time = time
         self.device_id = device_id
         self.forces = forces
-        self.trigger = trigger
+        self.hardware_trigger = hardware_trigger
 
     def __str__(self):
         """converts data to string. """
@@ -61,7 +61,7 @@ class ForceData(object):
                                                            self.forces[3],
                                                            self.forces[4],
                                                            self.forces[5])
-        txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
+        txt += ",%.4f,%.4f" % (self.hardware_trigger[0], self.hardware_trigger[1])
         return txt
 
     @property
@@ -106,23 +106,23 @@ class ForceData(object):
 
     @property
     def Tz(self):
-        return self.forces[3]
+        return self.forces[5]
 
     @Tz.setter
     def Tz(self, value):
-        self.forces[3] = value
+        self.forces[5] = value
 
     @property
     def ctypes_struct(self):
         return CTypesForceData(self.device_id, self.time,
-              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
+              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.hardware_trigger))
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
         self.device_id = struct.device_id
         self.time = struct.time
         self.force = struct.forces
-        self.trigger = struct.triger
+        self.hardware_trigger = struct.trigger
 
 
 

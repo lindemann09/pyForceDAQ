@@ -6,4 +6,11 @@ if __name__=="__main__":
     remote_control = True
     gui.start(remote_control=remote_control,
                   ask_filename=not remote_control,
-                  calibration_file="FT_demo.cal")
+                  calibration_file="FT_demo.cal",
+                  write_deviceid = False,
+                  write_Fx = True,
+                  write_Fy = True,
+                  write_Fz = True,
+                  write_Tx = False,
+                  write_Ty = False,
+                  write_Tz = False)

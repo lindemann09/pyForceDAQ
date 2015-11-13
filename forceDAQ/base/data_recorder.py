@@ -3,6 +3,9 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
+__author__ = "Oliver Lindemann"
+
+
 import atexit
 import gzip
 import os
@@ -10,23 +13,35 @@ from time import localtime, strftime,asctime
 
 from .. import __version__ as forceDAQVersion
 from ..daq.sensor import SensorSettings, SensorProcess
-from forceDAQ_types import ForceData, UDPData, DAQEvents, CODE_SOFTTRIGGER, CODE_UDPDATA
+from forceDAQ_types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, TAG_UDPDATA, TAG_COMMENTS
 from forceDAQ_types import GUIRemoteControlCommands as RemoteCmd
 from udp_connection import UDPConnectionProcess
 
-__author__ = "Oliver Lindemann"
-
+NEWLINE = "\n"
 
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
     def __init__(self, force_sensor_settings, timer,
-                 poll_udp_connection=False):
+                 poll_udp_connection=False,
+                 write_deviceid = False,
+                 write_Fx = True,
+                 write_Fy = True,
+                 write_Fz = True,
+                 write_Tx = False,
+                 write_Ty = False,
+                 write_Tz = False,
+                 write_hardware_trigger1 = False,
+                 write_hardware_trigger2 = False):
 
 
         """queue_data will be saved
         see sensorprocess.__init__
         """
+
+        self._write_deviceid = write_deviceid
+        self._write_forces = [write_Fx, write_Fy, write_Fz, write_Tx, write_Ty, write_Tz]
+        self._write_hw_trigger = [write_hardware_trigger1, write_hardware_trigger2]
 
         self.timer = timer
         #create sensor processes
@@ -101,38 +116,49 @@ class DataRecorder(object):
         self._write_data(buffer)
         return buffer
 
-    def _write_data(self, data_buffer, recording_screen=None):
+    def _write_data(self, data_buffer,
+                    recording_screen=None,
+                    float_decimal_places=4):
         """ writes data to disk and set counters
 
-        ignore UDP remote control commands
+        ignores UDP remote control commands
         """
+        #TODO docu output format
 
+        BLOCKSIZE = 10000 # for recording screen feedback only
+
+        float_format = "{0:." + str(float_decimal_places) + "f},"
         l = len(data_buffer)
-        blocksize = 10000 # for recording screen feedback only
         for c, d in enumerate(data_buffer):
             if isinstance(d, ForceData):
                 self.sample_counter[d.device_id] += 1
 
             if self._file is not None:
                 if isinstance(d, ForceData):
-                    self._file.write("%d,%d,%.4f,%.4f,%.4f\n" % \
-                                 (d.device_id, d.time,
-                                  d.Fx, d.Fy, d.Fz))
+                    line = "{0},".format(d.time)
+                    if self._write_deviceid: line += "{0},".format(d.device_id)
+                    for x in range(6):
+                        if self._write_forces[x]:
+                            line += float_format.format(d.forces[x])
+                    if self._write_hw_trigger[0]: line += float_format.format(d.hardware_trigger[0])
+                    if self._write_hw_trigger[1]: line += float_format.format(d.hardware_trigger[1])
+                    self._file.write(line[:-1] + NEWLINE)
+
                 elif isinstance(d, DAQEvents):
-                     self._file.write("%d,%d,%s,0,0\n" % \
-                                 (CODE_SOFTTRIGGER, d.time, str(d.code))) # write ascii data to fill todo: DOC output format
+                    self._file.write("{0},{1},{2}".format(TAG_SOFTTRIGGER, d.time, str(d.code)) + NEWLINE)
+
                 elif isinstance(d, UDPData):
                     if not d.string.startswith(RemoteCmd.COMMAND_STR):
-                        self._file.write("%d,%d,%s,0,0\n" % \
-                                     (CODE_UDPDATA, d.time, d.string)) # write ascii data to fill
-            if recording_screen is not None and c % blocksize == 0:
+                        self._file.write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.string) + NEWLINE)
+
+            if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
-                    "Writing {0} of {1} blocks".format(c/blocksize,l/blocksize)).present()
+                    "Writing {0} of {1} blocks".format(c/BLOCKSIZE,l/BLOCKSIZE)).present()
 
 
 
 
-    def write_soft_trigger(self, code, time=None):
+    def save_soft_trigger(self, code, time=None):
         """Set marker code in file
 
         Trigger will be timestamps and occur in the data output
@@ -283,13 +309,21 @@ class DataRecorder(object):
             self._file = open(directory + os.path.sep + self.filename, 'w+')
         print "Data file: ", self.filename
 
-        self._file.write("# Recorded at {0} with pyForceDAQ {1}\n".format(
+        self._file.write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
 
         if len(comment_line)>0:
-            self._file.write("#" + comment_line + "\n")
+            self._file.write(TAG_COMMENTS + comment_line + "\n")
         if varnames:
-            self._file.write("device_tag, time, Fx, Fy, Fz\n")
+            line = "time,"
+            if self._write_deviceid: line += "device_tag,"
+            for x in range(6):
+                if self._write_forces[x]:
+                    line += ForceData.forces_names[x]
+            if self._write_hw_trigger[0]: line += "trigger1,"
+            if self._write_hw_trigger[1]: line += "trigger2,"
+            self._file.write(line + NEWLINE)
+
         return self.filename
 
     def close_data_file(self):

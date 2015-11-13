@@ -13,7 +13,7 @@ if __name__  == "__main__":
     sensor1 = SensorSettings(device_id=1, sync_timer=timer,
                              calibration_file="FT_demo.cal")
 
-    # create a data base
+    # create a data recorder
     recorder = DataRecorder(force_sensor_settings= [sensor1],
                             timer=timer,
                             poll_udp_connection=False)
@@ -30,9 +30,9 @@ if __name__  == "__main__":
 
     recorder.start_recording()
     timer.wait(500)
-    recorder.write_soft_trigger(100)
+    recorder.save_soft_trigger(100)
     timer.wait(1000)
-    recorder.write_soft_trigger(200)
+    recorder.save_soft_trigger(200)
 
     print "pause recording"
     data = recorder.pause_recording()

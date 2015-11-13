@@ -539,7 +539,18 @@ def _logo_text_line(text):
     return blank
 
 
-def start(remote_control, ask_filename, calibration_file):
+def start(remote_control,
+          ask_filename,
+          calibration_file,
+          write_deviceid = False,
+          write_Fx = True,
+          write_Fy = True,
+          write_Fz = True,
+          write_Tx = False,
+          write_Ty = False,
+          write_Tz = False,
+          write_hardware_trigger1 = False,
+          write_hardware_trigger2 = False):
     """start gui
     remote_control should be None (ask) or True or False
 
@@ -567,7 +578,17 @@ def start(remote_control, ask_filename, calibration_file):
     _logo_text_line("Initializing Force Recording").present()
 
     recorder = DataRecorder([sensor1], timer=timer,
-                            poll_udp_connection=True)
+                 poll_udp_connection=True,
+                 write_deviceid = write_deviceid,
+                 write_Fx = write_Fx,
+                 write_Fy = write_Fy,
+                 write_Fz = write_Fz,
+                 write_Tx = write_Tx,
+                 write_Ty = write_Ty,
+                 write_Tz = write_Tz,
+                 write_hardware_trigger1 = write_hardware_trigger1,
+                 write_hardware_trigger2 = write_hardware_trigger2)
+
     sleep(0.1) # wait for base init
     recorder.determine_biases(n_samples=500)
 

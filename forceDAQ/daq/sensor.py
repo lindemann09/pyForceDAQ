@@ -87,7 +87,7 @@ class Sensor(DAQReadAnalog):
         return ForceData(time=self.timer.time, device_id=self.device_id,
                          forces=self._atidaq.convertToFT(
                              read_buffer[Sensor.SENSOR_CHANNELS]),
-                         trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
+                         hardware_trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
 
 
@@ -248,6 +248,7 @@ class SensorProcess(Process):
                     is_polling = False
 
                 if self._return_buffer and self._buffer_size.value>0:
+                    # sending data to recorder
                     self._event_sending_data.set()
                     chks = self._chunk_size
                     while len(buffer)>0:
