@@ -70,11 +70,11 @@ def extract_non_force_data(path):
 
     t, u = read_non_force_data(path)
     i = path.find(".")
-    if path.endswith("gz"):
-        trigger_file = gzip.open(path[:i] + ".tigger.csv.gz", "w")
+    if path.endswith(".gz"):
+        trigger_file = gzip.open(path[:i] + ".trigger.csv.gz", "w")
         udp_file = gzip.open(path[:i] + ".udp.csv.gz", "w")
     else:
-        trigger_file = open(path[:i] + ".tigger.csv", "w")
+        trigger_file = open(path[:i] + ".trigger.csv", "w")
         udp_file = open(path[:i] + ".udp.csv", "w")
 
     t.to_csv(trigger_file)
