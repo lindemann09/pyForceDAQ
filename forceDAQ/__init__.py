@@ -23,7 +23,7 @@ import relevant stuff for remote control of the GUI recorder:
 
 import relevant stuff for data analysis:
 ``
-    from forceDAQ import analysis
+    from forceDAQ import data_handling
 ``
 """
 
