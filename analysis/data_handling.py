@@ -1,5 +1,5 @@
 """
-import this module to have all relevant classes and functions to analyse your force data
+import this module to have all relevant functions to read your force data output
 """
 
 __author__ = 'Oliver Lindemann'
@@ -15,11 +15,9 @@ def read_force_data(path):
     """returns force data pandas table"""
     return pd.read_csv(path, comment=TAG_COMMENTS)
 
-def read_non_force_data(path):
+def read_event_data(path):
     """reading trigger and udp data
-    Returns
-        trigger: pandas data frame
-        udp: pandas data frame
+    Returns: event data as pandas data frame
 
     """
 
@@ -42,44 +40,40 @@ def read_non_force_data(path):
                 trigger.append(ln[len(TAG_SOFTTRIGGER)+1:].strip().split(","))
     fl.close()
 
-    return  pd.DataFrame(trigger, columns=["time", "value"]), \
-            pd.DataFrame(udp, columns=["time", "value"])
+    trigger =  pd.DataFrame(trigger, columns=["time", "value"])
+    trigger["type"] = "softtrigger"
+    udp = pd.DataFrame(udp, columns=["time", "value"])
+    udp["type"] = "udp"
+
+    return trigger.append(udp)
+
 
 def force_data_csv2hdf5(path, complevel=9):
     """converting csv force data to hdf5 file
     with three seperate tables:
         * force
-        * trigger
-        * udp
+        * events
     """
 
     print "converting to hdf5", path
 
-    f = read_force_data(path)
-    t, u = read_non_force_data(path)
-
     hdf_filename = path[:path.find(".")] + ".hdf5"
     hdf = pd.HDFStore(hdf_filename, mode = "w", complib='zlib',
                             complevel=complevel)
-    hdf['force'], hdf['trigger'], hdf['udp'] = f, t, u
+
+    hdf['force'] = read_force_data(path)
+    hdf['events']  = read_event_data(path)
     hdf.close()
 
-def extract_non_force_data(path):
+def extract_event_data(path):
     """extracting non force data and saving *.trigger.csv and *.udp.csv"""
 
-    print "extracting non force data", path
-
-    t, u = read_non_force_data(path)
+    print "extracting event data", path
+    events = read_event_data(path)
     i = path.find(".")
     if path.endswith(".gz"):
-        trigger_file = gzip.open(path[:i] + ".trigger.csv.gz", "w")
-        udp_file = gzip.open(path[:i] + ".udp.csv.gz", "w")
+        fl = gzip.open(path[:i] + ".events.csv.gz", "w")
     else:
-        trigger_file = open(path[:i] + ".trigger.csv", "w")
-        udp_file = open(path[:i] + ".udp.csv", "w")
-
-    t.to_csv(trigger_file)
-    u.to_csv(udp_file)
-
-    trigger_file.close()
-    udp_file.close()
+        fl = open(path[:i] + ".events.csv", "w")
+    events.to_csv(fl, index=False)
+    fl.close()
