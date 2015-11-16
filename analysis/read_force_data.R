@@ -1,17 +1,17 @@
 # Reading pyForceDAQ data
 #
 # read_force_data(folder, filename)
-#     Note: Extract non force data with Python using 
-#           forceDAQ.data_handling.extract_non_force_data
+#     Note: Extract event data with Python using 
+#           forceDAQ.data_handling.extract_event_data
 #
 # O. Lindemann
 
 require(stringr)
 
-read_force_data = function(folder, filename) {
+read.force.data = function(folder, filename) {
   # Reading pyForceDAQ data
   
-  path = file.path(folder, file)
+  path = file.path(folder, filename)
   message("reading ", path)
 
   idx = str_locate(path, ".csv.gz")
@@ -23,17 +23,13 @@ read_force_data = function(folder, filename) {
   }
   
   name = str_sub(path, start=0, end=idx[1]-1)
-  trigger = read.csv(paste(name, ".trigger", ext, sep=""), 
-                     comment.char="#", 
-                     na.strings=c("NA", "None"))
-  udp = read.csv(paste(name, ".udp", ext, sep=""), 
+  events = read.csv(paste(name, ".events", ext, sep=""), 
                      comment.char="#", 
                      na.strings=c("NA", "None"))
   force = read.csv(path, 
                    comment.char="#", 
                    na.strings=c("NA", "None"))
   
-  return(list(force=force, 
-              trigger=trigger, 
-              udp=udp))
+  return(list(force = force, 
+              events = events))
 }
