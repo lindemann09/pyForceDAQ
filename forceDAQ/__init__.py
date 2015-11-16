@@ -21,9 +21,7 @@ import relevant stuff for remote control of the GUI recorder:
     from forceDAQ import remote_control
 ``
 
-import relevant stuff for data analysis:
-``
-    from forceDAQ import data_handling
-``
+For function to support data handling see the folder pyForceDAQ/analysis
+
 """
 

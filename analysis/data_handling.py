@@ -7,8 +7,9 @@ __author__ = 'Oliver Lindemann'
 import gzip
 import pandas as pd
 
-from base.forceDAQ_types import TAG_SOFTTRIGGER, TAG_UDPDATA, TAG_COMMENTS
-
+TAG_COMMENTS = "#"
+TAG_UDPDATA  = TAG_COMMENTS + "UDP"
+TAG_SOFTTRIGGER = TAG_COMMENTS +"T"
 
 def read_force_data(path):
     """returns force data pandas table"""
