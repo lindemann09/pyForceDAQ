@@ -149,10 +149,10 @@ Calibration *createCalibration(char *CalFilePath,unsigned short index) {
 	free(temp);
 	// find calibration specified by index
 	calibrationNodelist=DOM_Element_getElementsByTagName(eRoot,"Calibration");
-	if (calibrationNodelist->length<index) {    // determine if invalid calibration index was used
+	if ((calibrationNodelist->length) < index || index < 1) {    // determine if invalid calibration index was used
 		return NULL;
 	}
-	eCalibration=DOM_NodeList_item(calibrationNodelist,index-1);	
+	eCalibration=DOM_NodeList_item(calibrationNodelist,index-1);
 	
 	// set Calibration structure attributes found in Calibration element
 	ReadAttribute(eCalibration,&temp,"PartNumber",TRUE,"");
