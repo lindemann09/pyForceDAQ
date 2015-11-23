@@ -8,7 +8,7 @@ if __name__ == "__main__":
     remote_control = True
     gui.start(remote_control=remote_control,
               ask_filename=not remote_control,
-              calibration_file="FT_demo.cal",
+              calibration_file="calibration/FT_demo.cal",
               write_deviceid=False,
               write_Fx=True,
               write_Fy=True,

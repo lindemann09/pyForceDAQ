@@ -1,11 +1,12 @@
 """
-import this module to have all relevant functions to read your force data output
+Functions to read your force and event data
 """
 
 __author__ = 'Oliver Lindemann'
 
 import gzip
 import pandas as pd
+
 
 TAG_COMMENTS = "#"
 TAG_UDPDATA  = TAG_COMMENTS + "UDP"
@@ -46,34 +47,3 @@ def read_event_data(path):
     udp["type"] = "udp"
 
     return trigger.append(udp)
-
-
-def force_data_csv2hdf5(path, complevel=9):
-    """converting csv force data to hdf5 file
-    with three seperate tables:
-        * force
-        * events
-    """
-
-    print "converting to hdf5", path
-
-    hdf_filename = path[:path.find(".")] + ".hdf5"
-    hdf = pd.HDFStore(hdf_filename, mode = "w", complib='zlib',
-                            complevel=complevel)
-
-    hdf['force'] = read_force_data(path)
-    hdf['events']  = read_event_data(path)
-    hdf.close()
-
-def extract_event_data(path):
-    """extracting non force data and saving *.trigger.csv and *.udp.csv"""
-
-    print "extracting event data", path
-    events = read_event_data(path)
-    i = path.find(".")
-    if path.endswith(".gz"):
-        fl = gzip.open(path[:i] + ".events.csv.gz", "w")
-    else:
-        fl = open(path[:i] + ".events.csv", "w")
-    events.to_csv(fl, index=False)
-    fl.close()

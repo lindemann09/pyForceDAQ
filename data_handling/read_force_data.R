@@ -1,8 +1,10 @@
 # Reading pyForceDAQ data
 #
 # read_force_data(folder, filename)
-#     Note: Extract event data with Python using 
-#           forceDAQ.data_handling.extract_event_data
+#     Note: Extract event data with convert_data.py
+#           ``
+#           python convert_data.py -e [FILENAME]
+#           ``
 #
 # O. Lindemann
 
