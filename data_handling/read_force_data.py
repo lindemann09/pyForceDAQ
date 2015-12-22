@@ -14,7 +14,11 @@ TAG_SOFTTRIGGER = TAG_COMMENTS +"T"
 
 def read_force_data(path):
     """returns force data pandas table"""
-    return pd.read_csv(path, comment=TAG_COMMENTS)
+    if path.endswith(".gz"):
+        comp = "gzip"
+    else:
+        comp = None
+    return pd.read_csv(path, comment=TAG_COMMENTS, compression=comp)
 
 def read_event_data(path):
     """reading trigger and udp data
