@@ -73,7 +73,7 @@ class GUIStatus(object):
         self.history = SensorHistory(history_size = MOVING_AVERAGE_SIZE,
                                      number_of_parameter=3)
 
-        self.sensor_process = recorder.force_sensor_process(0)
+        self.sensor1_process = recorder.force_sensor_processes[0]
         self.plot_indicator = True
         self._start_recording_time = 0
         self.pause_recording = True
@@ -116,9 +116,9 @@ class GUIStatus(object):
 
     def check_new_samples(self):
         """returns only true if not changed between calls"""
-        if self._last_processed_smpl < self.sensor_process.sample_cnt:
+        if self._last_processed_smpl < self.sensor1_process.sample_cnt:
             # new sample
-            self._last_processed_smpl = self.sensor_process.sample_cnt
+            self._last_processed_smpl = self.sensor1_process.sample_cnt
             return True
         return False
 
@@ -227,22 +227,22 @@ class GUIStatus(object):
                                             dumps(forceDAQVersion))
             elif udp_event.string == RcCmd.GET_FX:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fx))
+                                                 dumps(self.sensor1_process.Fx))
             elif udp_event.string == RcCmd.GET_FY:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fy))
+                                                 dumps(self.sensor1_process.Fy))
             elif udp_event.string == RcCmd.GET_FZ:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fz))
+                                                 dumps(self.sensor1_process.Fz))
             elif udp_event.string == RcCmd.GET_TX:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fx))
+                                                 dumps(self.sensor1_process.Fx))
             elif udp_event.string == RcCmd.GET_TY:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fy))
+                                                 dumps(self.sensor1_process.Fy))
             elif udp_event.string == RcCmd.GET_TZ:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(self.sensor_process.Fz))
+                                                 dumps(self.sensor1_process.Fz))
             elif udp_event.string == RcCmd.PING:
                 self.recorder.udp.send_queue.put(RcCmd.PING)
         else:
@@ -252,7 +252,7 @@ class GUIStatus(object):
 
 
     def update_history(self):
-        self.history.update([self.sensor_process.Fx, self.sensor_process.Fy, self.sensor_process.Fz])
+        self.history.update([self.sensor1_process.Fx, self.sensor1_process.Fy, self.sensor1_process.Fz])
 
     @property
     def moving_average(self):
@@ -344,8 +344,8 @@ def _main_loop(exp, recorder, remote_control=False):
                     plotter_thread = None
 
                 ## indicator
-                force_data_array = [status.sensor_process.Fx, status.sensor_process.Fy, status.sensor_process.Fz,
-                                    status.sensor_process.Tx, status.sensor_process.Ty, status.sensor_process.Tz]
+                force_data_array = [status.sensor1_process.Fx, status.sensor1_process.Fy, status.sensor1_process.Fz,
+                                    status.sensor1_process.Tx, status.sensor1_process.Ty, status.sensor1_process.Tz]
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
 
@@ -417,8 +417,8 @@ def _main_loop(exp, recorder, remote_control=False):
                 if status.plot_filtered:
                     tmp = np.array(status.history.moving_average, dtype=float)
                 else:
-                    tmp = np.array([status.sensor_process.Fx, status.sensor_process.Fy,
-                                    status.sensor_process.Fz], dtype=float)
+                    tmp = np.array([status.sensor1_process.Fx, status.sensor1_process.Fy,
+                                    status.sensor1_process.Fz], dtype=float)
 
                 if status.thresholds is not None:
                     point_marker = status.thresholds.is_detecting
@@ -459,9 +459,9 @@ def _main_loop(exp, recorder, remote_control=False):
                                 #background_colour=(30,30,30),
                                 text_size=15,
                                 text = "n samples base: {0}\n".format(
-                                                    status.sensor_process.sample_cnt) +
+                                                    status.sensor1_process.sample_cnt) +
                                        "n samples buffered: {0} ({1} seconds)".format(
-                                    status.sensor_process.buffer_size,
+                                    status.sensor1_process.buffer_size,
                                     status.recording_duration_in_sec),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
