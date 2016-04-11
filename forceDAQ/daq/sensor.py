@@ -158,12 +158,20 @@ class SensorProcess(Process):
     def Tz(self):
         return self._last_Tz.value
 
+    def get_Fxyz(self):
+        return (self._last_Fx.value, self._last_Fy.value, self._last_Fz.value)
+
+    def Txyz(self):
+        return (self._last_Tx.value, self._last_Ty.value, self._last_Tz.value)
+
     @property
     def sample_cnt(self):
         return self._sample_cnt.value
 
-    @property
-    def buffer_size(self):
+    def get_sample_cnt(self):
+        return self._sample_cnt.value
+
+    def get_buffer_size(self):
         return self._buffer_size.value
 
     def determine_bias(self, n_samples=100):  # TODO changing no samples. Does that work?

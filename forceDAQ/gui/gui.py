@@ -17,6 +17,7 @@ from ..base.data_recorder import DataRecorder, SensorSettings
 from ..base.forceDAQ_types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
 from ..base.sensor_history import SensorHistory
 from ..base.timer import Timer
+from ..daq.sensor import SensorProcess
 from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
 from plotter import PlotterThread, level_indicator, Scaling
 
@@ -70,23 +71,41 @@ class GUIStatus(object):
                                 pixel_max = indicator_pixel_min_max[1])
 
 
-        self.history = SensorHistory(history_size = MOVING_AVERAGE_SIZE,
-                                     number_of_parameter=3)
+        self.sensor_processes = recorder.force_sensor_processes
+        self.n_sensors = len(self.sensor_processes)
+        self.history = []
+        for _ in range(self.n_sensors):
+            self.history.append( SensorHistory(history_size = MOVING_AVERAGE_SIZE,
+                                     number_of_parameter= 3) )
 
-        self.sensor1_process = recorder.force_sensor_processes[0]
-        self.plot_indicator = True
         self._start_recording_time = 0
         self.pause_recording = True
         self.quit_recording = False
         self.clear_screen = True
-        self.plot_filtered = False
         self.thresholds = None
         self.set_marker = False
         self.last_udp_data = None
-        self._last_processed_smpl = 0
+        self._last_processed_smpl = [0] * self.n_sensors
         self._last_recording_status = None
         self._last_thresholds = None
         self._clock = misc.Clock()
+
+        self.plot_indicator = True
+        self.plot_filtered = False
+        if self.n_sensors == 1:
+            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (0, 3), (0.4), (0, 5)]  # sensor, parameter
+            self.plot_data_plotter = [ (0,0), (0,1), (0,2) ] # plotter can't plot torques
+        else:
+            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]  # sensor, parameter
+            self.plot_data_plotter = [ (0,0), (0,2), (1,2) ] # plotter can't plot torques
+        # plot data parameter names
+        self.plot_data_indicator_names = []
+        for x in self.plot_data_indicator:
+            self.plot_data_indicator_names.append(str(x[0]) + "_" + ForceData.forces_names[ x[1]])
+        self.plot_data_plotter_names = []
+        for x in self.plot_data_plotter:
+            self.plot_data_plotter_names.append(str(x[0]) + "_" + ForceData.forces_names[ x[1]])
+
 
     def set_start_recording_time(self):
         self._start_recording_time = self._clock.time
@@ -115,12 +134,14 @@ class GUIStatus(object):
         return False
 
     def check_new_samples(self):
-        """returns only true if not changed between calls"""
-        if self._last_processed_smpl < self.sensor1_process.sample_cnt:
-            # new sample
-            self._last_processed_smpl = self.sensor1_process.sample_cnt
-            return True
-        return False
+        """returns list of sensors with new samples"""
+        rtn = []
+        for i,cnt in enumerate(map(SensorProcess.get_sample_cnt, self.sensor_processes)):
+            if self._last_processed_smpl[i] < cnt:
+                # new sample
+                self._last_processed_smpl[i] = cnt
+                rtn.append(i)
+        return rtn
 
     def check_thresholds_changed(self):
         """returns only true if not changed between calls"""
@@ -174,7 +195,7 @@ class GUIStatus(object):
                                     background_stimulus=logo_text_line("")).get())
             self.background.stimulus().present()
             if tmp is not None:
-                self.thresholds = Thresholds(tmp)
+                self.thresholds = Thresholds(tmp, n_channels=self.n_sensors)
             else:
                 self.thresholds = None
 
@@ -198,18 +219,20 @@ class GUIStatus(object):
                         udp_event.string[len(RcCmd.SET_THRESHOLDS):])
                     if not isinstance(self.thresholds, Thresholds): # ensure not strange types
                         self.thresholds = None
+                    else:
+                        self.thresholds.set_number_of_channels(self.n_sensors)
                 except:
                     self.thresholds = None
 
             elif udp_event.string.startswith(RcCmd.GET_THRESHOLD_LEVEL):
                 if self.thresholds is not None:
-                    tmp = self.thresholds.get_level(self.moving_average)
+                    tmp = self.thresholds.get_level(self.level_detection_parameter_average(0)) # FIXME SENSOR ID
                     self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(tmp))
                 else:
                     self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(None))
             elif udp_event.string.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION):
                 if self.thresholds is not None:
-                    self.thresholds.set_level_change_detection(self.moving_average)
+                    self.thresholds.set_level_change_detection(self.level_detection_parameter_average(0)) ## FIXME SENORID
 
             elif udp_event.string.startswith(RcCmd.SET_RESPONSE_MINMAX_DETECTION):
                 try:
@@ -220,43 +243,62 @@ class GUIStatus(object):
 
                 if self.thresholds is not None and duration is not None:
                     self.thresholds.set_response_minmax_detection(
-                        value = self.moving_average, duration = duration)
+                        value = self.level_detection_parameter_average(0), duration = duration) ## FIXME SENSOR ID
 
             elif udp_event.string == RcCmd.GET_VERSION:
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
                                             dumps(forceDAQVersion))
-            elif udp_event.string == RcCmd.GET_FX:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fx))
-            elif udp_event.string == RcCmd.GET_FY:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fy))
-            elif udp_event.string == RcCmd.GET_FZ:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fz))
-            elif udp_event.string == RcCmd.GET_TX:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fx))
-            elif udp_event.string == RcCmd.GET_TY:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fy))
-            elif udp_event.string == RcCmd.GET_TZ:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor1_process.Fz))
             elif udp_event.string == RcCmd.PING:
                 self.recorder.udp.send_queue.put(RcCmd.PING)
+            elif udp_event.string == RcCmd.GET_FX0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fx))
+            elif udp_event.string == RcCmd.GET_FY0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fy))
+            elif udp_event.string == RcCmd.GET_FZ0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fz))
+            elif udp_event.string == RcCmd.GET_TX0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fx))
+            elif udp_event.string == RcCmd.GET_TY0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fy))
+            elif udp_event.string == RcCmd.GET_TZ0:
+                self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                 dumps(self.sensor_processes[0].Fz))
+            elif self.n_sensors > 1:
+                if udp_event.string == RcCmd.GET_FX1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fx))
+                elif udp_event.string == RcCmd.GET_FY1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fy))
+                elif udp_event.string == RcCmd.GET_FZ1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fz))
+                elif udp_event.string == RcCmd.GET_TX1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fx))
+                elif udp_event.string == RcCmd.GET_TY1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fy))
+                elif udp_event.string == RcCmd.GET_TZ1:
+                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
+                                                     dumps(self.sensor_processes[1].Fz))
         else:
             # not remote control command
             self.set_marker = True
             self.last_udp_data = udp_event.string
 
 
-    def update_history(self):
-        self.history.update([self.sensor1_process.Fx, self.sensor1_process.Fy, self.sensor1_process.Fz])
+    def update_history(self, sensor=0):
+        self.history[sensor].update(self.sensor_processes[sensor].get_Fxyz())
 
-    @property
-    def moving_average(self):
-        return self.history.moving_average[self.level_detection_parameter]
+    def level_detection_parameter_average(self, sensor=0):
+        """just a short cut"""
+        return self.history[sensor].moving_average[self.level_detection_parameter]
 
 
 def _main_loop(exp, recorder, remote_control=False):
@@ -270,8 +312,8 @@ def _main_loop(exp, recorder, remote_control=False):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    status = GUIStatus(screen_refresh_interval_indicator= 300,
-                       screen_refresh_interval_plotter= 50,
+    status = GUIStatus(screen_refresh_interval_indicator = 300,
+                       screen_refresh_interval_plotter = 50,
                        recorder = recorder,
                        remote_control=remote_control,
                        level_detection_parameter = ForceData.forces_names.index("Fz"),  # only one dimension
@@ -298,18 +340,22 @@ def _main_loop(exp, recorder, remote_control=False):
             status.process_udp_event(udp.pop(0))
 
         ########################### process new samples
-        if status.check_new_samples():
-            status.update_history()
+        for x in status.check_new_samples():
+            status.update_history(sensor=x)
 
             if status.thresholds is not None:
                 # level change detection
-                level_change, tmp = status.thresholds.get_level_change(status.moving_average)
+                level_change, tmp = status.thresholds.get_level_change(
+                                                status.history[x].moving_average[status.level_detection_parameter],
+                                                channel=x)
                 if level_change:
-                    recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+                    recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp)) ## FIXME which channel?
                 # minmax detection
-                tmp = status.thresholds.get_response_minmax(status.moving_average)
+                tmp = status.thresholds.get_response_minmax(
+                                                status.history[x].moving_average[status.level_detection_parameter],
+                                                channel=x)
                 if tmp is not None:
-                    recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX + dumps(tmp))
+                    recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX + dumps(tmp)) ## FIXME which channel?
 
 
         ######################## show pause or recording screen
@@ -344,8 +390,8 @@ def _main_loop(exp, recorder, remote_control=False):
                     plotter_thread = None
 
                 ## indicator
-                force_data_array = [status.sensor1_process.Fx, status.sensor1_process.Fy, status.sensor1_process.Fz,
-                                    status.sensor1_process.Tx, status.sensor1_process.Ty, status.sensor1_process.Tz]
+                force_data_array = map(lambda x: status.sensor_processes[x[0]].forces[x[1]], status.plot_data_indicator)
+
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
 
@@ -354,7 +400,7 @@ def _main_loop(exp, recorder, remote_control=False):
                     else:
                         thr = None
                     li = level_indicator(value=force_data_array[cnt],
-                                         text=ForceData.forces_names[cnt],
+                                         text=status.plot_data_indicator_names,
                                          scaling=status.scaling_indicator,
                                          width = 50,
                                          position=(x_pos,0),
@@ -392,12 +438,12 @@ def _main_loop(exp, recorder, remote_control=False):
                 ############################################  plotter
                 if plotter_thread is None:
                     plotter_thread = PlotterThread(
-                        n_data_rows=3,
-                        data_row_colours=colours[:3],
+                        n_data_rows= len(status.plot_data_plotter),
+                        data_row_colours=colours[:len(status.plot_data_plotter)],
                         y_range = [status.scaling_plotter.pixel_min, status.scaling_plotter.pixel_max],
                         width=plotter_width,
                         position=plotter_position,
-                        background_colour=[10,10,10],
+                        background_colour=[10, 10, 10],
                         axis_colour=misc.constants.C_YELLOW)
                     plotter_thread.start()
 
@@ -415,13 +461,14 @@ def _main_loop(exp, recorder, remote_control=False):
                     status.clear_screen = False
 
                 if status.plot_filtered:
-                    tmp = np.array(status.history.moving_average, dtype=float)
+                    tmp = np.array(map(lambda x: status.history[x[0]].moving_average[x[1]], status.plot_data_plotter),
+                                   dtype=float)
                 else:
-                    tmp = np.array([status.sensor1_process.Fx, status.sensor1_process.Fy,
-                                    status.sensor1_process.Fz], dtype=float)
+                    tmp = np.array(map(lambda x: status.sensor_processes[x[0]].forces[x[1]], status.plot_data_plotter),
+                                   dtype=float)
 
                 if status.thresholds is not None:
-                    point_marker = status.thresholds.is_detecting
+                    point_marker = status.thresholds.is_detecting_anything()
                 else:
                     point_marker = False
 
@@ -454,14 +501,14 @@ def _main_loop(exp, recorder, remote_control=False):
             stimuli.Canvas(position=pos, size=(400,50),
                            colour=misc.constants.C_BLACK).present(
                                     update=False, clear=False)
+
             txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
                                 #background_colour=(30,30,30),
                                 text_size=15,
-                                text = "n samples base: {0}\n".format(
-                                                    status.sensor1_process.sample_cnt) +
-                                       "n samples buffered: {0} ({1} seconds)".format(
-                                    status.sensor1_process.buffer_size,
+                                text = "n samples base: {0}\nn samples buffered: {1} ({2} seconds)".format(
+                                    str(map(SensorProcess.get_sample_cnt, status.sensor_processes))[1:-1],
+                                    str(map(SensorProcess.get_buffer_size, status.sensor_processes))[1:-1],
                                     status.recording_duration_in_sec),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
@@ -475,7 +522,7 @@ def _main_loop(exp, recorder, remote_control=False):
             tmp.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(tmp, exp.screen.size))
             if status.thresholds is not None:
-                tmp = status.thresholds.get_level(status.history.moving_average[status.level_detection_parameter])
+                tmp = status.thresholds.get_level(status.level_detection_parameter_average(0)) ## FIXME SENSOR ID
                 txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
                                 text_size = 15,
@@ -540,7 +587,7 @@ def _logo_text_line(text):
 
 def start(remote_control,
           ask_filename,
-          sensor_ids,
+          device_ids,
           calibration_files,
           write_deviceid = False,
           write_Fx = True,
@@ -558,8 +605,8 @@ def start(remote_control,
     returns False only if quited by key while waiting for remote control
     """
 
-    if not isinstance(sensor_ids, (list, tuple)):
-        sensor_ids = [sensor_ids]
+    if not isinstance(device_ids, (list, tuple)):
+        device_ids = [device_ids]
     if not isinstance(calibration_files, (list, tuple)):
         calibration_files = [calibration_files]
 
@@ -582,7 +629,7 @@ def start(remote_control,
     _logo_text_line("Initializing Force Recording").present()
 
     sensors = []
-    for sid, fl in zip(sensor_ids, calibration_files):
+    for sid, fl in zip(device_ids, calibration_files):
         sensors.append(SensorSettings(device_id=sid, sync_timer=timer,
                                     calibration_file=fl))
 
@@ -664,3 +711,6 @@ def _draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
         else:
             plotter_thread.set_horizontal_lines(y_values=None)
 
+
+def _strlist_append(prefix, strlist):
+    return map(lambda x: prefix+x, strlist)

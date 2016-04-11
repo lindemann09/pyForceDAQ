@@ -2,7 +2,7 @@ __author__ = 'Oliver Lindemann'
 
 from forceDAQ import gui
 
-gui.start(sensor_ids= (1),
+gui.start(device_ids= (1),
           calibration_file=("calibration/FT_demo.cal"),
 
           remote_control=True,

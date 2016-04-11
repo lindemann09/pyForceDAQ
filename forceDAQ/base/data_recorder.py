@@ -47,7 +47,7 @@ class DataRecorder(object):
         #create sensor processes
         if not isinstance(force_sensor_settings, list):
             force_sensor_settings = [force_sensor_settings]
-        self.force_sensor_processes =[]
+        self._force_sensor_processes =[]
 
         event_trigger = []
         for fs in force_sensor_settings:
@@ -58,7 +58,7 @@ class DataRecorder(object):
                                     pipe_buffered_data_after_pause=True)
                 fst.start()
                 event_trigger.append(fst.event_trigger)
-                self.force_sensor_processes.append(fst)
+                self._force_sensor_processes.append(fst)
 
         # create udp connection process
         if poll_udp_connection:
@@ -80,6 +80,10 @@ class DataRecorder(object):
         """Property indicates whether the recording is started or paused"""
         return self._is_recording
 
+    @property
+    def force_sensor_processes(self):
+        return self._force_sensor_processes
+
     def quit(self):
         """Stop all recording processes, close data file and quit recording
 
@@ -96,7 +100,7 @@ class DataRecorder(object):
             self.udp.stop()
 
         # wait that all processes are quitted
-        for fsp in self.force_sensor_processes:
+        for fsp in self._force_sensor_processes:
             fsp.stop()
 
         return buffer
@@ -182,11 +186,11 @@ class DataRecorder(object):
             self.determine_biases(n_samples=1000)
 
         if sum(map(lambda x:not(x.event_bias_is_available.is_set()),
-                   self.force_sensor_processes)) != len(self.force_sensor_processes):
+                   self._force_sensor_processes)) != len(self._force_sensor_processes):
             raise RuntimeError("Sensors can't be started before bias has been determined.")
 
         # start polling
-        map(lambda x:x.start_polling(), self.force_sensor_processes)
+        map(lambda x:x.start_polling(), self._force_sensor_processes)
         self._is_recording = True
 
     def pause_recording(self, recording_screen=None):
@@ -201,7 +205,7 @@ class DataRecorder(object):
 
         data = []
         #sensors
-        for fsp in self.force_sensor_processes:
+        for fsp in self._force_sensor_processes:
             if recording_screen is not None:
                 recording_screen.stimulus("Getting data").present()
             buffer = fsp.pause_polling_get_buffer()
@@ -234,8 +238,8 @@ class DataRecorder(object):
 
         self.pause_recording()
         map(lambda x:x.determine_bias(n_samples=n_samples),
-            self.force_sensor_processes)
-        map(lambda x:x.event_bias_is_available.wait(), self.force_sensor_processes)
+            self._force_sensor_processes)
+        map(lambda x:x.event_bias_is_available.wait(), self._force_sensor_processes)
 
     def open_data_file(self, filename, directory="data",
                        time_stamp_filename=False,
