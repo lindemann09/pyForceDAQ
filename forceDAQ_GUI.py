@@ -1,12 +1,13 @@
 __author__ = 'Oliver Lindemann'
 
-from forceDAQ import gui
+if __name__ == "__main__": # required because of threding
+    from forceDAQ import gui
 
-gui.start(device_ids= (1),
-          calibration_file=("calibration/FT_demo.cal"),
+    gui.start(device_ids= (1),
+          calibration_files=("calibration/FT_demo.cal"),
 
-          remote_control=True,
-          ask_filename= True,
+          remote_control=False,
+          ask_filename= False,
 
           write_deviceid=False,
           write_Fx=True,

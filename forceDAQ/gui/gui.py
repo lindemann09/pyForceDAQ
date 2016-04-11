@@ -93,7 +93,7 @@ class GUIStatus(object):
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
-            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (0, 3), (0.4), (0, 5)]  # sensor, parameter
+            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5)]  # sensor, parameter
             self.plot_data_plotter = [ (0,0), (0,1), (0,2) ] # plotter can't plot torques
         else:
             self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]  # sensor, parameter
