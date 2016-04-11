@@ -540,7 +540,8 @@ def _logo_text_line(text):
 
 def start(remote_control,
           ask_filename,
-          calibration_file,
+          sensor_ids,
+          calibration_files,
           write_deviceid = False,
           write_Fx = True,
           write_Fy = True,
@@ -557,6 +558,12 @@ def start(remote_control,
     returns False only if quited by key while waiting for remote control
     """
 
+    if not isinstance(sensor_ids, (list, tuple)):
+        sensor_ids = [sensor_ids]
+    if not isinstance(calibration_files, (list, tuple)):
+        calibration_files = [calibration_files]
+
+
     # expyriment
     control.defaults.initialize_delay = 0
     control.defaults.pause_key = None
@@ -568,16 +575,18 @@ def start(remote_control,
     exp = design.Experiment(text_font="freemono")
     exp.set_log_level(0)
 
-    SENSOR_ID = 1  # i.e., NI-device id
+
     filename = "output.csv"
     timer = Timer()
-    sensor1 = SensorSettings(device_id=SENSOR_ID, sync_timer=timer,
-                                    calibration_file=calibration_file)
-
     remote_control = _initialize(exp, remote_control=remote_control)
     _logo_text_line("Initializing Force Recording").present()
 
-    recorder = DataRecorder([sensor1], timer=timer,
+    sensors = []
+    for sid, fl in zip(sensor_ids, calibration_files):
+        sensors.append(SensorSettings(device_id=sid, sync_timer=timer,
+                                    calibration_file=fl))
+
+    recorder = DataRecorder(sensors, timer=timer,
                  poll_udp_connection=True,
                  write_deviceid = write_deviceid,
                  write_Fx = write_Fx,
