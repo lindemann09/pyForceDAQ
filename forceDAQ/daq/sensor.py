@@ -158,6 +158,15 @@ class SensorProcess(Process):
     def Tz(self):
         return self._last_Tz.value
 
+    def get_force(self, parameter_id):
+        if   parameter_id == 0: return self._last_Fx.value
+        elif parameter_id == 1: return self._last_Fy.value
+        elif parameter_id == 2: return self._last_Fz.value
+        elif parameter_id == 3: return self._last_Tx.value
+        elif parameter_id == 4: return self._last_Ty.value
+        elif parameter_id == 5: return self._last_Tz.value
+        else: return None
+
     def get_Fxyz(self):
         return (self._last_Fx.value, self._last_Fy.value, self._last_Fz.value)
 

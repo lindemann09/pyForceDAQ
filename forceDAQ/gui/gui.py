@@ -293,10 +293,10 @@ class GUIStatus(object):
             self.last_udp_data = udp_event.string
 
 
-    def update_history(self, sensor=0):
+    def update_history(self, sensor):
         self.history[sensor].update(self.sensor_processes[sensor].get_Fxyz())
 
-    def level_detection_parameter_average(self, sensor=0):
+    def level_detection_parameter_average(self, sensor):
         """just a short cut"""
         return self.history[sensor].moving_average[self.level_detection_parameter]
 
@@ -312,7 +312,7 @@ def _main_loop(exp, recorder, remote_control=False):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    status = GUIStatus(screen_refresh_interval_indicator = 300,
+    s = GUIStatus(screen_refresh_interval_indicator = 300,
                        screen_refresh_interval_plotter = 50,
                        recorder = recorder,
                        remote_control=remote_control,
@@ -327,49 +327,49 @@ def _main_loop(exp, recorder, remote_control=False):
     plotter_thread = None
     exp.keyboard.clear()
 
-    while not status.quit_recording:  ######## process loop
-        if status.pause_recording:
+    while not s.quit_recording:  ######## process loop
+        if s.pause_recording:
             sleep(0.01)
 
         ################################ process keyboard
-        status.process_key(exp.keyboard.check(check_for_control_keys=False))
+        s.process_key(exp.keyboard.check(check_for_control_keys=False))
 
         ##############################  process udp
         udp = recorder.process_and_write_udp_events()
         while len(udp)>0:
-            status.process_udp_event(udp.pop(0))
+            s.process_udp_event(udp.pop(0))
 
         ########################### process new samples
-        for x in status.check_new_samples():
-            status.update_history(sensor=x)
+        for x in s.check_new_samples():
+            s.update_history(sensor=x)
 
-            if status.thresholds is not None:
+            if s.thresholds is not None:
                 # level change detection
-                level_change, tmp = status.thresholds.get_level_change(
-                                                status.history[x].moving_average[status.level_detection_parameter],
+                level_change, tmp = s.thresholds.get_level_change(
+                                                s.history[x].moving_average[s.level_detection_parameter],
                                                 channel=x)
                 if level_change:
                     recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp)) ## FIXME which channel?
                 # minmax detection
-                tmp = status.thresholds.get_response_minmax(
-                                                status.history[x].moving_average[status.level_detection_parameter],
+                tmp = s.thresholds.get_response_minmax(
+                                                s.history[x].moving_average[s.level_detection_parameter],
                                                 channel=x)
                 if tmp is not None:
                     recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX + dumps(tmp)) ## FIXME which channel?
 
 
         ######################## show pause or recording screen
-        if status.check_recording_status_change():
-            if status.pause_recording:
-                status.background.stimulus("writing data...").present()
+        if s.check_recording_status_change():
+            if s.pause_recording:
+                s.background.stimulus("writing data...").present()
                 recorder.pause_recording()
-                status.background.stimulus("Paused ('b' for baseline)").present()
+                s.background.stimulus("Paused ('b' for baseline)").present()
                 if remote_control:
                     recorder.udp.send_queue.put(RcCmd.FEEDBACK_PAUSED)
             else:
                 recorder.start_recording()
-                status.set_start_recording_time()
-                status.background.stimulus().present()
+                s.set_start_recording_time()
+                s.background.stimulus().present()
                 if remote_control:
                     recorder.udp.send_queue.put(RcCmd.FEEDBACK_STARTED)
 
@@ -377,31 +377,31 @@ def _main_loop(exp, recorder, remote_control=False):
         ########################### plotting
         ###########################
 
-        if status.check_refresh_required(): #do not give priority to visual output
+        if s.check_refresh_required(): #do not give priority to visual output
             update_rects = []
 
-            if status.check_thresholds_changed():
-                _draw_plotter_thread_thresholds(plotter_thread, status.thresholds, status.scaling_plotter)
+            if s.check_thresholds_changed():
+                _draw_plotter_thread_thresholds(plotter_thread, s.thresholds, s.scaling_plotter)
 
-            if status.plot_indicator:
+            if s.plot_indicator:
                 ############################################  plot_indicator
                 if plotter_thread is not None:
                     plotter_thread.stop()
                     plotter_thread = None
 
                 ## indicator
-                force_data_array = map(lambda x: status.sensor_processes[x[0]].forces[x[1]], status.plot_data_indicator)
+                force_data_array = map(lambda x: s.sensor_processes[x[0]].get_force(x[1]), s.plot_data_indicator)
 
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
 
-                    if cnt == status.level_detection_parameter:
-                        thr = status.thresholds
+                    if cnt == s.level_detection_parameter:
+                        thr = s.thresholds
                     else:
                         thr = None
                     li = level_indicator(value=force_data_array[cnt],
-                                         text=status.plot_data_indicator_names,
-                                         scaling=status.scaling_indicator,
+                                         text=s.plot_data_indicator_names[cnt],
+                                         scaling=s.scaling_indicator,
                                          width = 50,
                                          position=(x_pos,0),
                                          thresholds=thr)
@@ -410,7 +410,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
 
                 #line
-                zero = status.scaling_indicator.data2pixel(status.scaling_indicator.trim(0))
+                zero = s.scaling_indicator.data2pixel(s.scaling_indicator.trim(0))
                 rect = stimuli.Line(start_point=(-200,zero), end_point=(200,zero),
                                     line_width=1, colour=misc.constants.C_YELLOW)
                 rect.present(update=False, clear=False)
@@ -421,7 +421,7 @@ def _main_loop(exp, recorder, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position=pos, text = str(status.scaling_indicator.min),
+                txt = stimuli.TextLine(position=pos, text = str(s.scaling_indicator.min),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -429,7 +429,7 @@ def _main_loop(exp, recorder, remote_control=False):
                 stimuli.Canvas(position=pos, size=(30,20),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
-                txt = stimuli.TextLine(position= pos, text = str(status.scaling_indicator.max),
+                txt = stimuli.TextLine(position= pos, text = str(s.scaling_indicator.max),
                             text_size=15, text_colour=misc.constants.C_YELLOW)
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
@@ -438,54 +438,54 @@ def _main_loop(exp, recorder, remote_control=False):
                 ############################################  plotter
                 if plotter_thread is None:
                     plotter_thread = PlotterThread(
-                        n_data_rows= len(status.plot_data_plotter),
-                        data_row_colours=colours[:len(status.plot_data_plotter)],
-                        y_range = [status.scaling_plotter.pixel_min, status.scaling_plotter.pixel_max],
+                        n_data_rows= len(s.plot_data_plotter),
+                        data_row_colours=colours[:len(s.plot_data_plotter)],
+                        y_range = [s.scaling_plotter.pixel_min, s.scaling_plotter.pixel_max],
                         width=plotter_width,
                         position=plotter_position,
                         background_colour=[10, 10, 10],
                         axis_colour=misc.constants.C_YELLOW)
                     plotter_thread.start()
 
-                    if status.plot_axis:
+                    if s.plot_axis:
                         plotter_thread.set_horizontal_lines(
-                            y_values = [status.scaling_plotter.data2pixel(0)])
+                            y_values = [s.scaling_plotter.data2pixel(0)])
 
-                    if status.thresholds is not None:
+                    if s.thresholds is not None:
                         plotter_thread.set_horizontal_lines(
-                            y_values = status.scaling_plotter.data2pixel(
-                                np.array(status.thresholds.thresholds)))
+                            y_values = s.scaling_plotter.data2pixel(
+                                np.array(s.thresholds.thresholds)))
 
-                if status.clear_screen:
+                if s.clear_screen:
                     plotter_thread.clear_area()
-                    status.clear_screen = False
+                    s.clear_screen = False
 
-                if status.plot_filtered:
-                    tmp = np.array(map(lambda x: status.history[x[0]].moving_average[x[1]], status.plot_data_plotter),
+                if s.plot_filtered:
+                    tmp = np.array(map(lambda x: s.history[x[0]].moving_average[x[1]], s.plot_data_plotter),
                                    dtype=float)
                 else:
-                    tmp = np.array(map(lambda x: status.sensor_processes[x[0]].forces[x[1]], status.plot_data_plotter),
+                    tmp = np.array(map(lambda x: s.sensor_processes[x[0]].get_force(x[1]), s.plot_data_plotter),
                                    dtype=float)
 
-                if status.thresholds is not None:
-                    point_marker = status.thresholds.is_detecting_anything()
+                if s.thresholds is not None:
+                    point_marker = s.thresholds.is_detecting_anything()
                 else:
                     point_marker = False
 
                 plotter_thread.add_values(
-                    values = status.scaling_plotter.data2pixel(tmp),
-                    set_marker=status.set_marker,
+                    values = s.scaling_plotter.data2pixel(tmp),
+                    set_marker=s.set_marker,
                     set_point_marker=point_marker)
-                status.set_marker = False
+                s.set_marker = False
 
                 update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
 
                 # axis labels
-                axis_labels = (int(status.scaling_plotter.min), int(status.scaling_plotter.max), 0)
+                axis_labels = (int(s.scaling_plotter.min), int(s.scaling_plotter.max), 0)
                 xpos = plotter_position[0] - (plotter_width/2) - 20
-                for cnt, ypos in enumerate((plotter_position[1] + status.scaling_plotter.pixel_min + 10,
-                                            plotter_position[1] + status.scaling_plotter.pixel_max - 10,
-                                            plotter_position[1] + status.scaling_plotter.data2pixel(0))):
+                for cnt, ypos in enumerate((plotter_position[1] + s.scaling_plotter.pixel_min + 10,
+                                            plotter_position[1] + s.scaling_plotter.pixel_max - 10,
+                                            plotter_position[1] + s.scaling_plotter.data2pixel(0))):
                     stimuli.Canvas(position=(xpos, ypos), size=(50, 30),
                                colour=misc.constants.C_BLACK).present(
                                         update=False, clear=False)
@@ -507,9 +507,9 @@ def _main_loop(exp, recorder, remote_control=False):
                                 #background_colour=(30,30,30),
                                 text_size=15,
                                 text = "n samples base: {0}\nn samples buffered: {1} ({2} seconds)".format(
-                                    str(map(SensorProcess.get_sample_cnt, status.sensor_processes))[1:-1],
-                                    str(map(SensorProcess.get_buffer_size, status.sensor_processes))[1:-1],
-                                    status.recording_duration_in_sec),
+                                    str(map(SensorProcess.get_sample_cnt, s.sensor_processes))[1:-1],
+                                    str(map(SensorProcess.get_buffer_size, s.sensor_processes))[1:-1],
+                                    s.recording_duration_in_sec),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
             txt.present(update=False, clear=False)
@@ -521,12 +521,12 @@ def _main_loop(exp, recorder, remote_control=False):
                                  colour=misc.constants.C_BLACK)
             tmp.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(tmp, exp.screen.size))
-            if status.thresholds is not None:
-                tmp = status.thresholds.get_level(status.level_detection_parameter_average(0)) ## FIXME SENSOR ID
+            if s.thresholds is not None:
+                tmp = s.thresholds.get_level(s.level_detection_parameter_average(0)) ## FIXME SENSOR ID
                 txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
                                 text_size = 15,
-                                text = "T: {0} L: {1}".format(status.thresholds, tmp),
+                                text = "T: {0} L: {1}".format(s.thresholds, tmp),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
 
@@ -537,7 +537,7 @@ def _main_loop(exp, recorder, remote_control=False):
                                  colour=misc.constants.C_BLACK)
             tmp.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(tmp, exp.screen.size))
-            if status.plot_filtered:
+            if s.plot_filtered:
                 txt = stimuli.TextBox(position= pos,
                                 size = (400, 50),
                                 text_size = 15,
@@ -547,7 +547,7 @@ def _main_loop(exp, recorder, remote_control=False):
                 txt.present(update=False, clear=False)
 
             # last_udp input
-            if status.last_udp_data is not None:
+            if s.last_udp_data is not None:
                 pos = (420, 250)
                 stimuli.Canvas(position=pos, size=(200, 30),
                                colour=misc.constants.C_BLACK).present(
@@ -555,7 +555,7 @@ def _main_loop(exp, recorder, remote_control=False):
                 txt = stimuli.TextBox(position= pos, size = (200, 30),
                                     #background_colour=(30,30,30),
                                     text_size=15,
-                                    text = "UDP:" + str(status.last_udp_data),
+                                    text = "UDP:" + str(s.last_udp_data),
                                     text_colour=misc.constants.C_YELLOW,
                                     text_justification = 0)
                 txt.present(update=False, clear=False)
@@ -566,10 +566,10 @@ def _main_loop(exp, recorder, remote_control=False):
 
         ##### end main  loop
 
-    status.background.stimulus("Quitting").present()
+    s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.stop()
-    recorder.pause_recording(status.background)
+    recorder.pause_recording(s.background)
 
 
 def _logo_text_line(text):

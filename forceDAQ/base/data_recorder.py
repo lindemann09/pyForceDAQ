@@ -185,7 +185,7 @@ class DataRecorder(object):
         if determine_bias:
             self.determine_biases(n_samples=1000)
 
-        if sum(map(lambda x:not(x.event_bias_is_available.is_set()),
+        if len(filter(lambda x:x.event_bias_is_available.is_set(),
                    self._force_sensor_processes)) != len(self._force_sensor_processes):
             raise RuntimeError("Sensors can't be started before bias has been determined.")
 

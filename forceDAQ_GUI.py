@@ -19,4 +19,4 @@ if __name__ == "__main__": # required because of threding
           write_trigger1=True,
           write_trigger2=False,
 
-          zip_data=True)
+          zip_data=False)
