@@ -589,7 +589,7 @@ def start(remote_control,
           ask_filename,
           device_ids,
           calibration_files,
-          write_deviceid = False,
+          device_name_prefix="Dev",
           write_Fx = True,
           write_Fy = True,
           write_Fz = True,
@@ -609,6 +609,12 @@ def start(remote_control,
         device_ids = [device_ids]
     if not isinstance(calibration_files, (list, tuple)):
         calibration_files = [calibration_files]
+    timer = Timer()
+    sensors = []
+    for n, fl in zip(device_ids, calibration_files):
+        sensors.append(SensorSettings(device_id=n, sync_timer=timer,
+                        calibration_file=fl, device_name_prefix=device_name_prefix))
+
 
 
     # expyriment
@@ -624,18 +630,12 @@ def start(remote_control,
 
 
     filename = "output.csv"
-    timer = Timer()
     remote_control = _initialize(exp, remote_control=remote_control)
     _logo_text_line("Initializing Force Recording").present()
 
-    sensors = []
-    for sid, fl in zip(device_ids, calibration_files):
-        sensors.append(SensorSettings(device_id=sid, sync_timer=timer,
-                                    calibration_file=fl))
-
     recorder = DataRecorder(sensors, timer=timer,
                  poll_udp_connection=True,
-                 write_deviceid = write_deviceid,
+                 write_deviceid = len(device_ids)>1,
                  write_Fx = write_Fx,
                  write_Fy = write_Fy,
                  write_Fz = write_Fz,
@@ -645,7 +645,7 @@ def start(remote_control,
                  write_trigger1= write_trigger1,
                  write_trigger2= write_trigger2)
 
-    sleep(0.1) # wait for base init
+    sleep(0.2) # wait for base init
     recorder.determine_biases(n_samples=500)
 
     if remote_control:

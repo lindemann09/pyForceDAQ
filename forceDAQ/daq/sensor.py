@@ -19,10 +19,14 @@ from pyATIDAQ import ATI_CDLL
 
 
 class SensorSettings(DAQConfiguration):
-    def __init__(self, calibration_file, sync_timer, device_id=1, channels="ai0:7",
-                 rate=1000, minVal=-10, maxVal=10):
-        DAQConfiguration.__init__(self, device_id=device_id, channels=channels,
+    def __init__(self, calibration_file, sync_timer, device_id, channels="ai0:7",
+                 device_name_prefix = "Dev", rate=1000, minVal=-10, maxVal=10):
+
+        DAQConfiguration.__init__(self,
+                                  device_name = "{0}{1}".format(device_name_prefix, device_id),
+                                  channels=channels,
                                   rate=rate, minVal=minVal, maxVal=maxVal)
+        self.device_id = device_id
         self.calibration_file = calibration_file
         self.sync_timer = sync_timer
 
@@ -178,10 +182,10 @@ class SensorProcess(Process):
         return self._sample_cnt.value
 
     def get_sample_cnt(self):
-        return self._sample_cnt.value
+        return int(self._sample_cnt.value)
 
     def get_buffer_size(self):
-        return self._buffer_size.value
+        return int(self._buffer_size.value)
 
     def determine_bias(self, n_samples=100):  # TODO changing no samples. Does that work?
         """recording is paused after bias determination

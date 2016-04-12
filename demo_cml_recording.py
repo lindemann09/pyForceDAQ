@@ -4,13 +4,13 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from forceDAQ.recorder import ForceData, DAQEvents, Timer, DataRecorder, SensorSettings
+from forceDAQ.recorder_classes import ForceData, DAQEvents, Timer, DataRecorder, SensorSettings
 
 if __name__  == "__main__":
     timer = Timer()
 
     # create a sensor
-    sensor1 = SensorSettings(device_id=1, sync_timer=timer,
+    sensor1 = SensorSettings(device_id="Dev1", sync_timer=timer,
                              calibration_file="FT_demo.cal")
 
     # create a data recorder

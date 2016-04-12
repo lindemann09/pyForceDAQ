@@ -13,7 +13,7 @@ to use the GUI recorder:
 
 import relevant stuff to program your own recorder:
 ``
-    from forceDAQ import recorder
+    from forceDAQ import recorder_classes
 ``
 
 import relevant stuff for remote control of the GUI recorder:
