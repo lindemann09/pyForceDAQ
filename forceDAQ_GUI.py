@@ -2,9 +2,11 @@ __author__ = 'Oliver Lindemann'
 
 
 if __name__ == "__main__": # required because of threding
-    from forceDAQ import gui
+    from forceDAQ.gui import start, config
 
-    gui.start(
+    config.plot_axis = False
+
+    start(
           device_ids = (1, 2),
           sensor_names = ("FT9093", "FT17809"),
           calibration_folder="calibration",

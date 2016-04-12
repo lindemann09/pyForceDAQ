@@ -8,7 +8,6 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = 'Oliver Lindemann'
-__version__ = "0.1"
 
 import ctypes as ct
 import numpy as np

@@ -5,23 +5,22 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import os
+import pygame
 from cPickle import dumps, loads
 from time import sleep
 
 import numpy as np
-import pygame
 from expyriment import control, design, stimuli, io, misc
 
+from . import config
+from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
+from plotter import PlotterThread, level_indicator, Scaling
 from .. import __version__ as forceDAQVersion
 from ..base.data_recorder import DataRecorder, SensorSettings
 from ..base.forceDAQ_types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
 from ..base.sensor_history import SensorHistory
 from ..base.timer import Timer
 from ..daq.sensor import SensorProcess
-from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
-from plotter import PlotterThread, level_indicator, Scaling
-
-MOVING_AVERAGE_SIZE = 5
 
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
@@ -75,8 +74,8 @@ class GUIStatus(object):
         self.n_sensors = len(self.sensor_processes)
         self.history = []
         for _ in range(self.n_sensors):
-            self.history.append( SensorHistory(history_size = MOVING_AVERAGE_SIZE,
-                                     number_of_parameter= 3) )
+            self.history.append( SensorHistory(history_size = config.moving_average_size,
+                                               number_of_parameter= 3) )
 
         self._start_recording_time = 0
         self.pause_recording = True
@@ -93,11 +92,11 @@ class GUIStatus(object):
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
-            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5)]  # sensor, parameter
-            self.plot_data_plotter = [ (0,0), (0,1), (0,2) ] # plotter can't plot torques
+            self.plot_data_indicator = config.plot_data_indicator_for_single_sensor
+            self.plot_data_plotter = config.plot_data_plotter_for_single_sensor
         else:
-            self.plot_data_indicator = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]  # sensor, parameter
-            self.plot_data_plotter = [ (0,0), (0,2), (1,2) ] # plotter can't plot torques
+            self.plot_data_indicator = config.plot_data_indicator_for_two_sensors
+            self.plot_data_plotter = config.plot_data_plotter_for_two_sensors
         # plot data parameter names
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
@@ -312,16 +311,17 @@ def _main_loop(exp, recorder, remote_control=False):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = GUIStatus(screen_refresh_interval_indicator = 300,
-                       screen_refresh_interval_plotter = 50,
-                       recorder = recorder,
-                       remote_control=remote_control,
-                       level_detection_parameter = ForceData.forces_names.index("Fz"),  # only one dimension
+    s = GUIStatus(screen_refresh_interval_indicator = config.screen_refresh_interval_indicator,
+                  screen_refresh_interval_plotter = config.gui_screen_refresh_interval_plotter,
+                  recorder = recorder,
+                  remote_control=remote_control,
+                  level_detection_parameter = ForceData.forces_names.index(
+                                                        config.level_detection_parameter),  # only one dimension
                        screen_size = exp.screen.size,
-                       data_min_max=[-5, 30],
-                       plotter_pixel_min_max=[-250, 250],
-                       indicator_pixel_min_max=[-150, 150],
-                       plot_axis = True)
+                  data_min_max=config.data_min_max,
+                  plotter_pixel_min_max=config.plotter_pixel_min_max,
+                  indicator_pixel_min_max=config.indicator_pixel_min_max,
+                  plot_axis = config.plot_axis)
 
     # plotter
     plotter_thread = None
@@ -640,7 +640,7 @@ def start(remote_control,
     control.defaults.fast_quit = True
     control.defaults.open_gl = False
     control.defaults.event_logging = 0
-    exp = design.Experiment(text_font="freemono")
+    exp = design.Experiment(text_font=config.window_font)
     exp.set_log_level(0)
 
 
