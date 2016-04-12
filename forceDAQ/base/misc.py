@@ -8,7 +8,6 @@ def N2g(N):
 class MinMaxDetector(object):
 
     def __init__(self, start_value, duration):
-        """start value and duration in msec"""
         self._minmax = [start_value, start_value]
         self._duration_in_sec = float(duration) / 1000
         self._level_change_time = None

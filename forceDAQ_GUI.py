@@ -5,6 +5,7 @@ if __name__ == "__main__": # required because of threding
     from forceDAQ.gui import start, config
 
     config.plot_axis = False
+    config.data_min_max = [-5, 30]
 
     start(
           device_ids = (1, 2),
