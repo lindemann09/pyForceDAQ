@@ -318,7 +318,7 @@ def _main_loop(exp, recorder, remote_control=False):
                        remote_control=remote_control,
                        level_detection_parameter = ForceData.forces_names.index("Fz"),  # only one dimension
                        screen_size = exp.screen.size,
-                       data_min_max=[-30, 5],
+                       data_min_max=[-5, 30],
                        plotter_pixel_min_max=[-250, 250],
                        indicator_pixel_min_max=[-150, 150],
                        plot_axis = True)
@@ -605,7 +605,8 @@ def start(remote_control,
     """start gui
     remote_control should be None (ask) or True or False
 
-    reverse scaling dict
+    reverse scaling: dictionary with rescaling (see SensorSetting)
+                key: device_id, value: list of parameter names (e.g., ["Fx"])
 
     returns False only if quited by key while waiting for remote control
     """
@@ -616,15 +617,15 @@ def start(remote_control,
         sensor_names = [sensor_names]
     timer = Timer()
     sensors = []
-    for n, fl in zip(device_ids, sensor_names):
+    for d_id, sn in zip(device_ids, sensor_names):
         try:
-            reverse_parameter_names = reverse_scaling[n]
+            reverse_parameter_names = reverse_scaling[d_id]
         except:
             reverse_parameter_names = []
 
-        sensors.append(SensorSettings(device_id=n,
+        sensors.append(SensorSettings(device_id = d_id,
                                       device_name_prefix=device_name_prefix,
-                                      sensor_name = n,
+                                      sensor_name = sn,
                                       sync_timer=timer,
                                       calibration_folder=calibration_folder,
                                       reverse_parameter_names=reverse_parameter_names))
