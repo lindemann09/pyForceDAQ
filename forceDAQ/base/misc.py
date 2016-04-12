@@ -36,7 +36,7 @@ class MinMaxDetector(object):
     def is_sampling_for_minmax(self):
         """true true if currently sampling for minmax"""
         return (self._level_change_time is not None) and \
-               (self._timer.time - self._level_change_time) < self._duration_in_sec
+               (get_time() - self._level_change_time) < self._duration_in_sec
 
 def find_calibration_file(calibration_folder, sensor_name):
     needle = 'Serial="{0}"'.format(sensor_name)
