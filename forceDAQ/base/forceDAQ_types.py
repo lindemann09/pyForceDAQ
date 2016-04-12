@@ -30,7 +30,7 @@ class ForceData(object):
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
     def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
-                 device_id=0, trigger_threshold=0.4):
+                 device_id=0, trigger_threshold=0.4, reverse=()):
         """Create a ForceData object
         Parameters
         ----------
@@ -57,6 +57,8 @@ class ForceData(object):
             self.trigger[0] = 0
         if abs(self.trigger[1]) < trigger_threshold:
             self.trigger[1] = 0
+        for r in reverse:
+            forces[r] = -1*forces[r]
 
     def __str__(self):
         """converts data to string. """

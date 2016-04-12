@@ -243,19 +243,25 @@ class ATI_CDLL(object):
 
         return self.cdll.Bias(self._calibration, VOLTAGE_SAMPLE_TYPE(*voltages))
 
-    def convertToFT(self, voltages):
+    def convertToFT(self, voltages, reverse_parameters=[]):
         """Converts an array of voltages into forces and torques and
          returns them in result
          Parameters:
            voltages: array of float
                 array of voltages acquired by DAQ system
+            reverse_parameters: array of integer
+                list of ids of parameter that should be reversed due to problems calibration with
+                    the calibration
          Returns:
             array of force-torque values (typ. 6 elements)
         """
         ft_array = FT_SAMPLE_TYPE()
         self.cdll.ConvertToFT(self._calibration, VOLTAGE_SAMPLE_TYPE(*voltages),
                               byref(ft_array))
-        return map(lambda x: x, ft_array)  # convert ctype array to python array
+        rtn = map(lambda x: x, ft_array)  # convert ctype array to python array
+        for x in reverse_parameters:
+            rtn[x] = -1*rtn[x]
+        return rtn
 
     def printCalInfo(self):
         """print Calibration info on the console
@@ -276,7 +282,7 @@ def print_calibration_info(calibration_file):
 if __name__ == "__main__":
     # test module
 
-    # FT_demo.cal
+    # FT_sensor1.cal
     # Bias reading:
     #   0.265100 -0.017700 -0.038400 -0.042700 -0.189100  0.137300 -3.242300
     #   Measurement:
@@ -285,7 +291,7 @@ if __name__ == "__main__":
     #   -0.065867  0.123803 111.156731  0.039974  0.040417  0.079049
 
     #filename = raw_input("Calibration file: ")
-    filename = "FT_demo.cal"
+    filename = "FT_sensor1.cal"
     atidaq = ATI_CDLL()
     # get calibration
     index = c_short(1)

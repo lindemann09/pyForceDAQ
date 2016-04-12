@@ -1,13 +1,16 @@
 __author__ = 'Oliver Lindemann'
 
+
 if __name__ == "__main__": # required because of threding
     from forceDAQ import gui
 
     gui.start(
           device_ids = (1, 2),
-          calibration_files=("calibration/FT_demo.cal",
-                             "calibration/FT_demo.cal"),
+          sensor_names = ("FT9093", "FT17809"),
+          calibration_folder="calibration",
           device_name_prefix="Dev",
+
+          reverse_scaling = {1: ["Fz"]}, # key: device_id,parameter
           remote_control=False,
           ask_filename= False,
 

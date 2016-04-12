@@ -9,26 +9,55 @@ import atexit
 import ctypes as ct
 from multiprocessing import Process, Event, sharedctypes, Pipe
 from time import sleep
+from copy import copy
 
 import numpy as np
 
 from ..base.forceDAQ_types import ForceData, DAQEvents
 from ..base.timer import Timer
+from ..base.misc import find_calibration_file
 from nidaq import DAQConfiguration, DAQReadAnalog
 from pyATIDAQ import ATI_CDLL
 
 
 class SensorSettings(DAQConfiguration):
-    def __init__(self, calibration_file, sync_timer, device_id, channels="ai0:7",
-                 device_name_prefix = "Dev", rate=1000, minVal=-10, maxVal=10):
+    def __init__(self,
+                 device_id,
+                 sensor_name,
+                 calibration_folder,
+                 sync_timer,
+                 channels="ai0:7",
+                 device_name_prefix = "Dev",
+                 rate=1000,
+                 minVal=-10,
+                 maxVal=10,
+                 reverse_parameter_names=()):
+
+        """
+        :parameter:
+            reverse_scaling: string or list of string
+                list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
+                Sensors take this into account and correct data online
+        """
 
         DAQConfiguration.__init__(self,
                                   device_name = "{0}{1}".format(device_name_prefix, device_id),
                                   channels=channels,
                                   rate=rate, minVal=minVal, maxVal=maxVal)
-        self.device_id = device_id
-        self.calibration_file = calibration_file
         self.sync_timer = sync_timer
+        self.device_id = device_id
+        self.calibration_file = find_calibration_file(calibration_folder=calibration_folder,
+                                                      sensor_name=sensor_name)
+
+        self.reverse_parameters = []
+        if not isinstance(reverse_parameter_names, (tuple, list)):
+            reverse_parameter_names = [reverse_parameter_names]
+        for para in reverse_parameter_names:
+            try:
+                self.reverse_parameters.append(ForceData.forces_names.index(para))
+            except:
+                pass
+
 
 class Sensor(DAQReadAnalog):
     SENSOR_CHANNELS = range(0,
@@ -52,6 +81,9 @@ class Sensor(DAQReadAnalog):
         self._atidaq.setForceUnits("N")
         self._atidaq.setTorqueUnits("N-m")
         self.timer = Timer(sync_timer=settings.sync_timer)
+
+        self._reverse_parameters = copy(settings.reverse_parameters)
+
 
     def determine_bias(self, n_samples=100):
         """determines the bias
@@ -88,10 +120,11 @@ class Sensor(DAQReadAnalog):
         """
 
         read_buffer, _read_samples = self.read_analog()
-        return ForceData(time=self.timer.time, device_id=self.device_id,
-                         forces=self._atidaq.convertToFT(
-                             read_buffer[Sensor.SENSOR_CHANNELS]),
-                         trigger=read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
+        return ForceData(time = self.timer.time,
+                         device_id = self.device_id,
+                         forces = self._atidaq.convertToFT( voltages=read_buffer[Sensor.SENSOR_CHANNELS],
+                                                            reverse_parameters=self._reverse_parameters),
+                         trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
 
 

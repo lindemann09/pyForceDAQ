@@ -8,7 +8,7 @@ to use the GUI recorder:
 
     gui.start(remote_control=False,
               ask_filename=True,
-               calibration_file="FT_demo.cal")
+               calibration_file="FT_sensor1.cal")
 ``
 
 import relevant stuff to program your own recorder:

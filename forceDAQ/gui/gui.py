@@ -588,7 +588,8 @@ def _logo_text_line(text):
 def start(remote_control,
           ask_filename,
           device_ids,
-          calibration_files,
+          sensor_names,
+          calibration_folder,
           device_name_prefix="Dev",
           write_Fx = True,
           write_Fy = True,
@@ -598,22 +599,35 @@ def start(remote_control,
           write_Tz = False,
           write_trigger1 = True,
           write_trigger2 = False,
-          zip_data=False):
+          zip_data=False,
+          reverse_scaling = None):
+
     """start gui
     remote_control should be None (ask) or True or False
+
+    reverse scaling dict
 
     returns False only if quited by key while waiting for remote control
     """
 
     if not isinstance(device_ids, (list, tuple)):
         device_ids = [device_ids]
-    if not isinstance(calibration_files, (list, tuple)):
-        calibration_files = [calibration_files]
+    if not isinstance(sensor_names, (list, tuple)):
+        sensor_names = [sensor_names]
     timer = Timer()
     sensors = []
-    for n, fl in zip(device_ids, calibration_files):
-        sensors.append(SensorSettings(device_id=n, sync_timer=timer,
-                        calibration_file=fl, device_name_prefix=device_name_prefix))
+    for n, fl in zip(device_ids, sensor_names):
+        try:
+            reverse_parameter_names = reverse_scaling[n]
+        except:
+            reverse_parameter_names = []
+
+        sensors.append(SensorSettings(device_id=n,
+                                      device_name_prefix=device_name_prefix,
+                                      sensor_name = n,
+                                      sync_timer=timer,
+                                      calibration_folder=calibration_folder,
+                                      reverse_parameter_names=reverse_parameter_names))
 
 
 
