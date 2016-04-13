@@ -58,6 +58,8 @@ class SensorSettings(DAQConfiguration):
             except:
                 pass
 
+        print((self.device_name, self.reverse_parameters))
+
 
 class Sensor(DAQReadAnalog):
     SENSOR_CHANNELS = range(0,

@@ -13,7 +13,7 @@ if __name__ == "__main__": # required because of threding
           calibration_folder="calibration",
           device_name_prefix="Dev",
 
-          reverse_scaling = {1: ["Fz", "Fx"]}, # key: device_id, parameter
+          reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter
           remote_control=False,
           ask_filename= False,
 
