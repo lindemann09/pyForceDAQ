@@ -30,7 +30,7 @@ class ForceData(object):
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
     def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
-                 device_id=0, trigger_threshold=0.4):
+                 device_id=0, trigger_threshold=0.4, reverse=()):
         """Create a ForceData object
         Parameters
         ----------
@@ -57,6 +57,8 @@ class ForceData(object):
             self.trigger[0] = 0
         if abs(self.trigger[1]) < trigger_threshold:
             self.trigger[1] = 0
+        for r in reverse:
+            forces[r] = -1*forces[r]
 
     def __str__(self):
         """converts data to string. """
@@ -208,34 +210,43 @@ class GUIRemoteControlCommands(object):
     PING,\
     SET_RESPONSE_MINMAX_DETECTION, \
     RESPONSE_MINMAX,\
-    GET_VERSION \
-    = map(lambda x: "$cmd{0:02d}".format(x), range(20))
+    GET_VERSION, \
+    GET_FX2, GET_FY2, GET_FZ2, GET_TX2, GET_TY2, GET_TZ2,\
+    GET_THRESHOLD_LEVEL2, \
+    SET_LEVEL_CHANGE_DETECTION2, \
+    CHANGED_LEVEL2, \
+    SET_RESPONSE_MINMAX_DETECTION2, \
+    RESPONSE_MINMAX2\
+    = map(lambda x: "$cmd{0:02d}:".format(x), range(31))
 
     FEEDBACK_PAUSED = FEEDBACK + "paused"
     FEEDBACK_STARTED = FEEDBACK + "started"
 
-
 class Thresholds(object):
 
-    def __init__(self, thresholds):
-        """Thresholds for a particular sensor"""
+    def __init__(self, thresholds, n_channels=1):
+        """Thresholds for a one or multiple channels of data"""
         self._thresholds = list(thresholds)
         self._thresholds.sort()
-        self._prev_level = None
-        self._minmax = None
+        self.set_number_of_channels(n_channels=n_channels)
 
-    @property
-    def is_detecting(self):
-        return self._minmax is not None or self._prev_level is not None
+    def is_detecting(self, channels=0):
+        return self._minmax[channels] is not None or self._prev_level[channels] is not None
 
-    @property
-    def is_level_change_detecting(self):
-        return self._prev_level is not None
+    def is_level_change_detecting(self, channels=0):
+        return self._prev_level[channels] is not None
 
-    @property
-    def is_response_minmax_detecting(self):
-        return self._minmax is not None
+    def is_response_minmax_detecting(self, channels=0):
+        return self._minmax[channels] is not None
 
+    def is_detecting_anything(self):
+        """is detecting something in at least one channel"""
+        nn = lambda x:x is not None
+        return len(filter(nn, self._prev_level))>0 or len(filter(nn, self._minmax))>0
+
+    def set_number_of_channels(self, n_channels):
+        self._prev_level = [None] * n_channels
+        self._minmax = [None] * n_channels
 
     @property
     def thresholds(self):
@@ -261,34 +272,34 @@ class Thresholds(object):
             level = cnt + 1
         return level
 
-    def set_level_change_detection(self, value):
+    def set_level_change_detection(self, value, channel=0):
         """sets level change detection
         returns: current level
         """
-        self._prev_level  = self.get_level(value)
-        self._minmax = None
-        return self._prev_level
+        self._prev_level[channel]  = self.get_level(value)
+        self._minmax[channel] = None
+        return self._prev_level[channel]
 
-    def get_level_change(self, value):
+    def get_level_change(self, value, channel=0):
         """return tuple with level_change (boolean) and current level (int)
         if level change detection is switch on
 
         Note: after detected level change detection is switched off!
         """
 
-        if self._prev_level is None:
+        if self._prev_level[channel] is None:
             return None, None
 
         current = self.get_level(value)
-        changed = (current != self._prev_level)
+        changed = (current != self._prev_level[channel])
         if changed:
-            self._prev_level = None
+            self._prev_level[channel] = None
         return changed, current
 
     def __str__(self):
         return str(self._thresholds)
 
-    def set_response_minmax_detection(self, value, duration):
+    def set_response_minmax_detection(self, value, duration, channel=0):
         """Start response detection
         Parameters detects minimum and maximum of the response
             after first level change (length =number_of_samples)
@@ -300,13 +311,13 @@ class Thresholds(object):
         """
 
         lv = self.get_level(value)
-        self._minmax = MinMaxDetector(start_value=lv,
+        self._minmax[channel] = MinMaxDetector(start_value=lv,
                                      duration=duration)
-        self._prev_level = None
+        self._prev_level[channel] = None
         return lv
 
 
-    def get_response_minmax(self, value):
+    def get_response_minmax(self, value, channel=0):
         """checks for response minimum and maximum if set_response_minmax_detection is switch on
         With this function you add a sample and check if the response can be classified. If so,
         it returns a tuple with the minimum and maximum response level during the response period
@@ -318,11 +329,11 @@ class Thresholds(object):
         Note: after response minmax has been determined once response_minmax_detection is switched off!
         """
 
-        if self._minmax is None:
+        if self._minmax[channel] is None:
             return None
 
-        rtn = self._minmax.process(self.get_level(value))
+        rtn = self._minmax[channel].process(self.get_level(value))
         if rtn is not None:
             # minmax just detected
-            self._minmax = None # switch off
+            self._minmax[channel] = None # switch off
         return rtn

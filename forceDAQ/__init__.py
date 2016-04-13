@@ -1,4 +1,4 @@
-__version__ = "0.6.2"
+__version__ = "0.7.0"
 __author__ = "Oliver Lindemann"
 
 """
@@ -8,12 +8,12 @@ to use the GUI recorder:
 
     gui.start(remote_control=False,
               ask_filename=True,
-               calibration_file="FT_demo.cal")
+               calibration_file="FT_sensor1.cal")
 ``
 
 import relevant stuff to program your own recorder:
 ``
-    from forceDAQ import recorder
+    from forceDAQ import recorder_classes
 ``
 
 import relevant stuff for remote control of the GUI recorder:

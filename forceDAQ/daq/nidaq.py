@@ -8,7 +8,6 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = 'Oliver Lindemann'
-__version__ = "0.1"
 
 import ctypes as ct
 import numpy as np
@@ -16,8 +15,9 @@ import PyDAQmx
 
 class DAQConfiguration(object):
     """Settings required for NI-DAQ"""
-    def __init__(self, device_id=1, channels="ai0:7", rate=1000, minVal = -10,  maxVal = 10):
-        self.device_id = device_id
+    def __init__(self, device_name, channels="ai0:7",
+                 rate=1000, minVal = -10,  maxVal = 10):
+        self.device_name = device_name
         self.channels = channels
         self.rate = ct.c_double(rate)
         self.minVal = ct.c_double(minVal)
@@ -25,7 +25,7 @@ class DAQConfiguration(object):
 
     @property
     def physicalChannel(self):
-        return "Dev{0}/{1}".format(self.device_id, self.channels)
+        return "{0}/{1}".format(self.device_name, self.channels)
 
 class DAQReadAnalog(PyDAQmx.Task):
 

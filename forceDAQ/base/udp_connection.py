@@ -227,8 +227,8 @@ class UDPConnectionProcess(Process):
             the internal clock for timestamps will synchronized with this clock
 
         event_trigger: multiprocessing.Event() (or list of..)
-            event trigger(s) to be set id udp event (not command) is received
-            typically from a sensor recording processes
+            event trigger(s) to be set. If Udp event is received and it is not a
+            command to set this event (typical ofsensor recording processes).
 
         event_ignore_tag:
             udp data that start with this tag will be ignored for event triggering

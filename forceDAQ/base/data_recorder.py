@@ -75,14 +75,14 @@ class DataRecorder(object):
         atexit.register(self.quit)
 
 
-    def force_sensor_process(self, sensor_id):
-        if 0 <= sensor_id < len(self._force_sensor_processes):
-            return self._force_sensor_processes[sensor_id]
-
     @property
     def is_recording(self):
         """Property indicates whether the recording is started or paused"""
         return self._is_recording
+
+    @property
+    def force_sensor_processes(self):
+        return self._force_sensor_processes
 
     def quit(self):
         """Stop all recording processes, close data file and quit recording
@@ -185,8 +185,8 @@ class DataRecorder(object):
         if determine_bias:
             self.determine_biases(n_samples=1000)
 
-        if sum(map(lambda x:not(x.event_bias_is_available.is_set()),
-                    self._force_sensor_processes)):
+        if len(filter(lambda x:x.event_bias_is_available.is_set(),
+                   self._force_sensor_processes)) != len(self._force_sensor_processes):
             raise RuntimeError("Sensors can't be started before bias has been determined.")
 
         # start polling
