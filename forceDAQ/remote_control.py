@@ -74,5 +74,8 @@ def set_force_thresholds(lower, upper):
     return udp.send(Command.SET_THRESHOLDS + dumps(thr))
 
 
-def set_level_change_detection():
-    return udp.send(Command.SET_LEVEL_CHANGE_DETECTION)
+def set_level_change_detection(sensor=1):
+    if sensor==2:
+        return udp.send(Command.SET_LEVEL_CHANGE_DETECTION2)
+    else:
+        return udp.send(Command.SET_LEVEL_CHANGE_DETECTION)

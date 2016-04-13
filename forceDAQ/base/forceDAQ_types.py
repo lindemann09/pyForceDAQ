@@ -211,17 +211,16 @@ class GUIRemoteControlCommands(object):
     SET_RESPONSE_MINMAX_DETECTION, \
     RESPONSE_MINMAX,\
     GET_VERSION, \
-    GET_FX1, GET_FY1, GET_FZ1, GET_TX1, GET_TY1, GET_TZ1,\
-    = map(lambda x: "$cmd{0:02d}".format(x), range(26))
+    GET_FX2, GET_FY2, GET_FZ2, GET_TX2, GET_TY2, GET_TZ2,\
+    GET_THRESHOLD_LEVEL2, \
+    SET_LEVEL_CHANGE_DETECTION2, \
+    CHANGED_LEVEL2, \
+    SET_RESPONSE_MINMAX_DETECTION2, \
+    RESPONSE_MINMAX2\
+    = map(lambda x: "$cmd{0:02d}:".format(x), range(31))
 
     FEEDBACK_PAUSED = FEEDBACK + "paused"
     FEEDBACK_STARTED = FEEDBACK + "started"
-    GET_FX0 = GET_FX
-    GET_FY0 = GET_FY
-    GET_FZ0 = GET_FZ
-    GET_TX0 = GET_TX
-    GET_TY0 = GET_TY
-    GET_TZ0 = GET_TZ
 
 class Thresholds(object):
 
