@@ -648,7 +648,8 @@ def start(remote_control,
                                       sensor_name = sn,
                                       sync_timer=timer,
                                       calibration_folder=calibration_folder,
-                                      reverse_parameter_names=reverse_parameter_names))
+                                      reverse_parameter_names=reverse_parameter_names,
+                                      rate = config.sampling_rate))
 
 
 

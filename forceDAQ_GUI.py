@@ -9,9 +9,9 @@ if __name__ == "__main__": # required because of threding
 
     start(
           device_ids = (1, 2),
+          device_name_prefix="Dev",
           sensor_names = ("FT9093", "FT17809"),
           calibration_folder="calibration",
-          device_name_prefix="Dev",
 
           reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter
           remote_control=False,

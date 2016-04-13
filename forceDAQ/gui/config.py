@@ -1,3 +1,4 @@
+sampling_rate = 1000
 level_detection_parameter = "Fz"
 window_font = "freemono"
 moving_average_size = 5
