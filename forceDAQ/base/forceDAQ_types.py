@@ -30,7 +30,7 @@ class ForceData(object):
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
     def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
-                 device_id=0, trigger_threshold=0.4, reverse=()):
+                 device_id=0, trigger_threshold=0.9, reverse=()):
         """Create a ForceData object
         Parameters
         ----------

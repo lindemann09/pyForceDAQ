@@ -13,8 +13,8 @@ if __name__ == "__main__": # required because of threding
           sensor_names = ("FT9093", "FT17809"),
           calibration_folder="calibration",
 
-          reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter
-          remote_control=False,
+          reverse_scaling = {},#{1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter
+          remote_control=True,
           ask_filename= False,
 
           write_Fx=True,
