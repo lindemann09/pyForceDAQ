@@ -13,10 +13,10 @@ import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
 from .. import __version__ as forceDAQVersion
-from ..lib.data_recorder import DataRecorder, SensorSettings
-from ..lib.sensor import SensorProcess, SensorHistory
-from ..lib.types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
-from ..lib.timer import Timer
+from ..base.data_recorder import DataRecorder, SensorSettings
+from ..base.sensor import SensorProcess, SensorHistory
+from ..base.types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
+from ..base.timer import Timer
 
 from . import config
 from .plotter import PlotterThread, level_indicator, Scaling
