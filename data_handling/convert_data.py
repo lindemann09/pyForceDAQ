@@ -10,7 +10,7 @@ __author__ = 'Oliver Lindemann'
 
 import gzip
 import pandas as pd
-from read_force_data import read_force_data, read_event_data
+from .read_force_data import read_force_data, read_event_data
 
 def force_data_csv2hdf5(path, complevel=9):
     """converting csv force data to hdf5 file
@@ -19,7 +19,7 @@ def force_data_csv2hdf5(path, complevel=9):
         * events
     """
 
-    print "converting to hdf5", path
+    print("converting to hdf5", path)
 
     hdf_filename = path[:path.find(".")] + ".hdf5"
     hdf = pd.HDFStore(hdf_filename, mode = "w", complib='zlib',
@@ -32,7 +32,7 @@ def force_data_csv2hdf5(path, complevel=9):
 def extract_event_data(path):
     """extracting non force data and saving *.trigger.csv and *.udp.csv"""
 
-    print "extracting event data", path
+    print("extracting event data", path)
     events = read_event_data(path)
     i = path.find(".")
     if path.endswith(".gz"):

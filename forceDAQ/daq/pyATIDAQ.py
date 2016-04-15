@@ -300,5 +300,5 @@ if __name__ == "__main__":
 
     atidaq.bias([0.2651, -0.0177, -0.0384, -0.0427, -0.1891, 0.1373, -3.2423])
     atidaq.printCalInfo()
-    print "\nConverting"
-    print atidaq.convertToFT([-3.2863, 0.3875, -3.4877, 0.4043, -3.9341, 0.5474, -3.2106])
+    print("\nConverting")
+    print(atidaq.convertToFT([-3.2863, 0.3875, -3.4877, 0.4043, -3.9341, 0.5474, -3.2106]))

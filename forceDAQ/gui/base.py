@@ -12,15 +12,16 @@ from time import sleep
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
-from . import config
-from layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
-from plotter import PlotterThread, level_indicator, Scaling
 from .. import __version__ as forceDAQVersion
-from ..base.data_recorder import DataRecorder, SensorSettings
-from ..base.forceDAQ_types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
-from ..base.sensor_history import SensorHistory
-from ..base.timer import Timer
-from ..daq.sensor import SensorProcess
+from ..lib.data_recorder import DataRecorder, SensorSettings
+from ..lib.sensor import SensorProcess, SensorHistory
+from ..lib.types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
+from ..lib.timer import Timer
+
+from . import config
+from .plotter import PlotterThread, level_indicator, Scaling
+from .layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
+
 
 def initialize(exp, remote_control=None):
     control.initialize(exp)
@@ -522,7 +523,7 @@ def main_loop(exp, recorder, remote_control=False):
                                 size = (400, 50),
                                 #background_colour=(30,30,30),
                                 text_size=15,
-                                text = "n samples base: {0}\nn samples buffered: {1} ({2} seconds)".format(
+                                text = "n samples lib: {0}\nn samples buffered: {1} ({2} seconds)".format(
                                     str(map(SensorProcess.get_sample_cnt, s.sensor_processes))[1:-1],
                                     str(map(SensorProcess.get_buffer_size, s.sensor_processes))[1:-1],
                                     s.recording_duration_in_sec),
@@ -681,7 +682,7 @@ def start(remote_control,
                  write_trigger1= write_trigger1,
                  write_trigger2= write_trigger2)
 
-    sleep(0.2) # wait for base init
+    sleep(0.2) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
     if remote_control:

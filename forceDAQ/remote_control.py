@@ -4,7 +4,6 @@ import this module to have all relevant classes and function for the remote_cont
 
 __author__ = 'Oliver Lindemann'
 
-from __init__ import __version__ as forceDAQVersion
 import atexit
 
 try:
@@ -12,9 +11,9 @@ try:
 except:
     from pickle import dumps, loads
 
-from base.forceDAQ_types import ForceData, Thresholds, UDPData
-from base.forceDAQ_types import GUIRemoteControlCommands as Command
-from base.udp_connection import UDPConnection
+from .lib.types import Thresholds
+from .lib.types import GUIRemoteControlCommands as Command
+from .lib.udp_connection import UDPConnection
 
 udp = None
 

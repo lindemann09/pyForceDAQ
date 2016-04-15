@@ -7,7 +7,7 @@ import pygame
 from expyriment import stimuli
 from expyriment.misc import constants
 
-from forceDAQ import __version__ as forceDAQVersion
+from .. import __version__ as forceDAQVersion
 
 
 colours = [constants.C_RED,

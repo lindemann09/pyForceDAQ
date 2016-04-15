@@ -1,2 +1,2 @@
-from read_force_data import *
-from convert_data import *
+from .read_force_data import *
+from .convert_data import *
