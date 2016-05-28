@@ -68,6 +68,24 @@ def poll_event(event_type):
     else:
         return None
 
+
+def poll_multiple_events(event_type_list):
+    """polling for multiple events
+    e.g.
+        [Command.CHANGED_LEVEL, Command.CHANGED_LEVEL2]
+
+    returns tuple (event_type, event_type_data) or (None, None)
+
+    """
+    rcv = udp.poll()
+    if rcv is not None:
+        for event_type in event_type_list:
+            if rcv.startswith(event_type):
+                x = loads(rcv.replace(event_type, ""))
+                return (event_type, x)
+    return (None, None)
+
+
 def set_force_thresholds(lower, upper):
     thr = Thresholds([lower, upper])
     return udp.send(Command.SET_THRESHOLDS + dumps(thr))
