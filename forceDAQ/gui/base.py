@@ -90,6 +90,11 @@ class GUIStatus(object):
         self._last_thresholds = None
         self._clock = misc.Clock()
 
+        self.sensor_info_str = ""
+        for tmp in self.recorder.sensor_settings_list:
+            self.sensor_info_str = self.sensor_info_str + \
+                                   "{0}: {1}\n".format(tmp.device_name, tmp.sensor_name)
+        self.sensor_info_str = self.sensor_info_str.strip()
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
@@ -101,7 +106,10 @@ class GUIStatus(object):
         # plot data parameter names
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
-            self.plot_data_indicator_names.append(str(x[0]) + "_" + ForceData.forces_names[ x[1]])
+            self.plot_data_indicator_names.append(self.recorder.sensor_settings_list[x[0]].device_name +\
+                                                  "_" + ForceData.forces_names[ x[1]])
+
+
         self.plot_data_plotter_names = []
         for x in self.plot_data_plotter:
             self.plot_data_plotter_names.append(str(x[0]) + "_" + ForceData.forces_names[ x[1]])
@@ -451,6 +459,19 @@ def main_loop(exp, recorder, remote_control=False):
                 txt.present(update=False, clear=False)
                 update_rects.append(get_pygame_rect(txt, exp.screen.size))
                 # end indicator
+
+                stimuli.Canvas(position=(-250, 200), size=(200, 50),
+                               colour=misc.constants.C_BLACK).present(
+                                        update=False, clear=False)
+                txt = stimuli.TextBox(text = str(s.sensor_info_str),
+                                      #background_colour=(30,30,30),
+                                size=(200, 50),
+                                text_size=15,
+                                position=(-250, 200),
+                                text_colour=misc.constants.C_YELLOW,
+                                text_justification = 0)
+                txt.present(update=False, clear=False)
+                update_rects.append(get_pygame_rect(txt, exp.screen.size))
             else:
                 ############################################  plotter
                 if plotter_thread is None:
@@ -523,7 +544,7 @@ def main_loop(exp, recorder, remote_control=False):
                                 size = (400, 50),
                                 #background_colour=(30,30,30),
                                 text_size=15,
-                                text = "n samples lib: {0}\nn samples buffered: {1} ({2} seconds)".format(
+                                text = "n samples (total): {0}\nn samples: {1} ({2} sec.)".format(
                                     str(map(SensorProcess.get_sample_cnt, s.sensor_processes))[1:-1],
                                     str(map(SensorProcess.get_buffer_size, s.sensor_processes))[1:-1],
                                     s.recording_duration_in_sec),

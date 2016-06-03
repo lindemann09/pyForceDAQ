@@ -83,6 +83,10 @@ class DataRecorder(object):
     def force_sensor_processes(self):
         return self._force_sensor_processes
 
+    @property
+    def sensor_settings_list(self):
+        return map(lambda x:x.sensor_settings, self._force_sensor_processes)
+
     def quit(self):
         """Stop all recording processes, close data file and quit recording
 
@@ -314,6 +318,11 @@ class DataRecorder(object):
 
         self._file.write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
+
+        for s in self.sensor_settings_list:
+            txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
+                                s.sensor_name, s.calibration_file)
+            self._file.write(TAG_COMMENTS + txt)
 
         if len(comment_line)>0:
             self._file.write(TAG_COMMENTS + comment_line + "\n")

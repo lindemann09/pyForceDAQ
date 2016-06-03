@@ -46,6 +46,7 @@ class SensorSettings(DAQConfiguration):
                                   rate=rate, minVal=minVal, maxVal=maxVal)
         self.sync_timer = sync_timer
         self.device_id = device_id
+        self.sensor_name = sensor_name
         self.calibration_file = find_calibration_file(calibration_folder=calibration_folder,
                                                       sensor_name=sensor_name)
 
