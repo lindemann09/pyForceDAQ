@@ -207,7 +207,10 @@ class DataRecorder(object):
         self._is_recording = False
 
         data = []
-        #sensors
+        #pause polling
+        for fsp in self._force_sensor_processes:
+            fsp.pause_polling()
+        # get data
         for fsp in self._force_sensor_processes:
             if recording_screen is not None:
                 recording_screen.stimulus("Getting data").present()

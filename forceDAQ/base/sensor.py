@@ -240,11 +240,14 @@ class SensorProcess(Process):
     def start_polling(self):
         self._event_is_polling.set()
 
+    def pause_polling(self):
+        self._event_is_polling.clear()
+
     def pause_polling_get_buffer(self):
         """pause polling and return recorded buffer"""
-        rtn = []
-        self._event_is_polling.clear()
+        self.pause_polling()
         sleep(0.1) # wait data acquisition paused properly
+        rtn = []
         if self._event_sending_data.is_set() or self._buffer_size.value > 0:
             self._event_sending_data.wait()
             while self._buffer_size.value > 0:  # wait until buffer is empty
