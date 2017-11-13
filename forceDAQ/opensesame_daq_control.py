@@ -9,8 +9,6 @@ v0.9
 
 """
 
-# TODO: opensesame destructor?
-
 from . import remote_control as rc
 
 from libopensesame.experiment import experiment
@@ -72,7 +70,6 @@ class OpensesameDAQControl():
         if self.udp is not None:
             udp.send(rc.Command.QUIT)
         self.udp = None
-
 
     def pause(self, time_for_feedback=60 * 2, text_saving_time ="Please wait..."):
         """returns true if feedback is OK (that means data are saved)
