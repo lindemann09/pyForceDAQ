@@ -86,6 +86,7 @@ class UDPConnection(object):
         while True:
             rtn = self.poll()
             if rtn is not None:
+                #print("UDP receive: {0}".format(rtn))
                 return rtn
             if (get_time() - t) > timeout:
                 return None
@@ -128,7 +129,7 @@ class UDPConnection(object):
         while time() - start < timeout:
             try:
                 self.socket.sendto(data, (self.peer_ip, self.udp_port))
-                # print "send:", data, self.peer_ip
+                #print("UDP send: {0}".format(data))
                 return True
             except:
                 sleep(0.001)  # wait 1 ms

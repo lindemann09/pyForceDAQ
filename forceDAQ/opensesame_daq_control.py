@@ -55,7 +55,8 @@ class OpensesameDAQControl():
                 break
             if self.clock.stopwatch_time > time_for_feedback*1000:
                 msg = "ERROR: Could not start recording <br/> Press key to quit"
-                cnv = canvas(self._exp, text = msg)
+                cnv = canvas(self._exp)
+                cnv.text(msg)
                 cnv.show()
                 kbd.get_key()
                 self._exp.end()
@@ -68,7 +69,7 @@ class OpensesameDAQControl():
 
     def quit_recording(self):
         if self.udp is not None:
-            udp.send(rc.Command.QUIT)
+            self.udp.send(rc.Command.QUIT)
         self.udp = None
 
     def pause(self, time_for_feedback=60 * 2, text_saving_time ="Please wait..."):
@@ -80,7 +81,9 @@ class OpensesameDAQControl():
         self.clock.reset_stopwatch()
         kbd = keyboard(self._exp)
         if text_saving_time != None:
-            canvas(self._exp, text=text_saving_time).show()
+            cnv = canvas(self._exp)
+            cnv.text(text_saving_time)
+            cnv.show()
         while True:
             rtn = self.udp.poll()
             kbd.get_key(timeout=1)
@@ -130,7 +133,8 @@ class OpensesameDAQControl():
         rtn = self.udp.receive(5)  # paused
         if rtn is None:
             msg = "Force server not responding"
-            cnv = canvas(self._exp, text = msg)
+            cnv = canvas(self._exp)
+            cnv.text(msg)
             cnv.show()
             kbd.get_key()
             self.udp.send(rc.Command.QUIT)
@@ -224,7 +228,7 @@ class OpensesameDAQControl():
                   rc.get_data(rc.Command.GET_THRESHOLD_LEVEL2)]
             if prev_lv!=lv:
                 # level has changes
-                self.clock.stopwatch_time()
+                self.clock.reset_stopwatch()
                 prev_lv = lv
                 cnv = canvas(self._exp)
                 for i, pos in enumerate([left_pos, right_pos]):
