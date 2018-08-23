@@ -1,7 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 
-if __name__ == "__main__": # required because of threding
+if __name__ == "__main__": # required because of threading
     from forceDAQ.gui import start, config
 
     config.plot_axis = False
@@ -13,7 +13,7 @@ if __name__ == "__main__": # required because of threding
           sensor_names = ("FT17809", "FT9093"),
           calibration_folder="calibration",
 
-          reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter
+          reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
           remote_control=True,
           ask_filename= False,
 
