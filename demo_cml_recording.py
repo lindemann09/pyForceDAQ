@@ -20,12 +20,12 @@ if __name__  == "__main__":
     recorder.open_data_file("outdata", directory="data", suffix=".csv",
                            time_stamp_filename=False,   comment_line="")
 
-    print "setting bias, not touch the sensor!"
+    print("setting bias, not touch the sensor!")
     #raw_input("Press Enter...")
     recorder.determine_biases(n_samples=100)
     data = []
     timer.wait(1000)
-    print "start recording"
+    print("start recording")
     #raw_input("Press Enter...")
 
     recorder.start_recording()
@@ -34,22 +34,22 @@ if __name__  == "__main__":
     timer.wait(1000)
     recorder.save_soft_trigger(200)
 
-    print "pause recording"
+    print("pause recording")
     data = recorder.pause_recording()
     counter = 0
     for d in data:
         counter += 1
         if isinstance(d, ForceData):
             if counter % 100 == 1:
-                print d
+                print(d)
                 pass
         if isinstance(d, DAQEvents):
-            print d.time
+            print(d.time)
 
-    print "counter", counter
+    print("counter " + str(counter))
 
     recorder.quit()
-    print "quitted"
+    print("quitted")
 
 
 

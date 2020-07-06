@@ -378,9 +378,9 @@ class SensorHistory(object):
             self.moving_average = self.calc_history_average()
         else:
             self._correction_cnt += 1
-            self.moving_average = map(
+            self.moving_average = list(map(
                 lambda x: x[0] + (float(x[1] - x[2]) / len(self.history)),
-                zip(self.moving_average, values, pop))
+                zip(self.moving_average, values, pop)))
 
 
     def calc_history_average(self):
@@ -394,8 +394,8 @@ class SensorHistory(object):
 
         s = [float(0)] * self.number_of_parameter
         for t in self.history:
-            s = map(lambda x: x[0] + x[1], zip(s, t))
-        return map(lambda x: x / len(self.history), s)
+            s = list(map(lambda x: x[0] + x[1], zip(s, t)))
+        return list(map(lambda x: x / len(self.history), s))
 
 
     @property

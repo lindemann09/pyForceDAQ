@@ -6,7 +6,10 @@ __author__ = "Oliver Lindemann"
 
 import os
 import pygame
-from cPickle import dumps, loads
+try:
+    from cPickle import dumps, loads
+except: #Python3
+    from _pickle import dumps, loads
 from time import sleep
 
 import numpy as np
@@ -415,7 +418,8 @@ def main_loop(exp, recorder, remote_control=False):
                     plotter_thread = None
 
                 ## indicator
-                force_data_array = map(lambda x: s.sensor_processes[x[0]].get_force(x[1]), s.plot_data_indicator)
+                force_data_array = list(map(lambda x: s.sensor_processes[x[
+                    0]].get_force(x[1]), s.plot_data_indicator))
 
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
@@ -499,10 +503,12 @@ def main_loop(exp, recorder, remote_control=False):
                     s.clear_screen = False
 
                 if s.plot_filtered:
-                    tmp = np.array(map(lambda x: s.history[x[0]].moving_average[x[1]], s.plot_data_plotter),
+                    tmp = np.array(list(map(lambda x: s.history[x[
+                        0]].moving_average[x[1]], s.plot_data_plotter)),
                                    dtype=float)
                 else:
-                    tmp = np.array(map(lambda x: s.sensor_processes[x[0]].get_force(x[1]), s.plot_data_plotter),
+                    tmp = np.array(list(map(lambda x: s.sensor_processes[x[
+                        0]].get_force(x[1]), s.plot_data_plotter)),
                                    dtype=float)
 
                 if s.thresholds is not None:
@@ -545,8 +551,10 @@ def main_loop(exp, recorder, remote_control=False):
                                 #background_colour=(30,30,30),
                                 text_size=15,
                                 text = "n samples (total): {0}\nn samples: {1} ({2} sec.)".format(
-                                    str(map(SensorProcess.get_sample_cnt, s.sensor_processes))[1:-1],
-                                    str(map(SensorProcess.get_buffer_size, s.sensor_processes))[1:-1],
+                                    str(list(map(SensorProcess.get_sample_cnt,
+                                             s.sensor_processes)))[1:-1],
+                                    str(list(map(SensorProcess.get_buffer_size,
+                                             s.sensor_processes)))[1:-1],
                                     s.recording_duration_in_sec),
                                 text_colour=misc.constants.C_YELLOW,
                                 text_justification = 0)
@@ -771,4 +779,4 @@ def draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
 
 
 def strlist_append(prefix, strlist):
-    return map(lambda x: prefix+x, strlist)
+    return list(map(lambda x: prefix+x, strlist))

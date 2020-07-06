@@ -3,6 +3,7 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
+# PY3
 __author__ = "Oliver Lindemann"
 
 import atexit
@@ -11,7 +12,8 @@ import os
 from time import localtime, strftime,asctime
 
 from .. import __version__ as forceDAQVersion
-from ..base.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, TAG_UDPDATA, TAG_COMMENTS
+from ..base.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
+                        TAG_UDPDATA, TAG_COMMENTS
 from ..base.types import GUIRemoteControlCommands as RemoteCmd
 from ..base.sensor import SensorSettings, SensorProcess
 from ..base.udp_connection import UDPConnectionProcess
@@ -85,7 +87,8 @@ class DataRecorder(object):
 
     @property
     def sensor_settings_list(self):
-        return map(lambda x:x.sensor_settings, self._force_sensor_processes)
+        return list(map(lambda x:x.sensor_settings,
+                        self._force_sensor_processes))
 
     def quit(self):
         """Stop all recording processes, close data file and quit recording
@@ -188,12 +191,12 @@ class DataRecorder(object):
         if determine_bias:
             self.determine_biases(n_samples=1000)
 
-        if len(filter(lambda x:x.event_bias_is_available.is_set(),
-                   self._force_sensor_processes)) != len(self._force_sensor_processes):
+        if len(list(filter(lambda x:x.event_bias_is_available.is_set(),
+                   self._force_sensor_processes))) != len(self._force_sensor_processes):
             raise RuntimeError("Sensors can't be started before bias has been determined.")
 
         # start polling
-        map(lambda x:x.start_polling(), self._force_sensor_processes)
+        list(map(lambda x:x.start_polling(), self._force_sensor_processes))
         self._is_recording = True
 
     def pause_recording(self, recording_screen=None):
@@ -243,9 +246,11 @@ class DataRecorder(object):
         """
 
         self.pause_recording()
-        map(lambda x:x.determine_bias(n_samples=n_samples),
-            self._force_sensor_processes)
-        map(lambda x:x.event_bias_is_available.wait(), self._force_sensor_processes)
+        for x in self._force_sensor_processes:
+            x.determine_bias(n_samples=n_samples)
+
+        for x in self._force_sensor_processes:
+            x.event_bias_is_available.wait()
 
     def open_data_file(self, filename, directory="data",
                        time_stamp_filename=False,
@@ -317,7 +322,7 @@ class DataRecorder(object):
             self._file = gzip.open(directory + os.path.sep + self.filename, 'w+')
         else:
             self._file = open(directory + os.path.sep + self.filename, 'w+')
-        print "Data file: ", self.filename
+        print("Data file: {}".format(self.filename))
 
         self._file.write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))

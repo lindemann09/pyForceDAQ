@@ -20,7 +20,7 @@ STR_LESS_FORCE = u"sacht"
 
 stopwatch = misc.Clock()
 udp = rc.init_udp_connection()
-print udp
+print(udp)
 
 
 def runtimeerror(exp, text):
