@@ -63,10 +63,10 @@ class SensorSettings(DAQConfiguration):
 
 
 class Sensor(DAQReadAnalog):
-    SENSOR_CHANNELS = range(0,
-                            5 + 1)  # channel 0:5 for FT sensor, channel 6 for trigger
-    TRIGGER_CHANNELS = range(5,
-                             6 + 1)  # channel 7 for trigger synchronization validation
+    SENSOR_CHANNELS = range(0, 5 + 1)  # channel 0:5 for FT sensor, channel 6
+                                       # for trigger
+    TRIGGER_CHANNELS = range(5, 6 + 1) # channel 7 for trigger
+                                       # synchronization validation
 
     def __init__(self, settings):
         """ TODO"""

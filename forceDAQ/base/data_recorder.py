@@ -2,8 +2,6 @@
 
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
-
-# PY3
 __author__ = "Oliver Lindemann"
 
 import atexit

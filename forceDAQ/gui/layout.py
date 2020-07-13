@@ -1,6 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 # helper functions
+import os
 from time import strftime
 import pygame
 
@@ -28,9 +29,13 @@ def get_pygame_rect(stimulus, screen_size):
 
 def logo_text_line(text):
     blank = stimuli.Canvas(size=(600, 400))
-    stimuli.TextLine(text="Version " + forceDAQVersion, position=(0, 80),
-                     text_size=14,
+    logo = stimuli.Picture(filename=os.path.join(os.path.dirname(__file__),
+                            "forceDAQ_logo.png"), position = (0, 150))
+    logo.scale(0.6)
+    stimuli.TextLine(text="Version " + forceDAQVersion, position=(0,80),
+                     text_size = 14,
                      text_colour=constants.C_EXPYRIMENT_ORANGE).plot(blank)
+    logo.plot(blank)
     stimuli.TextLine(text=text).plot(blank)
     return blank
 
