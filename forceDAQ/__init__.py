@@ -26,3 +26,8 @@ For function to support data handling see the folder pyForceDAQ/analysis
 """
 
 #TODO setting files
+
+import sys as _sys
+PYTHON3 = (_sys.version_info[0] == 3)
+
+

@@ -1,8 +1,6 @@
 from .timer import get_time
-import sys
 from os import listdir, path
 
-PYTHON3 = (sys.version_info[0] == 3)
 
 def N2g(N):
     kg = N/9.81

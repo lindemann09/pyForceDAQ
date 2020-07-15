@@ -1,10 +1,8 @@
 """ A lan connect class using udp
-
-See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.3.1"
+__version__ = "0.4"
 
 import atexit
 import os
@@ -15,13 +13,16 @@ from time import sleep, time
 
 from ..base.types import UDPData
 from .timer import Timer, get_time
-from .misc import PYTHON3
+from .. import PYTHON3
 
 def get_lan_ip():
     if os.name != "nt":
         # linux
         from subprocess import check_output
-        rtn = check_output("hostname -I".split(" ")).split(" ")
+        rtn = check_output("hostname -I".split(" "))
+        if PYTHON3:
+            rtn = rtn.decode()
+        rtn = rtn.split(" ")
         return rtn[0].strip()
 
     else:
@@ -41,11 +42,11 @@ class UDPConnection(object):
     def __init__(self, udp_port=5005):
         self.udp_port = udp_port
 
-        self.socket = socket.socket(socket.AF_INET,  # Internet
-                                    socket.SOCK_DGRAM)  # UDP
+        self._socket = socket.socket(socket.AF_INET,  # Internet
+                                     socket.SOCK_DGRAM)  # UDP
         self.my_ip = get_lan_ip()
-        self.socket.bind((self.my_ip, self.udp_port))
-        self.socket.setblocking(False)
+        self._socket.bind((self.my_ip, self.udp_port))
+        self._socket.setblocking(False)
         self.peer_ip = None
 
     def __str__(self):
@@ -79,9 +80,12 @@ class UDPConnection(object):
         """
 
         try:
-            data, sender = self.socket.recvfrom(1024)
+            data, sender = self._socket.recvfrom(1024)
         except:
             return None
+
+        if PYTHON3 and isinstance(data, bytes):
+            data = data.decode()
 
         # process data
         if data == UDPConnection.CONNECT:
@@ -106,9 +110,12 @@ class UDPConnection(object):
         if self.peer_ip is None:
             return False
         start = time()
+        if PYTHON3 and isinstance(data, str):
+            data = data.encode()
+
         while time() - start < timeout:
             try:
-                self.socket.sendto(data, (self.peer_ip, self.udp_port))
+                self._socket.sendto(data, (self.peer_ip, self.udp_port))
                 #print("UDP send: {0}".format(data))
                 return True
             except:
@@ -287,5 +294,9 @@ class UDPConnectionProcess(Process):
                         self.event_is_connected.set()
                     else:
                         self.event_is_connected.clear()
+
+                if not udp_connection.is_connected:
+                    sleep(0.1)
+
 
         udp_connection.unconnect_peer()
