@@ -1,4 +1,4 @@
-__version__ = "0.7.6b"
+__version__ = "0.8"
 __author__ = "Oliver Lindemann"
 
 """
@@ -25,3 +25,4 @@ For function to support data handling see the folder pyForceDAQ/analysis
 
 """
 
+#TODO setting files

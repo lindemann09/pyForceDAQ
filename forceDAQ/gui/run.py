@@ -4,7 +4,6 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-import os
 import pygame
 try:
     from cPickle import dumps, loads
@@ -18,15 +17,16 @@ from expyriment import control, design, stimuli, io, misc
 from .. import __version__ as forceDAQVersion
 from ..base.data_recorder import DataRecorder, SensorSettings
 from ..base.sensor import SensorProcess, SensorHistory
-from ..base.types import ForceData,  Thresholds, GUIRemoteControlCommands as RcCmd
+from ..base.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
 from ..base.timer import Timer
 
 from . import config
-from .plotter import PlotterThread, level_indicator, Scaling
+from .plotter import PlotterThread
+from ._level_indicator import level_indicator
+from ._scaling import Scaling
 from .layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
 
-
-def initialize(exp, remote_control=None):
+def _initialize(exp, remote_control=None):
     control.initialize(exp)
     exp.mouse.show_cursor()
 
@@ -42,7 +42,7 @@ def initialize(exp, remote_control=None):
 
     return remote_control
 
-class GUIStatus(object):
+class _GUIStatus(object):
 
     def __init__(self,
                  screen_refresh_interval_indicator,
@@ -201,7 +201,7 @@ class GUIStatus(object):
             self.plot_filtered = not self.plot_filtered
 
         elif key == misc.constants.K_t:
-            tmp = text2number_array(
+            tmp = _text2number_array(
                         io.TextInput("Enter thresholds",
                                     background_stimulus=logo_text_line("")).get())
             self.background.stimulus().present()
@@ -321,7 +321,7 @@ class GUIStatus(object):
             return self.history[sensor].moving_average[self.level_detection_parameter]
 
 
-def main_loop(exp, recorder, remote_control=False):
+def _main_loop(exp, recorder, remote_control=False):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -332,17 +332,17 @@ def main_loop(exp, recorder, remote_control=False):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = GUIStatus(screen_refresh_interval_indicator = config.screen_refresh_interval_indicator,
-                  screen_refresh_interval_plotter = config.gui_screen_refresh_interval_plotter,
-                  recorder = recorder,
-                  remote_control=remote_control,
-                  level_detection_parameter = ForceData.forces_names.index(
+    s = _GUIStatus(screen_refresh_interval_indicator = config.screen_refresh_interval_indicator,
+                   screen_refresh_interval_plotter = config.gui_screen_refresh_interval_plotter,
+                   recorder = recorder,
+                   remote_control=remote_control,
+                   level_detection_parameter = ForceData.forces_names.index(
                                                         config.level_detection_parameter),  # only one dimension
-                       screen_size = exp.screen.size,
-                  data_min_max=config.data_min_max,
-                  plotter_pixel_min_max=config.plotter_pixel_min_max,
-                  indicator_pixel_min_max=config.indicator_pixel_min_max,
-                  plot_axis = config.plot_axis)
+                   screen_size = exp.screen.size,
+                   data_min_max=config.data_min_max,
+                   plotter_pixel_min_max=config.plotter_pixel_min_max,
+                   indicator_pixel_min_max=config.indicator_pixel_min_max,
+                   plot_axis = config.plot_axis)
 
     # plotter
     plotter_thread = None
@@ -409,7 +409,7 @@ def main_loop(exp, recorder, remote_control=False):
             update_rects = []
 
             if s.check_thresholds_changed():
-                draw_plotter_thread_thresholds(plotter_thread, s.thresholds, s.scaling_plotter)
+                _draw_plotter_thread_thresholds(plotter_thread, s.thresholds, s.scaling_plotter)
 
             if s.plot_indicator:
                 ############################################  plot_indicator
@@ -624,22 +624,22 @@ def main_loop(exp, recorder, remote_control=False):
 
 
 
-def start(remote_control,
-          ask_filename,
-          device_ids,
-          sensor_names,
-          calibration_folder,
-          device_name_prefix="Dev",
-          write_Fx = True,
-          write_Fy = True,
-          write_Fz = True,
-          write_Tx = False,
-          write_Ty = False,
-          write_Tz = False,
-          write_trigger1 = True,
-          write_trigger2 = False,
-          zip_data=False,
-          reverse_scaling = None):
+def run(remote_control,
+        ask_filename,
+        device_ids,
+        sensor_names,
+        calibration_folder,
+        device_name_prefix="Dev",
+        write_Fx = True,
+        write_Fy = True,
+        write_Fz = True,
+        write_Tx = False,
+        write_Ty = False,
+        write_Tz = False,
+        write_trigger1 = True,
+        write_trigger2 = False,
+        zip_data=False,
+        reverse_scaling = None):
 
     """start gui
     remote_control should be None (ask) or True or False
@@ -680,12 +680,13 @@ def start(remote_control,
     control.defaults.fast_quit = True
     control.defaults.open_gl = False
     control.defaults.event_logging = 0
+    control.defaults.audiosystem_autostart = False
     exp = design.Experiment(text_font=config.window_font)
     exp.set_log_level(0)
 
 
     filename = "output.csv"
-    remote_control = initialize(exp, remote_control=remote_control)
+    remote_control = _initialize(exp, remote_control=remote_control)
     logo_text_line("Initializing Force Recording").present()
 
     recorder = DataRecorder(sensors, timer=timer,
@@ -739,8 +740,8 @@ def start(remote_control,
                             time_stamp_filename=False,
                             comment_line="")
 
-    main_loop(exp, recorder=recorder,
-              remote_control=remote_control)
+    _main_loop(exp, recorder=recorder,
+               remote_control=remote_control)
 
     recorder.quit()
     control.end()
@@ -748,7 +749,7 @@ def start(remote_control,
 
 
 #### helper
-def text2number_array(txt):
+def _text2number_array(txt):
     """helper function"""
     rtn = []
     try:
@@ -758,7 +759,7 @@ def text2number_array(txt):
     except:
         return None
 
-def draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
+def _draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
     if plotter_thread is not None:
         if thresholds is not None:
             plotter_thread.set_horizontal_lines(
@@ -767,5 +768,5 @@ def draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
             plotter_thread.set_horizontal_lines(y_values=None)
 
 
-def strlist_append(prefix, strlist):
+def _strlist_append(prefix, strlist):
     return list(map(lambda x: prefix+x, strlist))

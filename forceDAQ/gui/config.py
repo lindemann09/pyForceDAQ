@@ -14,3 +14,5 @@ plot_data_plotter_for_single_sensor = [ (0,0), (0,1), (0,2) ] # plotter can't pl
 
 plot_data_indicator_for_two_sensors = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]  # sensor, parameter
 plot_data_plotter_for_two_sensors = [ (0,2), (1,2) ] # plotter can't plot torques
+
+#TODO config file

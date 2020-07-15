@@ -10,7 +10,6 @@ from expyriment.misc import constants
 
 from .. import __version__ as forceDAQVersion
 
-
 colours = [constants.C_RED,
                constants.C_GREEN,
                constants.C_YELLOW,

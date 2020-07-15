@@ -13,10 +13,12 @@ import ctypes as ct
 import numpy as np
 import PyDAQmx
 
+from ._config import NUM_SAMPS_PER_CHAN, TIMEOUT, NI_DAQ_BUFFER_SIZE\
+
 class DAQReadAnalog(PyDAQmx.Task):
-    NUM_SAMPS_PER_CHAN = ct.c_int32(1)
-    TIMEOUT = ct.c_longdouble(1.0)  # one second
-    NI_DAQ_BUFFER_SIZE = 1000
+    NUM_SAMPS_PER_CHAN = NUM_SAMPS_PER_CHAN
+    TIMEOUT = TIMEOUT
+    NI_DAQ_BUFFER_SIZE = NI_DAQ_BUFFER_SIZE
 
     def __init__(self, configuration, read_array_size_in_samples):
         """ TODO

@@ -18,10 +18,7 @@ from .types import ForceData, DAQEvents
 from .misc import find_calibration_file
 from .timer import Timer
 
-#
-#### change import here if you want to use nidaqmx instead of pydaymx ####
-from ..daq.daq_read_Analog_pydaqmx import DAQReadAnalog
-#from ..daq.daq_read_analog_nidaqmx import DAQReadAnalog
+from ..daq import DAQReadAnalog
 
 class SensorSettings(DAQConfiguration):
     def __init__(self,
@@ -74,7 +71,8 @@ class Sensor(DAQReadAnalog):
     def __init__(self, settings):
         """ TODO"""
 
-        DAQReadAnalog.__init__(self, configuration=settings,
+        super(Sensor).__init__(self,
+                               configuration=settings,
                                read_array_size_in_samples= \
                                    len(Sensor.SENSOR_CHANNELS) + len(
                                        Sensor.TRIGGER_CHANNELS))
