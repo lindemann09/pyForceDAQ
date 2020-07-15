@@ -77,7 +77,7 @@ while True:
     elif key == misc.constants.K_SPACE:
         text = io.TextInput().get()
         stimuli.BlankScreen().present()
-        print(("--> ", c.time, text))
+        print("--> {} {}".format(c.time, text))
         udp_connection.send(text)
     elif key == ord("t"):
         times = []
@@ -93,6 +93,6 @@ while True:
 
     feedback = udp_connection.poll()
     if feedback is not None:
-        print(("<-- ", c.time, feedback))
+        print("<-- {} {}".format(c.time, feedback))
 
 udp_connection.unconnect_peer()

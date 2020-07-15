@@ -99,8 +99,7 @@ class PGSurface(Canvas):
         if not self.has_surface:
             ok = self._set_surface(self._get_surface())  # create surface
             if not ok:
-                raise RuntimeError(Visual._compression_exception_message.format(
-                    "surface"))
+                raise RuntimeError("Cannot call surface on compressed stimuli!")
         return self._surface
 
     @property
@@ -149,7 +148,7 @@ class PGSurface(Canvas):
             self.unlock_pixel_array()
         return Canvas.unload(self, keep_surface)
 
-    def rotate(self, degree):
+    def rotate(self, degree):  # , filter=True) Exypriment >=.9
         self.unlock_pixel_array()
         return Canvas.rotate(self, degree)
 
@@ -414,7 +413,7 @@ def level_indicator(value, text, scaling, width=20,
 
     # indicator
     height = scaling.pixel_max - scaling.pixel_min
-    indicator = Canvas(size=[width + 2, height + 2],
+    indicator = Canvas(size=(width + 2, height + 2),
                                colour=(30, 30, 30))
 
     zero = scaling.data2pixel(0)

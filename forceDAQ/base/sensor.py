@@ -13,12 +13,15 @@ from time import sleep
 
 import numpy as np
 
-from ..daq.nidaq import DAQConfiguration, DAQReadAnalog
-from ..daq.pyATIDAQ import ATI_CDLL
+from ..daq import ATI_CDLL, DAQConfiguration
 from .types import ForceData, DAQEvents
 from .misc import find_calibration_file
 from .timer import Timer
 
+#
+#### change import here if you want to use nidaqmx instead of pydaymx ####
+from ..daq.daq_read_Analog_pydaqmx import DAQReadAnalog
+#from ..daq.daq_read_analog_nidaqmx import DAQReadAnalog
 
 class SensorSettings(DAQConfiguration):
     def __init__(self,
@@ -63,10 +66,10 @@ class SensorSettings(DAQConfiguration):
 
 
 class Sensor(DAQReadAnalog):
-    SENSOR_CHANNELS = range(0,
-                            5 + 1)  # channel 0:5 for FT sensor, channel 6 for trigger
-    TRIGGER_CHANNELS = range(5,
-                             6 + 1)  # channel 7 for trigger synchronization validation
+    SENSOR_CHANNELS = range(0, 5 + 1)  # channel 0:5 for FT sensor, channel 6
+                                       # for trigger
+    TRIGGER_CHANNELS = range(5, 6 + 1) # channel 7 for trigger
+                                       # synchronization validation
 
     def __init__(self, settings):
         """ TODO"""
@@ -378,9 +381,9 @@ class SensorHistory(object):
             self.moving_average = self.calc_history_average()
         else:
             self._correction_cnt += 1
-            self.moving_average = map(
+            self.moving_average = list(map(
                 lambda x: x[0] + (float(x[1] - x[2]) / len(self.history)),
-                zip(self.moving_average, values, pop))
+                zip(self.moving_average, values, pop)))
 
 
     def calc_history_average(self):
@@ -394,8 +397,8 @@ class SensorHistory(object):
 
         s = [float(0)] * self.number_of_parameter
         for t in self.history:
-            s = map(lambda x: x[0] + x[1], zip(s, t))
-        return map(lambda x: x / len(self.history), s)
+            s = list(map(lambda x: x[0] + x[1], zip(s, t)))
+        return list(map(lambda x: x / len(self.history), s))
 
 
     @property

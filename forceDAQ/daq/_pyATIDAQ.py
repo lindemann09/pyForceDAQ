@@ -254,7 +254,8 @@ class ATI_CDLL(object):
         ft_array = FT_SAMPLE_TYPE()
         self.cdll.ConvertToFT(self._calibration, VOLTAGE_SAMPLE_TYPE(*voltages),
                               byref(ft_array))
-        rtn = map(lambda x: x, ft_array)  # convert ctype array to python array
+        rtn = list(map(lambda x: x, ft_array))  # convert ctype array to python
+        # array
         for x in reverse_parameters:
             rtn[x] = -1*rtn[x]
         return rtn

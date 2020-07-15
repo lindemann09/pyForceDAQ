@@ -4,26 +4,29 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.3"
+__version__ = "0.3.1"
 
 import atexit
 import os
 import socket
-from multiprocessing import Process, Event, Queue, sharedctypes
+from multiprocessing import Process, Event, Queue
+from multiprocessing.sharedctypes import Array
 from time import sleep, time
 
 from ..base.types import UDPData
 from .timer import Timer, get_time
-
+from .misc import PYTHON3
 if os.name != "nt":
     import fcntl
     import struct
 
     def get_interface_ip(ifname):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if PYTHON3:
+            ifname = ifname.encode()
         return socket.inet_ntoa(fcntl.ioctl(s.fileno(),
                                             0x8915, struct.pack('256s',
-                                                                ifname[:15]))[20:24])
+                                                    ifname[:15]))[20:24])
 
 
 def get_lan_ip():
@@ -243,7 +246,7 @@ class UDPConnectionProcess(Process):
         self.event_is_connected = Event()
         self._event_stop_request = Event()
         self._event_is_polling = Event()
-        self._ip_address = sharedctypes.Array('c', 'xxx.xxx.xxx.xxx')
+        self._ip_address = Array('c', 'xxx.xxx.xxx.xxx')
         self._event_ignore_tag = event_ignore_tag
 
         if isinstance(event_trigger, type(Event)  ):
