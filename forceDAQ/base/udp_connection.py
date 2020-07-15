@@ -235,7 +235,11 @@ class UDPConnectionProcess(Process):
         self.event_is_connected = Event()
         self._event_stop_request = Event()
         self._event_is_polling = Event()
-        self._ip_address = Array('c', 'xxx.xxx.xxx.xxx')
+        if PYTHON3:
+            self._ip_address = Array("c", b"xxx.xxx.xxx.xxx")
+        else:
+            self._ip_address = Array("c", "xxx.xxx.xxx.xxx")
+
         self._event_ignore_tag = event_ignore_tag
 
         if isinstance(event_trigger, type(Event)  ):
@@ -249,7 +253,16 @@ class UDPConnectionProcess(Process):
 
     @property
     def ip_address(self):
-        return self._ip_address.value
+        rtn = self._ip_address.value
+        if PYTHON3:
+            rtn = rtn.decode()
+        return rtn
+
+    @ip_address.setter
+    def ip_address(self, ip):
+        if PYTHON3:
+            ip = ip.encode()
+        self._ip_address.value = ip
 
     def stop(self):
         self._event_stop_request.set()
@@ -266,7 +279,7 @@ class UDPConnectionProcess(Process):
         udp_connection = UDPConnection(udp_port=5005)
         print("UDP process started")
         print(udp_connection)
-        self._ip_address.value = str(udp_connection.my_ip)
+        self.ip_address = udp_connection.my_ip
         self.start_polling()
         timer = Timer(self._sync_timer)
         while not self._event_stop_request.is_set():
