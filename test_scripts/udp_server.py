@@ -19,7 +19,7 @@ while True:
             print("Server is connected")
         else:
             print("Server is unconnected")
-            break
+
 
 udp_p.stop()
 udp_p.join()
