@@ -317,7 +317,7 @@ class DataRecorder(object):
             self._file = gzip.open(directory + os.path.sep + self.filename, 'w+')
         else:
             self._file = open(directory + os.path.sep + self.filename, 'w+')
-        print "Data file: ", self.filename
+        print("Data file: {}".format(self.filename))
 
         self._file.write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
