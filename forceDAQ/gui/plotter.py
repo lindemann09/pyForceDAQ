@@ -1,4 +1,4 @@
-__version__ = "0.2"
+__version__ = "0.2b"
 
 import threading
 import numpy as np
@@ -192,7 +192,7 @@ class Plotter(PGSurface):
         self.data_row_colours = data_row_colours
         self.width = width
         self.y_range = y_range
-        self._background_colour = background_colour
+        self._background_colour = tuple(background_colour)
         self.marker_colour = marker_colour
         self._horizontal_lines = None
 
@@ -223,7 +223,8 @@ class Plotter(PGSurface):
     def data_row_colours(self, values):
         """data_row_colours: list of colour"""
         try:
-            if not isinstance(values[0], list) and \
+            ## values[0] FIXME too sensors issue??
+            if not isinstance(values[0], list) and  \
                     not isinstance(values[0], tuple):  # one dimensional
                 values = [values]
         except:

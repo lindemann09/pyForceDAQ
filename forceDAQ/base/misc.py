@@ -1,4 +1,4 @@
-from timer import get_time
+from .timer import get_time
 from os import listdir, path
 
 def N2g(N):

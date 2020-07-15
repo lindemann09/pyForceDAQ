@@ -51,7 +51,7 @@ def get_lan_ip():
 
 
 class UDPConnection(object):
-    # todo: document the usage "connecting" "unconecting"
+    # todo: document the usage "connecting" "unconnecting"
     COMMAND_CHAR = "$"
     CONNECT = COMMAND_CHAR + "connect"
     UNCONNECT = COMMAND_CHAR + "unconnect"

@@ -8,14 +8,14 @@ if __name__ == "__main__": # required because of threading
     config.data_min_max = [-5, 30]
 
     start(
-          device_ids = (1, 2),
           device_name_prefix="Dev",
-          sensor_names = ("FT17809", "FT9093"),
+          device_ids = 1,
+          sensor_names = ("FT30436"),
           calibration_folder="calibration",
 
-          reverse_scaling = {1: ["Fz"], 2: ["Fz"]}, # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
-          remote_control=True,
-          ask_filename= False,
+          reverse_scaling = {1: ["Fz"]}, # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
+          remote_control=False,
+          ask_filename= True,
 
           write_Fx=True,
           write_Fy=True,

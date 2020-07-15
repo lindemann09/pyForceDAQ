@@ -82,10 +82,7 @@ class ATI_CDLL(object):
         else:
             raise RuntimeError("Your plattform is not supported")
 
-        try:
-            self.cdll = CDLL(lib_path)
-        except:
-            raise RuntimeError("Can't load " + lib_path)
+        self.cdll = CDLL(lib_path)
 
         self.cdll.createCalibration.argtype = [c_char_p, c_ushort]
         self.cdll.createCalibration.restype = calibration_p
