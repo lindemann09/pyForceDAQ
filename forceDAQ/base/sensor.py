@@ -79,7 +79,7 @@ class Sensor(DAQReadAnalog):
                                        Sensor.TRIGGER_CHANNELS))
 
         # ATI voltage to forrce converter
-        self._atidaq = ATI_CDLL()
+        self._atidaq = ATI_CDLL(w64_dll=False)
         # get calibration
         index = ct.c_short(1)
         self._atidaq.createCalibration(settings.calibration_file, index)

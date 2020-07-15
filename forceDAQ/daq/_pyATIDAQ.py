@@ -72,13 +72,15 @@ calibration_p = POINTER(Calibration)
 
 class ATI_CDLL(object):
 
-    def __init__(self):
+    def __init__(self, w64_dll):
 
-        file_dir = os.path.dirname(os.path.realpath(__file__))
         if platform.startswith('linux'):
             lib_path = "/usr/lib/atidaq.so"
         elif platform == 'win32':
-            lib_path = "atidaq.dll"  # search in windows system folder
+            if w64_dll: # search in windows system folder
+                lib_path = "atidaq64.dll"
+            else:
+                lib_path = "atidaq.dll"
         else:
             raise RuntimeError("Your plattform is not supported")
 
@@ -289,7 +291,7 @@ if __name__ == "__main__":
 
     #filename = raw_input("Calibration file: ")
     filename = "FT_sensor1.cal"
-    atidaq = ATI_CDLL()
+    atidaq = ATI_CDLL(w64_dll=False)
     # get calibration
     index = c_short(1)
     atidaq.createCalibration(filename, index)
