@@ -2,7 +2,11 @@
 from expyriment import control, stimuli, io, misc
 from expyriment.misc import Clock
 
-from forceDAQ import UDPConnection
+from forceDAQ.base.udp_connection import UDPConnection
+
+
+
+
 
 # t : test connect
 # q : quit client
@@ -13,10 +17,10 @@ control.set_develop_mode(True)
 exp = control.initialize()
 
 udp_connection = UDPConnection()
-print udp_connection
+print(udp_connection)
 
 if not udp_connection.connect_peer("192.168.1.1"):  # 41.89.98.24
-    print "error connecting to peer"
+    print("error connecting to peer")
     exit()
 
 stimuli.TextLine("connected to " + udp_connection.peer_ip).present()
@@ -73,7 +77,7 @@ while True:
     elif key == misc.constants.K_SPACE:
         text = io.TextInput().get()
         stimuli.BlankScreen().present()
-        print "--> ", c.time, text
+        print(("--> ", c.time, text))
         udp_connection.send(text)
     elif key == ord("t"):
         times = []
@@ -81,14 +85,14 @@ while True:
             stimuli.TextLine("ping test " + str(cnt)).present()
             c.reset_stopwatch()
             ok, time = udp_connection.ping()
-            print c.stopwatch_time
+            print(c.stopwatch_time)
             times.append(time)
             c.wait(100)
         stimuli.BlankScreen().present()
-        print times
+        print(times)
 
     feedback = udp_connection.poll()
     if feedback is not None:
-        print "<-- ", c.time, feedback
+        print(("<-- ", c.time, feedback))
 
 udp_connection.unconnect_peer()
