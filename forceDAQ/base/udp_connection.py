@@ -147,17 +147,17 @@ class UDPConnection(object):
         self.peer_ip = None
         return False
 
-    def wait_input(self, input_string, duration=1):
+    def wait_input(self, input_string, duration=1.0):
         """poll the connection and waits for a specific input"""
         start = time()
         while time() - start < duration:
             in_ = self.poll()
-            if in_ == UDPConnection.COMMAND_REPLY:
+            if in_ == input_string:
                 return True
         return False
 
     def unconnect_peer(self, timeout=1.0):
-        self.send(UDPConnection.UNCONNECT)
+        self.send(UDPConnection.UNCONNECT, timeout=timeout)
         self.peer_ip = None
 
     @property
@@ -207,7 +207,7 @@ class UDPConnectionProcess(Process):
 
         while True:
             data = receive_queue.get()
-            print data
+            print(data)
             if data is not None:
                 udp_p.send_queue.put(data.string)
 
@@ -216,7 +216,8 @@ class UDPConnectionProcess(Process):
         # connecting to a server
     """        # todo docu
 
-    def __init__(self, sync_timer, event_trigger = (), event_ignore_tag = None):
+    def __init__(self, sync_timer=None, event_trigger = (), event_ignore_tag =
+    None):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -232,7 +233,7 @@ class UDPConnectionProcess(Process):
 
         event_trigger: multiprocessing.Event() (or list of..)
             event trigger(s) to be set. If Udp event is received and it is not a
-            command to set this event (typical ofsensor recording processes).
+            command to set this event (typical of sensor recording processes).
 
         event_ignore_tag:
             udp data that start with this tag will be ignored for event triggering
@@ -240,7 +241,11 @@ class UDPConnectionProcess(Process):
         """ # todo docu
 
         super(UDPConnectionProcess, self).__init__()
-        self._sync_timer = sync_timer
+        if isinstance(sync_timer, Timer):
+            self._sync_timer = sync_timer
+        else:
+            self._sync_timer = None
+
         self.receive_queue = Queue()
         self.send_queue = Queue()
         self.event_is_connected = Event()
@@ -255,7 +260,6 @@ class UDPConnectionProcess(Process):
             self._event_trigger = tuple(event_trigger)
         except:
             self._event_trigger = ()
-
 
         atexit.register(self.stop)
 
@@ -291,7 +295,8 @@ class UDPConnectionProcess(Process):
                                                     time=timer.time))
 
                     if not data.startswith(self._event_ignore_tag):
-                        for ev in self._event_trigger: # set trigger
+                        for ev in self._event_trigger:
+                            # set all connected trigger
                             ev.set()
                 try:
                     udp_connection.send(self.send_queue.get_nowait())

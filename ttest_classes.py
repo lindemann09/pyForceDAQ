@@ -1,16 +1,5 @@
 from forceDAQ.gui import plotter
 from forceDAQ.gui.layout import colours
-import time
-
-
-try:
-    # expyriment >= 0.10
-    from expyriment.misc import Colour as ExpyColor
-except:
-    # old expyriment
-    ExpyColor = None
-
-
 
 import expyriment
 expyriment.control.set_develop_mode(True)

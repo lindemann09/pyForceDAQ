@@ -4,16 +4,12 @@ from expyriment.misc import Clock
 
 from forceDAQ.base.udp_connection import UDPConnection
 
-
-
-
-
 # t : test connect
 # q : quit client
 # space : enter
 
-
 control.set_develop_mode(True)
+control.defaults.audiosystem_autostart=False
 exp = control.initialize()
 
 udp_connection = UDPConnection()

@@ -38,7 +38,6 @@ def quit():
 
 atexit.register(quit)
 
-
 def get_data(get_command):
     """Get data from the recording PC
     get_commands e.g.
