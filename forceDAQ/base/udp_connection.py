@@ -193,8 +193,8 @@ class UDPConnectionProcess(Process):
         # connecting to a server
     """        # todo docu
 
-    def __init__(self, sync_timer=None, event_trigger = (), event_ignore_tag =
-    None):
+    def __init__(self, sync_timer=None, event_trigger = (),
+                 event_ignore_tag = None):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -271,7 +271,8 @@ class UDPConnectionProcess(Process):
                     self.receive_queue.put(UDPData(string=data,
                                                     time=timer.time))
 
-                    if not data.startswith(self._event_ignore_tag):
+                    if self._event_ignore_tag is not None and \
+                            not data.startswith(self._event_ignore_tag):
                         for ev in self._event_trigger:
                             # set all connected trigger
                             ev.set()
