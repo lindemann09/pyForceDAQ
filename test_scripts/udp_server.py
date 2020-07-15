@@ -1,7 +1,5 @@
 # # Server
-from forceDAQ.base.udp_connection import UDPConnectionProcess, Queue
-from forceDAQ.base.timer import Timer
-from forceDAQ.base.udp_connection import UDPData
+from forceDAQ.base.udp_connection import UDPConnectionProcess
 
 
 udp_p = UDPConnectionProcess()
@@ -12,8 +10,8 @@ connected = None
 while True:
     data = udp_p.receive_queue.get()
     if data is not None:
-        udp_p.send_queue.put(data.string)
-        print(data.string)
+        #udp_p.send_queue.put(data.string)
+        print("received: {}".format(data.string))
 
     if udp_p.event_is_connected.is_set() != connected:
         connected = udp_p.event_is_connected.is_set()
