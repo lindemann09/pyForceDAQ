@@ -7,7 +7,7 @@ if __name__ == "__main__": # required because of threading
     config.plot_axis = False
     config.data_min_max = [-5, 30]
 
-    run.run(
+    run(
           device_name_prefix="Dev",
           device_ids = 1,
           sensor_names = ("FT30436"),

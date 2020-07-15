@@ -38,11 +38,12 @@ class MinMaxDetector(object):
         return (self._level_change_time is not None) and \
                (get_time() - self._level_change_time) < self._duration_in_sec
 
-def find_calibration_file(calibration_folder, sensor_name):
+def find_calibration_file(calibration_folder, sensor_name,
+                          calibration_suffix=".cal"):
     needle = 'Serial="{0}"'.format(sensor_name)
     for x in listdir(calibration_folder):
         filename = path.join(calibration_folder, x)
-        if path.isfile(filename):
+        if path.isfile(filename) and filename.endswith(calibration_suffix):
             with open(filename, "r") as fl:
                 for l in fl:
                     if l.find(needle)>0:

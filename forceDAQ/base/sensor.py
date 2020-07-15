@@ -47,8 +47,10 @@ class SensorSettings(DAQConfiguration):
         self.sync_timer = sync_timer
         self.device_id = device_id
         self.sensor_name = sensor_name
-        self.calibration_file = find_calibration_file(calibration_folder=calibration_folder,
-                                                      sensor_name=sensor_name)
+        self.calibration_file = find_calibration_file(
+                                        calibration_folder=calibration_folder,
+                                        sensor_name=sensor_name,
+                                        calibration_suffix=".cal")
 
         self.reverse_parameters = []
         if not isinstance(reverse_parameter_names, (tuple, list)):
@@ -71,8 +73,7 @@ class Sensor(DAQReadAnalog):
     def __init__(self, settings):
         """ TODO"""
 
-        super(Sensor).__init__(self,
-                               configuration=settings,
+        super(Sensor, self).__init__(configuration=settings,
                                read_array_size_in_samples= \
                                    len(Sensor.SENSOR_CHANNELS) + len(
                                        Sensor.TRIGGER_CHANNELS))

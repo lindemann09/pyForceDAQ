@@ -235,11 +235,7 @@ class UDPConnectionProcess(Process):
         self.event_is_connected = Event()
         self._event_stop_request = Event()
         self._event_is_polling = Event()
-        if PYTHON3:
-            self._ip_address = Array("c", b"xxx.xxx.xxx.xxx")
-        else:
-            self._ip_address = Array("c", "xxx.xxx.xxx.xxx")
-
+        self._ip_address = Array("c", b"xxx.xxx.xxx.xxx")
         self._event_ignore_tag = event_ignore_tag
 
         if isinstance(event_trigger, type(Event)  ):
