@@ -150,19 +150,21 @@ class DataRecorder(object):
                                 line += "{0},".format(d.trigger[x])
                             else:
                                 line += float_format.format(d.trigger[x])
-                    self._file.write(line[:-1] + NEWLINE)
+                    self._file_write(line[:-1] + NEWLINE)
 
                 elif isinstance(d, DAQEvents):
-                    self._file.write("{0},{1},{2}".format(TAG_SOFTTRIGGER, d.time, str(d.code)) + NEWLINE)
+                    self._file_write("{0},{1},{2}".format(TAG_SOFTTRIGGER, d.time, str(d.code)) + NEWLINE)
 
                 elif isinstance(d, UDPData):
                     if not d.is_remote_control_command:
-                        self._file.write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.string) + NEWLINE)
+                        self._file_write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.string) + NEWLINE)
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
                     "Writing {0} of {1} blocks".format(c/BLOCKSIZE,l/BLOCKSIZE)).present()
 
+    def _file_write(self, str):
+        self._file.write(str.encode())
 
 
 
@@ -322,16 +324,16 @@ class DataRecorder(object):
             self._file = open(directory + os.path.sep + self.filename, 'w+')
         print("Data file: {}".format(self.filename))
 
-        self._file.write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
+        self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
 
         for s in self.sensor_settings_list:
             txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
                                 s.sensor_name, s.calibration_file)
-            self._file.write(TAG_COMMENTS + txt)
+            self._file_write(TAG_COMMENTS + txt)
 
         if len(comment_line)>0:
-            self._file.write(TAG_COMMENTS + comment_line + "\n")
+            self._file_write(TAG_COMMENTS + comment_line + "\n")
         if varnames:
             line = "time,"
             if self._write_deviceid: line += "device_tag,"
@@ -340,7 +342,7 @@ class DataRecorder(object):
                     line += ForceData.forces_names[x] + ","
             if self._write_trigger[0]: line += "trigger1,"
             if self._write_trigger[1]: line += "trigger2,"
-            self._file.write(line[:-1] + NEWLINE)
+            self._file_write(line[:-1] + NEWLINE)
 
         return self.filename
 

@@ -255,7 +255,7 @@ class Thresholds(object):
     def is_detecting_anything(self):
         """is detecting something in at least one channel"""
         nn = lambda x:x is not None
-        return len(filter(nn, self._prev_level))>0 or len(filter(nn, self._minmax))>0
+        return len(list(filter(nn, self._prev_level)))>0 or len(list(filter(nn, self._minmax)))>0
 
     def set_number_of_channels(self, n_channels):
         self._prev_level = [None] * n_channels
