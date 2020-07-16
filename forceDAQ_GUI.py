@@ -14,7 +14,7 @@ if __name__ == "__main__": # required because of threading
           calibration_folder="C:\\Users\\Force\\Desktop\\calibration",
           reverse_scaling = {1: ["Fz"]}, # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
           remote_control=False,
-          ask_filename= False,
+          ask_filename= False, # demo github
 
           write_Fx=True,
           write_Fy=True,
