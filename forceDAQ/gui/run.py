@@ -317,8 +317,10 @@ class _GUIStatus(object):
 
     def level_detection_parameter_average(self, sensor):
         """just a short cut"""
-        if sensor<=self.n_sensors:
+        if sensor < self.n_sensors:
             return self.history[sensor].moving_average[self.level_detection_parameter]
+        else:
+            return None
 
 
 def _main_loop(exp, recorder, remote_control=False):

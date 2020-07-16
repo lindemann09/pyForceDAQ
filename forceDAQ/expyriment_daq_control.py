@@ -93,10 +93,11 @@ def make_connection(exp, experiment_name="force_daq"):
     return version
 
 
-def force_button_box_prepare():
+def force_button_box_prepare(n_sensors=1):
     udp.clear_receive_buffer()
     udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION)
-    udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION2)
+    if n_sensors>1:
+        udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION2)
 
 
 def force_button_box_check():
@@ -152,7 +153,8 @@ def wait_no_button_pressed(exp, feedback_stimulus=None, polling_intervall=500):
 
 
 ############ further convenient functions
-def hold_check(exp, holding_time, background_stimulus=None):
+def hold_check(exp, holding_time, background_stimulus=None,
+               n_sensors=2): # FIXME not checked for sensor=1
     if background_stimulus is None:
         background_stimulus = stimuli.BlankScreen()
 
@@ -174,7 +176,7 @@ def hold_check(exp, holding_time, background_stimulus=None):
         udp.clear_receive_buffer()
         lv = [rc.get_data(rc.Command.GET_THRESHOLD_LEVEL),
               rc.get_data(rc.Command.GET_THRESHOLD_LEVEL2)]
-        for i in range(2):
+        for i in range(n_sensors):
             bkg[i].clear_surface()
             if lv[i] == WEAK:
                 too_low.plot(bkg[i])

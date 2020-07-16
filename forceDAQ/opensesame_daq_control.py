@@ -148,10 +148,11 @@ class OpensesameDAQControl():
         self.clock.wait(1000)
         return version
 
-    def force_button_box_prepare(self):
+    def force_button_box_prepare(self, n_sensors=1):
         self.udp.clear_receive_buffer()
         self.udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION)
-        self.udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION2)
+        if n_sensors>1:
+            self.udp.send(rc.Command.SET_LEVEL_CHANGE_DETECTION2)
 
     def force_button_box_check(self):
         """
@@ -214,7 +215,8 @@ class OpensesameDAQControl():
                     left_pos=-200, right_pos=200, radius=50,
                     col_fine='gray',
                     col_too_low='green',
-                    col_too_strong='red'):
+                    col_too_strong='red',
+                    n_sensors=2):
         kbd = keyboard(self._exp)
         blank = canvas(self._exp)
         blank.show()
@@ -224,8 +226,12 @@ class OpensesameDAQControl():
         prev_lv = None
         while True:
             self.udp.clear_receive_buffer()
-            lv = [rc.get_data(rc.Command.GET_THRESHOLD_LEVEL),
-                  rc.get_data(rc.Command.GET_THRESHOLD_LEVEL2)]
+            lv = [rc.get_data(rc.Command.GET_THRESHOLD_LEVEL)]
+            if n_sensors>1:
+                lv.append(rc.get_data(rc.Command.GET_THRESHOLD_LEVEL2))
+            else:
+                lv.append(lv[0]) # just double, if one sensor
+
             if prev_lv!=lv:
                 # level has changes
                 self.clock.reset_stopwatch()
