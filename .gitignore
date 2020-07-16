@@ -64,3 +64,4 @@ events/
 doc/_build
 calibration/
 expyriment/
+venv/

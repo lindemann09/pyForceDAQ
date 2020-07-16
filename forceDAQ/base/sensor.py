@@ -13,9 +13,8 @@ from time import sleep
 
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQConfiguration
+from ..daq import ATI_CDLL, DAQConfiguration, find_calibration_file
 from .types import ForceData, DAQEvents
-from .misc import find_calibration_file
 from .timer import Timer
 
 from ..daq import DAQReadAnalog
@@ -79,7 +78,7 @@ class Sensor(DAQReadAnalog):
                                        Sensor.TRIGGER_CHANNELS))
 
         # ATI voltage to forrce converter
-        self._atidaq = ATI_CDLL(w64_dll=False)
+        self._atidaq = ATI_CDLL()
         # get calibration
         index = ct.c_short(1)
         self._atidaq.createCalibration(settings.calibration_file, index)

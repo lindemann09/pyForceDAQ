@@ -2,7 +2,7 @@ __author__ = "Oliver Lindemann"
 __version__ = "0.3"
 
 from ._config import DAQConfiguration
-from ._pyATIDAQ import ATI_CDLL
+from ._pyATIDAQ import ATI_CDLL, find_calibration_file
 
 #### change import here if you want to use nidaqmx instead of pydaymx ####
 try:

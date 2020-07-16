@@ -83,9 +83,12 @@ class Plotter(PGSurface):
 
         for c, plot_value in enumerate(self._y_range[1] - \
                 np.array(values, dtype=int)):
-            if plot_value >= 0 and self._previous[c] >= 0 \
-                    and plot_value <= self._height and \
-                            self._previous[c] <= self._height:
+
+            if self._previous[c] is not None and \
+                    plot_value >= 0 and \
+                    self._previous[c] >= 0 and \
+                    plot_value <= self.height and \
+                    self._previous[c] <= self.height:
                 if self._previous[c] > plot_value:
                     self.pixel_array[position,
                     plot_value:self._previous[c] + 1] = \

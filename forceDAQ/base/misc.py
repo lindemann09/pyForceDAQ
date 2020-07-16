@@ -1,5 +1,4 @@
 from .timer import get_time
-from os import listdir, path
 
 
 def N2g(N):
@@ -37,15 +36,3 @@ class MinMaxDetector(object):
         """true true if currently sampling for minmax"""
         return (self._level_change_time is not None) and \
                (get_time() - self._level_change_time) < self._duration_in_sec
-
-def find_calibration_file(calibration_folder, sensor_name,
-                          calibration_suffix=".cal"):
-    needle = 'Serial="{0}"'.format(sensor_name)
-    for x in listdir(calibration_folder):
-        filename = path.join(calibration_folder, x)
-        if path.isfile(filename) and filename.endswith(calibration_suffix):
-            with open(filename, "r") as fl:
-                for l in fl:
-                    if l.find(needle)>0:
-                        return filename
-    raise RuntimeError("Can't find calibration file for sensor '{0}'.".format(sensor_name))

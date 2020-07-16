@@ -9,9 +9,9 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-import os
 from sys import platform
 from ctypes import *
+from os import listdir, path
 
 # ### DATA TYPES ####
 VOLTAGE_SAMPLE_TYPE = c_float * 7
@@ -72,15 +72,12 @@ calibration_p = POINTER(Calibration)
 
 class ATI_CDLL(object):
 
-    def __init__(self, w64_dll):
+    def __init__(self):
 
         if platform.startswith('linux'):
             lib_path = "/usr/lib/atidaq.so"
         elif platform == 'win32':
-            if w64_dll: # search in windows system folder
-                lib_path = "atidaq64.dll"
-            else:
-                lib_path = "atidaq.dll"
+            lib_path = "C:\\Windows\\System\\atidaq.dll"
         else:
             raise RuntimeError("Your plattform is not supported")
 
@@ -141,7 +138,7 @@ class ATI_CDLL(object):
                 destroyCalibration must be called for cleanup.
         """
 
-        self._calibration = self.cdll.createCalibration(CalFilePath, index)
+        self._calibration = self.cdll.createCalibration(CalFilePath.encode(), index)
         if self._calibration == 0:
             raise RuntimeError("Specified calibration could not be loaded.")
 
@@ -166,7 +163,8 @@ class ATI_CDLL(object):
         """
 
         error = self.cdll.SetToolTransform(self._calibration, DISPLACEMENT_VECTOR(*Vector),
-                                           DistUnits, AngleUnits)
+                                           DistUnits.encode(),
+                                           AngleUnits.encode())
         if error:
             if error == 1:
                 raise RuntimeError("Invalid Calibration struct.")
@@ -187,7 +185,8 @@ class ATI_CDLL(object):
         		("lb","klb","N","kN","g","kg")
         """
 
-        error = self.cdll.SetForceUnits(self._calibration, NewUnits)
+        error = self.cdll.SetForceUnits(self._calibration,
+                                        NewUnits.encode())
         if error:
             if error == 1:
                 raise RuntimeError("Invalid Calibration struct.")
@@ -204,7 +203,8 @@ class ATI_CDLL(object):
                 units for torque output
         		("in-lb","ft-lb","N-m","N-mm","kg-cm")
         """
-        error = self.cdll.SetTorqueUnits(self._calibration, NewUnits)
+        error = self.cdll.SetTorqueUnits(self._calibration,
+                                         NewUnits.encode())
         if error:
             if error == 1:
                 raise RuntimeError("Invalid Calibration struct.")
@@ -222,7 +222,8 @@ class ATI_CDLL(object):
                       1 = temperature compensation on
         """
 
-        error = self.cdll.SetTempComp(self._calibration, TCEnabled)
+        error = self.cdll.SetTempComp(self._calibration,
+                                      TCEnabled.encode())
         if error:
             if error == 1:
                 raise RuntimeError("Invalid Calibration struct.")
@@ -268,6 +269,18 @@ class ATI_CDLL(object):
 
         return self.cdll.printCalInfo(self._calibration)
 
+def find_calibration_file(calibration_folder, sensor_name,
+                          calibration_suffix=".cal"):
+    needle = 'Serial="{0}"'.format(sensor_name)
+    for x in listdir(path.abspath(calibration_folder)):
+        filename = path.join(calibration_folder, x)
+        if path.isfile(filename) and filename.endswith(calibration_suffix):
+            with open(filename, "r") as fl:
+                for l in fl:
+                    if l.find(needle)>0:
+                        return filename
+    raise RuntimeError("Can't find calibration file for sensor '{0}'.".format(sensor_name))
+
 
 def print_calibration_info(calibration_file):
     """convinient function to print calibration file infos"""
@@ -290,8 +303,9 @@ if __name__ == "__main__":
     #   -0.065867  0.123803 111.156731  0.039974  0.040417  0.079049
 
     #filename = raw_input("Calibration file: ")
-    filename = "FT_sensor1.cal"
-    atidaq = ATI_CDLL(w64_dll=False)
+    filename = find_calibration_file("C:\\Users\\Force\\Desktop\\calibration",
+                                     "FT30436")
+    atidaq = ATI_CDLL()
     # get calibration
     index = c_short(1)
     atidaq.createCalibration(filename, index)
