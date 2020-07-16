@@ -157,7 +157,7 @@ class DataRecorder(object):
 
                 elif isinstance(d, UDPData):
                     if not d.is_remote_control_command:
-                        self._file_write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.string) + NEWLINE)
+                        self._file_write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.unicode) + NEWLINE)
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(

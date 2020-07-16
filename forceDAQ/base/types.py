@@ -150,12 +150,25 @@ class UDPData(object):
 
         """
         self.time = time
-        self.string = string
+        if isinstance(string, str):
+            self.byte_string = string.encode()
+        else:
+            self.byte_string = string
+
+    @property
+    def unicode(self):
+        return self.byte_string.decode('utf-8', 'replace')
 
     @property
     def is_remote_control_command(self):
-        return self.string.startswith(GUIRemoteControlCommands.COMMAND_STR)
+        return self.startswith(GUIRemoteControlCommands.COMMAND_STR)
 
+    def startswith(self, byte_string):
+        return self.byte_string[:len(byte_string)] == byte_string
+
+
+def bytes_startswith(a, b):
+    return a[:len(b)] == b
 
 
 class DAQEvents(object):

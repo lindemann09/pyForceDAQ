@@ -83,7 +83,7 @@ def make_connection(exp, experiment_name="force_daq"):
 
     stimuli.TextScreen("Connected", "").present()
     exp.clock.wait(500)
-    udp.send(rc.Command.FILENAME + "{0}_{1}.csv".format(experiment_name, exp.subject))
+    udp.send(rc.Command.FILENAME.decode('utf-8', 'replace') + "{0}_{1}.csv".format(experiment_name, exp.subject))
     rtn = udp.receive(5)  # paused
     if rtn is None:
         runtimeerror(exp, "Force server not responding")

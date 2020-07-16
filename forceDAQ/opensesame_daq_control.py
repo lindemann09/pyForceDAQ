@@ -128,7 +128,7 @@ class OpensesameDAQControl():
         cnv.text("Connected")
         cnv.show()
         self.clock.wait(500)
-        self.udp.send(rc.Command.FILENAME + "{0}_{1}.csv".format(self.experiment_name,
+        self.udp.send(rc.Command.FILENAME.decode('utf-8', 'replace') + "{0}_{1}.csv".format(self.experiment_name,
                                                                  self.subject_number))
         rtn = self.udp.receive(5)  # paused
         if rtn is None:

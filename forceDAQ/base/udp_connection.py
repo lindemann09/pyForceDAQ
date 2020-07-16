@@ -284,11 +284,10 @@ class UDPConnectionProcess(Process):
             else:
                 data = udp_connection.poll()
                 if data is not None:
-                    self.receive_queue.put(UDPData(string=data,
-                                                    time=timer.time))
-
+                    d = UDPData(string=data, time=timer.time)
+                    self.receive_queue.put(d)
                     if self._event_ignore_tag is not None and \
-                            not data.decode().startswith(self._event_ignore_tag.decode()): #FIXME better comparision of bytes
+                            not d.startswith(self._event_ignore_tag):
                         for ev in self._event_trigger:
                             # set all connected trigger
                             ev.set()

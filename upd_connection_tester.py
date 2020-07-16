@@ -65,7 +65,7 @@ def server():
         data = udp_p.receive_queue.get()
         if data is not None:
             # udp_p.send_queue.put(data.string)
-            print("received: {}".format(data.string))
+            print("received: {}".format(data.byte_string))
 
         if udp_p.event_is_connected.is_set() != connected:
             connected = udp_p.event_is_connected.is_set()
