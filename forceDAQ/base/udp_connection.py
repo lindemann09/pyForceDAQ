@@ -33,11 +33,11 @@ def get_lan_ip():
 
 class UDPConnection(object):
     # todo: document the usage "connecting" "unconnecting"
-    COMMAND_CHAR = "$"
-    CONNECT = COMMAND_CHAR + "connect"
-    UNCONNECT = COMMAND_CHAR + "unconnect"
-    COMMAND_REPLY = COMMAND_CHAR + "ok"
-    PING = COMMAND_CHAR + "ping"
+    COMMAND_CHAR = b"$"
+    CONNECT = COMMAND_CHAR + b"connect"
+    UNCONNECT = COMMAND_CHAR + b"unconnect"
+    COMMAND_REPLY = COMMAND_CHAR + b"ok"
+    PING = COMMAND_CHAR + b"ping"
 
     def __init__(self, udp_port=5005):
         self.udp_port = udp_port
@@ -73,7 +73,7 @@ class UDPConnection(object):
                 return None
 
     def poll(self):
-        """returns data or None if no data found
+        """returns data (bytes) or None if no data found
         process also commands
 
         if send is unkown input is ignored
@@ -84,8 +84,8 @@ class UDPConnection(object):
         except:
             return None
 
-        if PYTHON3 and isinstance(data, bytes):
-            data = data.decode()
+        #if PYTHON3 and isinstance(data, bytes):
+        #    data = data.decode()
 
         # process data
         if data == UDPConnection.CONNECT:
@@ -111,7 +111,7 @@ class UDPConnection(object):
             return False
         start = time()
         if PYTHON3 and isinstance(data, str):
-            data = data.encode()
+            data = data.encode() # force to byte
 
         while time() - start < timeout:
             try:
@@ -288,7 +288,7 @@ class UDPConnectionProcess(Process):
                                                     time=timer.time))
 
                     if self._event_ignore_tag is not None and \
-                            not data.startswith(self._event_ignore_tag):
+                            not data.decode().startswith(self._event_ignore_tag.decode()): #FIXME better comparision of bytes
                         for ev in self._event_trigger:
                             # set all connected trigger
                             ev.set()

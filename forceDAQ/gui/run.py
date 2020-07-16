@@ -265,6 +265,8 @@ class _GUIStatus(object):
                         channel=s)
 
             elif udp_event.string == RcCmd.GET_VERSION:
+                print(RcCmd.VALUE )
+                print(dumps(forceDAQVersion))
                 self.recorder.udp.send_queue.put(RcCmd.VALUE +
                                             dumps(forceDAQVersion))
             elif udp_event.string == RcCmd.PING:

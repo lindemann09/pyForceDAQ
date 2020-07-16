@@ -98,7 +98,7 @@ class OpensesameDAQControl():
         return True
 
     # make connection #
-    def make_connection(self):
+    def make_connection(self, ip=FORCE_SERVER_IP):
         """hand shake and filename,
         returns forceDAQ version
         """
@@ -110,7 +110,7 @@ class OpensesameDAQControl():
         kbd.get_key()
         canvas(self._exp).show()
 
-        while not self.udp.connect_peer(FORCE_SERVER_IP):
+        while not self.udp.connect_peer(ip):
             cnv = canvas(self._exp)
             cnv.text("ERROR while connecting to server <br> try again or Q to quit")
             cnv.show()
