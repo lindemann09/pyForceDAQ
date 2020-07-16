@@ -16,7 +16,7 @@ from libopensesame.exceptions import osexception
 from openexp.canvas import canvas
 from openexp.keyboard import keyboard
 
-FORCE_SERVER_IP = "192.168.1.2"
+FORCE_SERVER_IP = "192.168.1.1"
 WEAK, FINE, STRONG = [0, 1, 2]
 
 
@@ -142,6 +142,8 @@ class OpensesameDAQControl():
             self._exp.end()
             exit()
         version = rc.get_data(rc.Command.GET_VERSION)
+        if version is None:
+            version = "" # FIXME Why is version somethimes None
         cnv = canvas(self._exp)
         cnv.text("Connected <br> Version " + version)
         cnv.show()
@@ -232,7 +234,7 @@ class OpensesameDAQControl():
             else:
                 lv.append(lv[0]) # just double, if one sensor
 
-            if prev_lv!=lv:
+            if prev_lv != lv:
                 # level has changes
                 self.clock.reset_stopwatch()
                 prev_lv = lv

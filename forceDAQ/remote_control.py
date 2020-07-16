@@ -11,7 +11,7 @@ try:
 except:
     from pickle import dumps, loads
 
-from .base.types import Thresholds
+from .base.types import Thresholds, bytes_startswith
 from .base.types import GUIRemoteControlCommands as Command
 from .base.udp_connection import UDPConnection
 
@@ -49,7 +49,7 @@ def get_data(get_command):
     udp.send(get_command)
     d = udp.receive(1)
     try:
-        return loads(d.replace(Command.VALUE, ""))
+        return loads(d[len(Command.VALUE):])
     except:
         return None
 
@@ -61,8 +61,8 @@ def poll_event(event_type):
         ....
     """
     rcv = udp.poll()
-    if rcv is not None and rcv.startswith(event_type):
-        x = loads(rcv.replace(event_type, ""))
+    if rcv is not None and bytes_startswith(rcv, event_type):
+        x = loads(rcv[len(event_type):])
         return x
     else:
         return None
@@ -79,8 +79,8 @@ def poll_multiple_events(event_type_list):
     rcv = udp.poll()
     if rcv is not None:
         for event_type in event_type_list:
-            if rcv.startswith(event_type):
-                x = loads(rcv.replace(event_type, ""))
+            if bytes_startswith(rcv, event_type):
+                x = loads(rcv[len(event_type):])
                 return (event_type, x)
     return (None, None)
 
