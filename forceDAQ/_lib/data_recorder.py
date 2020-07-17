@@ -10,11 +10,11 @@ import os
 from time import localtime, strftime,asctime
 
 from .. import __version__ as forceDAQVersion
-from ..base.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
+from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
                         TAG_UDPDATA, TAG_COMMENTS
-from ..base.types import GUIRemoteControlCommands as RemoteCmd
-from ..base.sensor import SensorSettings, SensorProcess
-from ..base.udp_connection import UDPConnectionProcess
+from .._lib.types import GUIRemoteControlCommands as RemoteCmd
+from .._lib.sensor import SensorSettings, SensorProcess
+from .._lib.udp_connection import UDPConnectionProcess
 
 NEWLINE = "\n"
 

@@ -1,3 +1,4 @@
 __author__ = "Oliver Lindemann"
 
-from .run import run
+from ._settings import settings
+from ._run import run_settings_file, run

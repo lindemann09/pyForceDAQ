@@ -11,7 +11,7 @@ from multiprocessing import Process, Event, Queue
 from multiprocessing.sharedctypes import Array
 from time import sleep, time
 
-from ..base.types import UDPData
+from .._lib.types import UDPData
 from .timer import Timer, get_time
 from .. import PYTHON3
 

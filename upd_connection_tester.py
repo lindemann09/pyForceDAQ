@@ -3,7 +3,7 @@ from expyriment import control, stimuli, io, misc
 from expyriment.misc import Clock
 
 from forceDAQ import PYTHON3
-from forceDAQ.base.udp_connection import UDPConnection, \
+from forceDAQ._lib.udp_connection import UDPConnection, \
     UDPConnectionProcess
 
 def client(server_ip):

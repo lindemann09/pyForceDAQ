@@ -58,10 +58,11 @@ docs/_build/
 *.swp
 .idea/
 
-# pyATIDAQ
+# pyForceDAQ
 data/
 events/
 doc/_build
 calibration/
 expyriment/
 venv/
+*.settings

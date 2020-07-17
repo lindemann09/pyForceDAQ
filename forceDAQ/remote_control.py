@@ -11,9 +11,9 @@ try:
 except:
     from pickle import dumps, loads
 
-from .base.types import Thresholds, bytes_startswith
-from .base.types import GUIRemoteControlCommands as Command
-from .base.udp_connection import UDPConnection
+from ._lib.types import Thresholds, bytes_startswith
+from ._lib.types import GUIRemoteControlCommands as Command
+from ._lib.udp_connection import UDPConnection
 
 udp = None
 

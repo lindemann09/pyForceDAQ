@@ -14,17 +14,17 @@ from time import sleep
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
+from . import settings
 from .. import __version__ as forceDAQVersion
-from ..base.data_recorder import DataRecorder, SensorSettings
-from ..base.sensor import SensorProcess, SensorHistory
-from ..base.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
-from ..base.timer import Timer
-
-from . import config
-from .plotter import PlotterThread
+from .._lib.data_recorder import DataRecorder, SensorSettings
+from .._lib.sensor import SensorProcess, SensorHistory
+from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
+from .._lib.timer import Timer
+from . import settings
+from ._plotter import PlotterThread
 from ._level_indicator import level_indicator
 from ._scaling import Scaling
-from .layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
+from ._layout import logo_text_line, colours, get_pygame_rect, RecordingScreen
 
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
@@ -78,7 +78,7 @@ class _GUIStatus(object):
         self.n_sensors = len(self.sensor_processes)
         self.history = []
         for _ in range(self.n_sensors):
-            self.history.append( SensorHistory(history_size = config.moving_average_size,
+            self.history.append( SensorHistory(history_size = settings.gui.moving_average_size,
                                                number_of_parameter= 3) )
 
         self._start_recording_time = 0
@@ -101,11 +101,11 @@ class _GUIStatus(object):
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
-            self.plot_data_indicator = config.plot_data_indicator_for_single_sensor
-            self.plot_data_plotter = config.plot_data_plotter_for_single_sensor
+            self.plot_data_indicator = settings.gui.plot_data_indicator_for_single_sensor
+            self.plot_data_plotter = settings.gui.plot_data_plotter_for_single_sensor
         else:
-            self.plot_data_indicator = config.plot_data_indicator_for_two_sensors
-            self.plot_data_plotter = config.plot_data_plotter_for_two_sensors
+            self.plot_data_indicator = settings.gui.plot_data_indicator_for_two_sensors
+            self.plot_data_plotter = settings.gui.plot_data_plotter_for_two_sensors
         # plot data parameter names
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
@@ -334,17 +334,17 @@ def _main_loop(exp, recorder, remote_control=False):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = _GUIStatus(screen_refresh_interval_indicator = config.screen_refresh_interval_indicator,
-                   screen_refresh_interval_plotter = config.gui_screen_refresh_interval_plotter,
+    s = _GUIStatus(screen_refresh_interval_indicator = settings.gui.screen_refresh_interval_indicator,
+                   screen_refresh_interval_plotter = settings.gui.gui_screen_refresh_interval_plotter,
                    recorder = recorder,
                    remote_control=remote_control,
                    level_detection_parameter = ForceData.forces_names.index(
-                                                        config.level_detection_parameter),  # only one dimension
+                                                        settings.gui.level_detection_parameter),  # only one dimension
                    screen_size = exp.screen.size,
-                   data_min_max=config.data_min_max,
-                   plotter_pixel_min_max=config.plotter_pixel_min_max,
-                   indicator_pixel_min_max=config.indicator_pixel_min_max,
-                   plot_axis = config.plot_axis)
+                   data_min_max=settings.gui.data_min_max,
+                   plotter_pixel_min_max=settings.gui.plotter_pixel_min_max,
+                   indicator_pixel_min_max=settings.gui.indicator_pixel_min_max,
+                   plot_axis = settings.gui.plot_axis)
 
     # plotter
     plotter_thread = None
@@ -624,7 +624,23 @@ def _main_loop(exp, recorder, remote_control=False):
     recorder.pause_recording(s.background)
 
 
-
+def run_settings_file(): # run using settings
+    return run(remote_control = settings.recording.remote_control,
+               ask_filename = settings.recording.ask_filename,
+               device_ids = settings.recording.device_ids,
+               sensor_names = settings.recording.sensor_names,
+               calibration_folder = settings.recording.calibration_folder,
+               device_name_prefix = settings.recording.device_name_prefix,
+               write_Fx = settings.recording.write_Fx,
+               write_Fy = settings.recording.write_Fy,
+               write_Fz = settings.recording.write_Fz,
+               write_Tx = settings.recording.write_Tx,
+               write_Ty = settings.recording.write_Ty,
+               write_Tz = settings.recording.write_Tz,
+               write_trigger1 = settings.recording.write_trigger1,
+               write_trigger2 = settings.recording.write_trigger2,
+               zip_data=settings.recording.zip_data,
+               reverse_scaling = settings.recording.reverse_scaling)
 
 def run(remote_control,
         ask_filename,
@@ -670,7 +686,7 @@ def run(remote_control,
                                       sync_timer=timer,
                                       calibration_folder=calibration_folder,
                                       reverse_parameter_names=reverse_parameter_names,
-                                      rate = config.sampling_rate))
+                                      rate = settings.gui.sampling_rate))
 
 
 
@@ -683,7 +699,7 @@ def run(remote_control,
     control.defaults.open_gl = False
     control.defaults.event_logging = 0
     control.defaults.audiosystem_autostart = False
-    exp = design.Experiment(text_font=config.window_font)
+    exp = design.Experiment(text_font=settings.gui.window_font)
     exp.set_log_level(0)
 
 
