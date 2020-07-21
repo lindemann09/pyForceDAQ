@@ -15,6 +15,8 @@ Dependencies
 * [PyDAQmx](https://pythonhosted.org/PyDAQmx/installation.html)
 * The GUI application (`forceDAQ.gui`) depends furthermore on [Expyriment](http://docs.expyriment.org/Installation.html) 0.8.0 or higher
 
+Recommended for GUI interface:
+* [PySimpleGUI](https://pysimplegui.readthedocs.io/)
 
 Installation
 ------------

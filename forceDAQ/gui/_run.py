@@ -624,40 +624,40 @@ def _main_loop(exp, recorder, remote_control=False):
     recorder.pause_recording(s.background)
 
 
-def run_settings_file(): # run using settings
-    return run(remote_control = settings.recording.remote_control,
-               ask_filename = settings.recording.ask_filename,
-               device_ids = settings.recording.device_ids,
-               sensor_names = settings.recording.sensor_names,
-               calibration_folder = settings.recording.calibration_folder,
-               device_name_prefix = settings.recording.device_name_prefix,
-               write_Fx = settings.recording.write_Fx,
-               write_Fy = settings.recording.write_Fy,
-               write_Fz = settings.recording.write_Fz,
-               write_Tx = settings.recording.write_Tx,
-               write_Ty = settings.recording.write_Ty,
-               write_Tz = settings.recording.write_Tz,
-               write_trigger1 = settings.recording.write_trigger1,
-               write_trigger2 = settings.recording.write_trigger2,
-               zip_data=settings.recording.zip_data,
-               reverse_scaling = settings.recording.reverse_scaling)
+def run():
+    return run_with_options(remote_control = settings.recording.remote_control,
+                            ask_filename = settings.recording.ask_filename,
+                            device_ids = settings.recording.device_ids,
+                            sensor_names = settings.recording.sensor_names,
+                            calibration_folder = settings.recording.calibration_folder,
+                            device_name_prefix = settings.recording.device_name_prefix,
+                            write_Fx = settings.recording.write_Fx,
+                            write_Fy = settings.recording.write_Fy,
+                            write_Fz = settings.recording.write_Fz,
+                            write_Tx = settings.recording.write_Tx,
+                            write_Ty = settings.recording.write_Ty,
+                            write_Tz = settings.recording.write_Tz,
+                            write_trigger1 = settings.recording.write_trigger1,
+                            write_trigger2 = settings.recording.write_trigger2,
+                            zip_data=settings.recording.zip_data,
+                            reverse_scaling = settings.recording.reverse_scaling)
 
-def run(remote_control,
-        ask_filename,
-        device_ids,
-        sensor_names,
-        calibration_folder,
-        device_name_prefix="Dev",
-        write_Fx = True,
-        write_Fy = True,
-        write_Fz = True,
-        write_Tx = False,
-        write_Ty = False,
-        write_Tz = False,
-        write_trigger1 = True,
-        write_trigger2 = False,
-        zip_data=False,
-        reverse_scaling = None):
+def run_with_options(remote_control,
+                     ask_filename,
+                     device_ids,
+                     sensor_names,
+                     calibration_folder,
+                     device_name_prefix="Dev",
+                     write_Fx = True,
+                     write_Fy = True,
+                     write_Fz = True,
+                     write_Tx = False,
+                     write_Ty = False,
+                     write_Tz = False,
+                     write_trigger1 = True,
+                     write_trigger2 = False,
+                     zip_data=False,
+                     reverse_scaling = None):
 
     """start gui
     remote_control should be None (ask) or True or False

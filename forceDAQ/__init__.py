@@ -1,12 +1,12 @@
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 __author__ = "Oliver Lindemann"
 
 """
-to use the GUI recorder:
+launch the GUI recorder from your Python program:
 ``
     from forceDAQ import gui
 
-    gui.start(remote_control=False,
+    gui.run_with_options(remote_control=False,
               ask_filename=True,
                calibration_file="FT_sensor1.cal")
 ``

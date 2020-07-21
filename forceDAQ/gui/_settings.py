@@ -68,14 +68,20 @@ class Settings(object):
         return {self.recording_section: self.recording._asdict(),
              self.gui_section: self.gui._asdict()}
 
+    def set_gui_settings(self, gui_setting_dict):
+        self.gui = _GUISettings(**gui_setting_dict)
+
+    def set_recoding_setting(self, recording_setting_dict):
+        self.recording = _RecordingSetting(**recording_setting_dict)
+
     def load(self, filename=None):
         if filename is not None:
             self.filename = filename
 
         with open(self.filename, 'r') as fl:
             d = json.load(fl)
-        self.gui = _GUISettings(**d[self.gui_section])
-        self.recording = _RecordingSetting(**d[self.recording_section])
+        self.set_gui_settings(d[self.gui_section])
+        self.set_recoding_setting(d[self.recording_section])
 
     def save(self):
         with open(self.filename, 'w') as fl:
