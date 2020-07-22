@@ -49,7 +49,6 @@ class DAQReadAnalog(PyDAQmx.Task):
                               # sampsPerChanToAcquire, i.e. buffer size
                               )
 
-        self.device_id = configuration.device_id
         self._task_is_started = False
         self.read_array_size_in_samples = ct.c_uint32(
             read_array_size_in_samples)

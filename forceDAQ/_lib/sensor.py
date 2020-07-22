@@ -30,7 +30,8 @@ class SensorSettings(DAQConfiguration):
                  rate=1000,
                  minVal=-10,
                  maxVal=10,
-                 reverse_parameter_names=()):
+                 reverse_parameter_names=(),
+                 convert_to_FT=True):
 
         """
         :parameter:
@@ -46,10 +47,14 @@ class SensorSettings(DAQConfiguration):
         self.sync_timer = sync_timer
         self.device_id = device_id
         self.sensor_name = sensor_name
-        self.calibration_file = find_calibration_file(
+        self.convert_to_FT = convert_to_FT
+        if self.convert_to_FT:
+            self.calibration_file = find_calibration_file(
                                         calibration_folder=calibration_folder,
                                         sensor_name=sensor_name,
                                         calibration_suffix=".cal")
+        else:
+            self.calibration_file = None
 
         self.reverse_parameters = []
         if not isinstance(reverse_parameter_names, (tuple, list)):
@@ -72,14 +77,18 @@ class Sensor(DAQReadAnalog):
     def __init__(self, settings):
         """ TODO"""
 
+        assert(isinstance(settings, SensorSettings))
+
         super(Sensor, self).__init__(configuration=settings,
                                read_array_size_in_samples= \
-                                   len(Sensor.SENSOR_CHANNELS) + len(
-                                       Sensor.TRIGGER_CHANNELS))
+                    len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
+
+        self.device_id = settings.device_id
+        self.convert_to_FT = settings.convert_to_FT
 
         if self.DAQ_TYPE == "dummy":
-            from ..daq._pyATIDAQ import DUMMY_ATI_CDLL
-            self._atidaq = DUMMY_ATI_CDLL()
+            self._atidaq = None
+            self.convert_to_FT = False
         else:
             # ATI voltage to forrce converter
             self._atidaq = ATI_CDLL()
@@ -111,7 +120,8 @@ class Sensor(DAQReadAnalog):
         if not task_was_running:
             self.stop_data_acquisition()
 
-        self._atidaq.bias(np.mean(data, axis=0))
+        if self._atidaq is not None:
+            self._atidaq.bias(np.mean(data, axis=0))
 
     def poll_force_data(self):
         """Polling data
@@ -127,10 +137,18 @@ class Sensor(DAQReadAnalog):
         """
 
         read_buffer, _read_samples = self.read_analog()
+        if self.convert_to_FT:
+            forces = self._atidaq.convertToFT( voltages=read_buffer[Sensor.SENSOR_CHANNELS],
+                                                reverse_parameters=self._reverse_parameters)
+        else:
+            # array
+            forces = list(read_buffer[Sensor.SENSOR_CHANNELS])
+            for x in self._reverse_parameters:
+                forces[x] = -1 * forces[x]
+
         return ForceData(time = self.timer.time,
                          device_id = self.device_id,
-                         forces = self._atidaq.convertToFT( voltages=read_buffer[Sensor.SENSOR_CHANNELS],
-                                                            reverse_parameters=self._reverse_parameters),
+                         forces = forces,
                          trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
 
 

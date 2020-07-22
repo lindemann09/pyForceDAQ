@@ -14,7 +14,7 @@ _RecordingSetting = collections.namedtuple('RecordingSetting',
           'ask_filename calibration_folder '
           ' zip_data write_Fx write_Fy '
           'write_Fz write_Tx write_Ty write_Tz  write_trigger1 '
-          'write_trigger2  reverse_scaling ')
+          'write_trigger2  reverse_scaling convert_to_forces')
 
 
 class Settings(object):
@@ -55,7 +55,7 @@ class Settings(object):
                        remote_control=True, ask_filename= False, write_Fx=True,
                        write_Fy=True, write_Fz=True, write_Tx=False, write_Ty=False,
                        write_Tz=False, write_trigger1=True, write_trigger2=False,
-                       zip_data=True)
+                       zip_data=True, convert_to_forces=True)
         self.recording_section = "Recording"
 
         self.filename = filename

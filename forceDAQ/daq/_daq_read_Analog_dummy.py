@@ -13,9 +13,7 @@ class DAQReadAnalog(object):
 
     def __init__(self, configuration=None,
                  read_array_size_in_samples=None):
-        self.configuration = configuration
         self.read_array_size_in_samples = read_array_size_in_samples
-        self.device_id = configuration.device_id
         self._task_is_started = False
         self._last_time = 0
         self._sample_cnt = 0

@@ -640,7 +640,8 @@ def run():
                             write_trigger1 = settings.recording.write_trigger1,
                             write_trigger2 = settings.recording.write_trigger2,
                             zip_data=settings.recording.zip_data,
-                            reverse_scaling = settings.recording.reverse_scaling)
+                            reverse_scaling = settings.recording.reverse_scaling,
+                            convert_to_forces=settings.recording.convert_to_forces)
 
 def run_with_options(remote_control,
                      ask_filename,
@@ -657,7 +658,8 @@ def run_with_options(remote_control,
                      write_trigger1 = True,
                      write_trigger2 = False,
                      zip_data=False,
-                     reverse_scaling = None):
+                     reverse_scaling = None,
+                     convert_to_forces = True):
 
     """start gui
     remote_control should be None (ask) or True or False
@@ -686,9 +688,8 @@ def run_with_options(remote_control,
                                       sync_timer=timer,
                                       calibration_folder=calibration_folder,
                                       reverse_parameter_names=reverse_parameter_names,
-                                      rate = settings.gui.sampling_rate))
-
-
+                                      rate = settings.gui.sampling_rate,
+                                      convert_to_FT=convert_to_forces))
 
     # expyriment
     control.defaults.initialize_delay = 0
