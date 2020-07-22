@@ -17,7 +17,7 @@ _RecordingSetting = collections.namedtuple('RecordingSetting',
           'write_trigger2  reverse_scaling convert_to_forces')
 
 
-class Settings(object):
+class GUISettings(object):
 
     def __init__(self, filename):
 
@@ -88,4 +88,4 @@ class Settings(object):
             json.dump(self._asdict(), fl, indent=2)
 
             
-settings = Settings(filename="pyForceDAQ.settings")
+settings = GUISettings(filename="pyForceDAQ.settings")
