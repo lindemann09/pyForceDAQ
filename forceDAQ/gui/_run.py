@@ -8,7 +8,7 @@ import pygame
 try:
     from cPickle import dumps, loads
 except: #Python3
-    from _pickle import dumps, loads
+    from pickle import dumps, loads
 from time import sleep
 
 import numpy as np

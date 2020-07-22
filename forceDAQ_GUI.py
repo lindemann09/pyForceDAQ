@@ -1,5 +1,6 @@
 __author__ = 'Oliver Lindemann'
-
+import forceDAQ
+forceDAQ.USE_DUMMY_SENSOR = True
 TRY_TK_LAUNCHER = True
 
 if __name__ == "__main__": # required because of threading

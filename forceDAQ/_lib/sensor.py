@@ -77,15 +77,18 @@ class Sensor(DAQReadAnalog):
                                    len(Sensor.SENSOR_CHANNELS) + len(
                                        Sensor.TRIGGER_CHANNELS))
 
-        # ATI voltage to forrce converter
-        self._atidaq = ATI_CDLL()
-        # get calibration
-        index = ct.c_short(1)
-        self._atidaq.createCalibration(settings.calibration_file, index)
-        self._atidaq.setForceUnits("N")
-        self._atidaq.setTorqueUnits("N-m")
+        if self.DAQ_TYPE == "dummy":
+            from ..daq._pyATIDAQ import DUMMY_ATI_CDLL
+            self._atidaq = DUMMY_ATI_CDLL()
+        else:
+            # ATI voltage to forrce converter
+            self._atidaq = ATI_CDLL()
+            # get calibration
+            index = ct.c_short(1)
+            self._atidaq.createCalibration(settings.calibration_file, index)
+            self._atidaq.setForceUnits("N")
+            self._atidaq.setTorqueUnits("N-m")
         self.timer = Timer(sync_timer=settings.sync_timer)
-
         self._reverse_parameters = copy(settings.reverse_parameters)
 
 
@@ -276,7 +279,6 @@ class SensorProcess(Process):
         self._event_sending_data.clear()
         is_polling = False
         while not self._event_stop_request.is_set():
-
             if self._event_is_polling.is_set():
                 # is polling
                 if not is_polling:
@@ -341,7 +343,6 @@ class SensorProcess(Process):
 
 
 """Sensor History with moving average filtering and distance, velocity"""
-
 class SensorHistory(object):
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).

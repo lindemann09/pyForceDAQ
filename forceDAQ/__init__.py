@@ -1,4 +1,4 @@
-__version__ = "0.8.5"
+__version__ = "0.8.6"
 __author__ = "Oliver Lindemann"
 
 """
@@ -29,5 +29,4 @@ For function to support data handling see the folder pyForceDAQ/analysis
 
 import sys as _sys
 PYTHON3 = (_sys.version_info[0] == 3)
-
-
+USE_DUMMY_SENSOR = False

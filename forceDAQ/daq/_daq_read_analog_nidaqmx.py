@@ -9,14 +9,14 @@ class DAQReadAnalog(nidaqmx.Task):
     NUM_SAMPS_PER_CHAN = NUM_SAMPS_PER_CHAN
     TIMEOUT = TIMEOUT
     NI_DAQ_BUFFER_SIZE = NI_DAQ_BUFFER_SIZE
+    DAQ_TYPE = "nidaqmx"
 
     def __init__(self, configuration, read_array_size_in_samples):
         """ TODO
         read_array_size_in_samples for ReadAnalogF64 call
 
         """
-        
-        #print('init')
+
         nidaqmx.Task.__init__(self)
         # CreateAIVoltageChan
         self.ai_channels.add_ai_voltage_chan(configuration.physicalChannel, # physicalChannel

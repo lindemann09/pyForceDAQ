@@ -138,4 +138,4 @@ def run():
     if event == "Start":
         _gui_run()
     else:
-        print("Canceled")
+        pass

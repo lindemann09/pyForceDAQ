@@ -12,6 +12,7 @@ __author__ = "Oliver Lindemann"
 from sys import platform
 from ctypes import *
 from os import listdir, path
+from copy import copy
 
 # ### DATA TYPES ####
 VOLTAGE_SAMPLE_TYPE = c_float * 7
@@ -69,6 +70,7 @@ class Calibration(Structure):
 
 
 calibration_p = POINTER(Calibration)
+
 
 class ATI_CDLL(object):
 
@@ -268,6 +270,20 @@ class ATI_CDLL(object):
         """
 
         return self.cdll.printCalInfo(self._calibration)
+
+
+class DUMMY_ATI_CDLL(object):
+
+    def bias(self, voltages):
+        return True
+
+    def convertToFT(self, voltages, reverse_parameters=[]):
+        rtn = copy(voltages)
+        # array
+        for x in reverse_parameters:
+            rtn[x] = -1 * rtn[x]
+        return rtn
+
 
 def find_calibration_file(calibration_folder, sensor_name,
                           calibration_suffix=".cal"):
