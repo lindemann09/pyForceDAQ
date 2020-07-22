@@ -5,9 +5,9 @@ Openseame Object or the force DAQ remote control
 
 (c) O. Lindemann
 
-v0.9
-
 """
+
+# TODO: opensesame destructor
 
 from . import remote_control as rc
 
@@ -35,10 +35,30 @@ class OpensesameDAQControl():
         self.subject_number = self._exp.var.get(u'subject_nr')
         self.experiment_name = self._exp.var.get(u'experiment_file').split('.')[0]
         self.udp = rc.init_udp_connection()
-        self._exp.cleanup_functions.append(self.quit_recording)
 
     def __del__(self):
-        self.quit_recording()
+        print("destrutor called")
+
+
+    def test(self): #FIXME delete me
+        # Get the timestamp before and after sleeping for 1000 ms
+        t0 = self._exp.clock.time()
+        txt = canvas(self._exp)
+        key = keyboard(self._exp, keylist=['a', 'q', 'l'])
+        txt.text('Some text with <b>boldface</b> and <i>italics</i>')
+        txt.show()
+        self.clock.reset_stopwatch()
+        while True:
+            k = key.get_key(timeout=0)
+            if k[0] == u'q':
+                self._exp.end()
+                exit()
+            if self.clock.stopwatch_time > 1000:
+                print('j')
+                self.clock.reset_stopwatch()
+
+
+
 
     def start(self, time_for_feedback=10):
         """ returns true if feedback is OK
@@ -54,33 +74,21 @@ class OpensesameDAQControl():
             if rtn == rc.Command.FEEDBACK_STARTED:
                 break
             if self.clock.stopwatch_time > time_for_feedback*1000:
-                msg = "ERROR: Could not start recording <br/> Press key to quit"
-                cnv = canvas(self._exp, text = msg)
-                cnv.show()
-                kbd.get_key()
-                self._exp.end()
-                exit()
+                return False
 
         return True
 
     def stop(self):
         self.udp.send(rc.Command.QUIT)
 
-    def quit_recording(self):
-        if self.udp is not None:
-            udp.send(rc.Command.QUIT)
-        self.udp = None
-
-    def pause(self, time_for_feedback=60 * 2, text_saving_time ="Please wait..."):
-        """returns true if feedback is OK (that means data are saved)
-        waits for a particular for feedback
+    def pause(self, time_for_feedback=60 * 2):
+        """returns true if feedback is OK
+        waits a particular for feedback and
         """
 
         self.udp.send(rc.Command.PAUSE)
         self.clock.reset_stopwatch()
         kbd = keyboard(self._exp)
-        if text_saving_time != None:
-            canvas(self._exp, text=text_saving_time).show()
         while True:
             rtn = self.udp.poll()
             kbd.get_key(timeout=1)
@@ -88,14 +96,10 @@ class OpensesameDAQControl():
                 break
             if self.clock.stopwatch_time > time_for_feedback * 1000:
                 return False
-
-        if text_saving_time != None:
-            canvas(self._exp).show()
-
         return True
 
     # make connection #
-    def make_connection(self):
+    def make_connection(self, experiment_name="force_daq"):
         """hand shake and filename,
         returns forceDAQ version
         """
@@ -108,21 +112,19 @@ class OpensesameDAQControl():
         canvas(self._exp).show()
 
         while not self.udp.connect_peer(FORCE_SERVER_IP):
-            cnv = canvas(self._exp)
             cnv.text("ERROR while connecting to server <br> try again or Q to quit")
             cnv.show()
-            key = kbd.get_key()
+            key = kbd.get_key() #xx
             if key[0] == u'q':
                 msg = "Experiment quitted by user!"
                 self.udp.send(rc.Command.QUIT)
                 print(msg)
                 self._exp.end()
                 exit()
-            canvas(self._exp).show()
+            canvas(self._exp).show() #xx
             self.clock.wait(300)
 
-        cnv = canvas(self._exp)
-        cnv.text("Connected")
+        cnv.text("Connected", "")
         cnv.show()
         self.clock.wait(500)
         self.udp.send(rc.Command.FILENAME + "{0}_{1}.csv".format(self.experiment_name,
@@ -130,7 +132,7 @@ class OpensesameDAQControl():
         rtn = self.udp.receive(5)  # paused
         if rtn is None:
             msg = "Force server not responding"
-            cnv = canvas(self._exp, text = msg)
+            cnv.text(msg)
             cnv.show()
             kbd.get_key()
             self.udp.send(rc.Command.QUIT)
@@ -138,7 +140,6 @@ class OpensesameDAQControl():
             self._exp.end()
             exit()
         version = rc.get_data(rc.Command.GET_VERSION)
-        cnv = canvas(self._exp)
         cnv.text("Connected <br> Version " + version)
         cnv.show()
         self.clock.wait(1000)
@@ -182,7 +183,7 @@ class OpensesameDAQControl():
                 else:
                     self.force_button_box_prepare()
                     sensor = None
-            last_key, _ = kbd.get_key(timeout=0)
+            last_key = kbd.get_key(timeout=1)# fixme checkout responses, it is not lasttkey, I guess
             if last_key is not None:
                 break
 
@@ -195,56 +196,13 @@ class OpensesameDAQControl():
         if rc.get_data(rc.Command.GET_THRESHOLD_LEVEL) > 0 or \
                         rc.get_data(rc.Command.GET_THRESHOLD_LEVEL) > 0:
             if feedback_stimulus_text is not None:
-                cnv = canvas(self._exp)
+                cnv = canvas()
                 cnv.text(feedback_stimulus_text)
                 cnv.show()
             kbd = keyboard(self._exp)
             while rc.get_data(rc.Command.GET_THRESHOLD_LEVEL) > 0 or \
                             rc.get_data(rc.Command.GET_THRESHOLD_LEVEL) > 0:
                 kbd.get_key(timeout=polling_intervall)
-
-    def set_thresholds(self, lower, upper):
-        rc.set_force_thresholds(lower=lower, upper=upper)
-
-    def hold_check(self, holding_time=3000,
-                    left_pos=-200, right_pos=200, radius=50,
-                    col_fine='gray',
-                    col_too_low='green',
-                    col_too_strong='red'):
-        kbd = keyboard(self._exp)
-        blank = canvas(self._exp)
-        blank.show()
-
-        self.udp.send("hold:test")
-        self.clock.reset_stopwatch()
-        prev_lv = None
-        while True:
-            self.udp.clear_receive_buffer()
-            lv = [rc.get_data(rc.Command.GET_THRESHOLD_LEVEL),
-                  rc.get_data(rc.Command.GET_THRESHOLD_LEVEL2)]
-            if prev_lv!=lv:
-                # level has changes
-                self.clock.stopwatch_time()
-                prev_lv = lv
-                cnv = canvas(self._exp)
-                for i, pos in enumerate([left_pos, right_pos]):
-                    if lv[i] == WEAK:
-                        cnv.circle(x=pos, y=0, r=radius, fill=True,
-                                   color=col_too_low)
-                    elif lv[i] == STRONG:
-                        cnv.circle(x=pos, y=0, r=radius, fill=True,
-                                   color=col_too_strong)
-                    elif lv[i] == FINE:
-                        cnv.circle(x=pos, y=0, r=radius, fill=True,
-                                   color=col_fine)
-                cnv.show()
-
-            key, _ = kbd.get_key(timeout=0)
-            if (lv == [FINE, FINE] and self.clock.stopwatch_time > holding_time) or\
-                    (key is not None):
-                break
-
-        blank.show()
 
 
 class ExpyClock():
@@ -267,3 +225,4 @@ class ExpyClock():
 
     def wait(self, waiting_time):
         return self._clock.sleep(waiting_time)
+
