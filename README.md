@@ -15,7 +15,7 @@ Dependencies
 * [PyDAQmx](https://pythonhosted.org/PyDAQmx/installation.html)
 * The GUI application (`forceDAQ.gui`) depends furthermore on [Expyriment](http://docs.expyriment.org/Installation.html) 0.8.0 or higher
 
-Recommended for GUI interface:
+Stringly recommended for GUI interface:
 * [PySimpleGUI](https://pysimplegui.readthedocs.io/)
 
 Installation
@@ -24,7 +24,19 @@ Installation
 * Create the shared library `atidaq.dll` (or `atidaq.so` for Linux) using
  `Makefile` in the folder `atidaq_cdll`. A complied version of `atidaq.dll
  ` can be also found in the `dll` subfolder
-* Make the library available by coping it in your system folder 
+* Make the library available by coping it in your system folder
+
+To install pyForceDAQ from release-zipfile
+
+1. Ensure that [Python 3](https://www.python.org/) is installed
+2. Download and unpack zip file
+3. run `install_dependencies.py`
+4. run `forceDAQ_GUI.py`
+5. edit settings via GUI if required
+
+**Note:** The software uses per default a DummySensor and simulates data. For the use of force sensors in the lab, please change `forceDAQ.py` accordingly.
+
+``forceDAQ.USE_DUMMY_SENSOR = False``
 
 Development
 -----------
