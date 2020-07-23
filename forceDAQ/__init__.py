@@ -25,7 +25,7 @@ For function to support data handling see the folder pyForceDAQ/analysis
 
 """
 
-#TODO setting files
+#TODO why pausing in dummy mode crashes
 
 import sys as _sys
 PYTHON3 = (_sys.version_info[0] == 3)

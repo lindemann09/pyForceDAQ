@@ -90,13 +90,16 @@ class Sensor(DAQReadAnalog):
             self._atidaq = None
             self.convert_to_FT = False
         else:
-            # ATI voltage to forrce converter
+            # ATI voltage to force converter (#TODO ATI_CDLL also care about
+            # biases, this is mabye not needed, check c-code)
             self._atidaq = ATI_CDLL()
+
             # get calibration
             index = ct.c_short(1)
             self._atidaq.createCalibration(settings.calibration_file, index)
             self._atidaq.setForceUnits("N")
             self._atidaq.setTorqueUnits("N-m")
+
         self.timer = Timer(sync_timer=settings.sync_timer)
         self._reverse_parameters = copy(settings.reverse_parameters)
 
@@ -122,6 +125,8 @@ class Sensor(DAQReadAnalog):
 
         if self._atidaq is not None:
             self._atidaq.bias(np.mean(data, axis=0))
+            # TODO is bias required
+            # for recoding of voltages, that is, not convert to forces
 
     def poll_force_data(self):
         """Polling data
