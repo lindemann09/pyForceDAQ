@@ -13,7 +13,8 @@ from time import sleep
 
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQConfiguration, find_calibration_file
+from ..daq import ATI_CDLL, DAQConfiguration
+from .._lib.misc import find_calibration_file
 from .types import ForceData, DAQEvents
 from .timer import Timer
 
@@ -51,8 +52,7 @@ class SensorSettings(DAQConfiguration):
         if self.convert_to_FT:
             self.calibration_file = find_calibration_file(
                                         calibration_folder=calibration_folder,
-                                        sensor_name=sensor_name,
-                                        calibration_suffix=".cal")
+                                        sensor_name=sensor_name)
         else:
             self.calibration_file = None
 

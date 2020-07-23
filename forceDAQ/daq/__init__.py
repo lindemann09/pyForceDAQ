@@ -2,7 +2,7 @@ __author__ = "Oliver Lindemann"
 __version__ = "0.3"
 
 from ._config import DAQConfiguration
-from ._pyATIDAQ import ATI_CDLL, find_calibration_file
+from ._pyATIDAQ import ATI_CDLL
 from .. import USE_DUMMY_SENSOR
 
 

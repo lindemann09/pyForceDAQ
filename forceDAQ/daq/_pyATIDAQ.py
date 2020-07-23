@@ -11,9 +11,8 @@ __author__ = "Oliver Lindemann"
 
 from sys import platform
 from ctypes import *
-from os import listdir, path
-from copy import copy
 
+from .._lib.misc import find_calibration_file
 # ### DATA TYPES ####
 VOLTAGE_SAMPLE_TYPE = c_float * 7
 FT_SAMPLE_TYPE = c_float * 6
@@ -270,20 +269,6 @@ class ATI_CDLL(object):
         """
 
         return self.cdll.printCalInfo(self._calibration)
-
-
-def find_calibration_file(calibration_folder, sensor_name,
-                          calibration_suffix=".cal"):
-    needle = 'Serial="{0}"'.format(sensor_name)
-    for x in listdir(path.abspath(calibration_folder)):
-        filename = path.join(calibration_folder, x)
-        if path.isfile(filename) and filename.endswith(calibration_suffix):
-            with open(filename, "r") as fl:
-                for l in fl:
-                    if l.find(needle)>0:
-                        return filename
-    raise RuntimeError("Can't find calibration file for sensor '{0}'.".format(sensor_name))
-
 
 def print_calibration_info(calibration_file):
     """convinient function to print calibration file infos"""
