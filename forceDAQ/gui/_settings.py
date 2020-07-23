@@ -52,7 +52,7 @@ class GUISettings(object):
                        sensor_names = ["FT30436"],
                        calibration_folder="C:\\Users\\Force\\Desktop\\calibration",
                        reverse_scaling = {1: ["Fz"], 2:["Fz"]},  # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
-                       remote_control=True, ask_filename= False, write_Fx=True,
+                       remote_control=False, ask_filename= False, write_Fx=True,
                        write_Fy=True, write_Fz=True, write_Tx=False, write_Ty=False,
                        write_Tz=False, write_trigger1=True, write_trigger2=False,
                        zip_data=True, convert_to_forces=True)
