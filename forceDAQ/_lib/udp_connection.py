@@ -10,6 +10,7 @@ import socket
 from multiprocessing import Process, Event, Queue
 from multiprocessing.sharedctypes import Array
 from time import sleep, time
+import logging
 
 from .._lib.types import UDPData
 from .._lib.polling_time_profile import PollingTimeProfile
@@ -274,6 +275,7 @@ class UDPConnectionProcess(Process):
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
+        logging.info("start {}".format(self))
         print("UDP process started")
         print(udp_connection)
         self.ip_address = udp_connection.my_ip
@@ -313,6 +315,6 @@ class UDPConnectionProcess(Process):
 
         udp_connection.unconnect_peer()
 
-        print(self)
-        print(ptp.profile_percent)
-        print(ptp.zero_time_polling_frequency)
+        logging.info("end {}".format(self))
+        logging.info("{}".format(ptp.profile_frequency))
+        #logging.info("{}".format(ptp.zero_time_polling_frequency))

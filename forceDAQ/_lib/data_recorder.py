@@ -7,6 +7,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import os
+import logging
 from time import localtime, strftime,asctime, sleep
 
 from .. import __version__ as forceDAQVersion
@@ -161,7 +162,8 @@ class DataRecorder(object):
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
-                    "Writing {0} of {1} blocks".format(c/BLOCKSIZE,l/BLOCKSIZE)).present()
+                    "Writing {0} of {1} blocks".format(c//BLOCKSIZE,
+                                                       l//BLOCKSIZE)).present()
 
     def _file_write(self, str):
         self._file.write(str.encode())
@@ -329,6 +331,7 @@ class DataRecorder(object):
 
         self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
+        logging.info("new file: {}".format(filename))
 
         for s in self.sensor_settings_list:
             txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,

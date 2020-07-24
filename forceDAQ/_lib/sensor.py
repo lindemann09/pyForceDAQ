@@ -10,6 +10,7 @@ import ctypes as ct
 from copy import copy
 from multiprocessing import Process, Event, sharedctypes, Pipe
 from time import sleep
+import logging
 
 import numpy as np
 
@@ -18,6 +19,7 @@ from .._lib.misc import find_calibration_file
 from .types import ForceData, DAQEvents
 from .timer import Timer
 from .._lib.polling_time_profile import PollingTimeProfile
+
 
 from ..daq import DAQReadAnalog
 
@@ -300,6 +302,7 @@ class SensorProcess(Process):
         self._event_sending_data.clear()
         is_polling = False
         ptp = PollingTimeProfile() #FIXME just debug
+        logging.info("start {}".format(self))
 
         while not self._event_stop_request.is_set():
             if self._event_is_polling.is_set():
@@ -368,9 +371,9 @@ class SensorProcess(Process):
         self._buffer_size.value = 0
         sensor.stop_data_acquisition()
 
-        print(self)
-        print(ptp.profile_frequency)
-        print(ptp.zero_time_polling_frequency)
+        logging.info("end {}".format(self))
+        logging.info("{}".format(ptp.profile_frequency))
+        #logging.info("{}".format(ptp.zero_time_polling_frequency))
 
 
 """Sensor History with moving average filtering and distance, velocity"""

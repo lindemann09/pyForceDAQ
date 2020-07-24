@@ -14,12 +14,13 @@ from time import sleep
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 
-from . import settings
 from .. import __version__ as forceDAQVersion
+from .._lib import log
 from .._lib.data_recorder import DataRecorder, SensorSettings
 from .._lib.sensor import SensorProcess, SensorHistory
 from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
 from .._lib.timer import Timer
+
 from . import settings
 from ._plotter import PlotterThread
 from ._level_indicator import level_indicator
@@ -669,6 +670,11 @@ def run_with_options(remote_control,
 
     returns False only if quited by key while waiting for remote control
     """
+    #
+
+    log.set_logging(data_directory="data")
+    log.logging.info("Recording with forceDAQ {}".format(forceDAQVersion))
+    log.logging.info("Sensors {}".format(sensor_names))
 
     if not isinstance(device_ids, (list, tuple)):
         device_ids = [device_ids]
@@ -690,6 +696,8 @@ def run_with_options(remote_control,
                                       reverse_parameter_names=reverse_parameter_names,
                                       rate = settings.gui.sampling_rate,
                                       convert_to_FT=convert_to_forces))
+
+
 
     # expyriment
     control.defaults.initialize_delay = 0
@@ -722,6 +730,7 @@ def run_with_options(remote_control,
 
     sleep(0.2) # wait for lib init
     recorder.determine_biases(n_samples=500)
+
 
     if remote_control:
         logo_text_line("Waiting to connect (my IP: {0})".format(

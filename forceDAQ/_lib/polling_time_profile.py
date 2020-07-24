@@ -21,14 +21,14 @@ class PollingTimeProfile(object):
                 d = self._timing_range
             self.profile_frequency[d] += 1
 
-            if d == 0:
-                self._zero_cnt += 1
-            elif self._zero_cnt > 0:
-                try:
-                    self._zero_time_polling_frequency[self._zero_cnt] += 1
-                except:
-                    self._zero_time_polling_frequency[self._zero_cnt] = 1
-                self._zero_cnt = 0
+            #if d == 0:
+            #    self._zero_cnt += 1
+            #elif self._zero_cnt > 0:
+            #    try:
+            #        self._zero_time_polling_frequency[self._zero_cnt] += 1
+            #    except:
+            #        self._zero_time_polling_frequency[self._zero_cnt] = 1
+            #    self._zero_cnt = 0
 
         self._last = time_ms
 
