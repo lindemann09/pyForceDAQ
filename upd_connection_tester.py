@@ -75,7 +75,7 @@ def server():
                 print("Server is unconnected")
                 break
 
-    udp_p.stop()
+    udp_p.quit()
     udp_p.join()
 
 if __name__ == "__main__":

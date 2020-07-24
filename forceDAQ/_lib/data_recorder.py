@@ -7,7 +7,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import os
-from time import localtime, strftime,asctime
+from time import localtime, strftime,asctime, sleep
 
 from .. import __version__ as forceDAQVersion
 from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
@@ -101,11 +101,11 @@ class DataRecorder(object):
         self.close_data_file()
 
         if self.udp is not None:
-            self.udp.stop()
+            self.udp.quit()
 
         # wait that all processes are quitted
         for fsp in self._force_sensor_processes:
-            fsp.stop()
+            fsp.join()
 
         return buffer
 
@@ -119,12 +119,12 @@ class DataRecorder(object):
                 # until queue empty or no udp connection
                 break
             buffer.append(data)
-        self._write_data(buffer)
+        self._save_data(buffer)
         return buffer
 
-    def _write_data(self, data_buffer,
-                    recording_screen=None,
-                    float_decimal_places=4):
+    def _save_data(self, data_buffer,
+                   recording_screen=None,
+                   float_decimal_places=4):
         """ writes data to disk and set counters
 
         ignores UDP remote control commands
@@ -213,19 +213,22 @@ class DataRecorder(object):
         #pause polling
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
+
+        if recording_screen is not None:
+            recording_screen.stimulus("Getting data").present()
+        sleep(0.5)  # wait data acquisition paused properly
+
         # get data
         for fsp in self._force_sensor_processes:
-            if recording_screen is not None:
-                recording_screen.stimulus("Getting data").present()
-            buffer = fsp.pause_polling_get_buffer()
-            self._write_data(buffer, recording_screen)
+            buffer = fsp.get_buffer()
+            self._save_data(buffer, recording_screen)
             data.extend(buffer)
 
         # udp event
         buffer = self.process_and_write_udp_events()
         data.extend(buffer)
         # soft trigger
-        self._write_data(self._soft_trigger)
+        self._save_data(self._soft_trigger)
         data.extend(self._soft_trigger)
         self._soft_trigger = []
 

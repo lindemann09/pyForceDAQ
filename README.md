@@ -29,12 +29,14 @@ Installation
 To install pyForceDAQ from release-zipfile
 
 1. Ensure that [Python 3](https://www.python.org/) is installed
-2. Download and unpack zip file
+2. Download and unpack zipfile file
 3. run `install_dependencies.py`
 4. run `forceDAQ_GUI.py`
 5. edit settings via GUI if required
 
-**Note:** The software uses per default a DummySensor and simulates data. For the use of force sensors in the lab, please change `forceDAQ.py` accordingly.
+**Note:** The software uses per default a dummy-sensor and simulates
+data. For the use of force sensors in the lab, please change
+`forceDAQ_GUI.py` accordingly:
 
 ``forceDAQ.USE_DUMMY_SENSOR = False``
 
@@ -43,4 +45,5 @@ Development
 
 https://github.com/lindemann09/pyForceDAQ
 
-Please [submit](https://github.com/lindemann09/pyForceDAQ/issues/new) any bugs you encounter to the Github issue tracker.
+Please [submit](https://github.com/lindemann09/pyForceDAQ/issues/new)
+any bugs you encounter to the Github issue tracker.

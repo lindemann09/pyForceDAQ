@@ -12,6 +12,7 @@ from multiprocessing.sharedctypes import Array
 from time import sleep, time
 
 from .._lib.types import UDPData
+from .._lib.polling_time_profile import PollingTimeProfile
 from .timer import Timer, get_time
 from .. import PYTHON3
 
@@ -245,7 +246,7 @@ class UDPConnectionProcess(Process):
         except:
             self._event_trigger = ()
 
-        atexit.register(self.stop)
+        atexit.register(self.quit)
 
     @property
     def ip_address(self):
@@ -260,7 +261,7 @@ class UDPConnectionProcess(Process):
             ip = ip.encode()
         self._ip_address.value = ip
 
-    def stop(self):
+    def quit(self):
         self._event_stop_request.set()
         if self.is_alive():
             self.join()
@@ -278,13 +279,17 @@ class UDPConnectionProcess(Process):
         self.ip_address = udp_connection.my_ip
         self.start_polling()
         timer = Timer(self._sync_timer)
+        ptp = PollingTimeProfile()
         while not self._event_stop_request.is_set():
             if not self._event_is_polling.is_set():
+                ptp.stop()
                 self._event_is_polling.wait(timeout=0.1)
             else:
                 data = udp_connection.poll()
+                t = timer.time
+                ptp.update(t)
                 if data is not None:
-                    d = UDPData(string=data, time=timer.time)
+                    d = UDPData(string=data, time=t)
                     self.receive_queue.put(d)
                     if self._event_ignore_tag is not None and \
                             not d.startswith(self._event_ignore_tag):
@@ -303,8 +308,11 @@ class UDPConnectionProcess(Process):
                     else:
                         self.event_is_connected.clear()
 
-                if not udp_connection.is_connected:
-                    sleep(0.1)
-
+                if False and not udp_connection.is_connected:
+                    sleep(0.01)
 
         udp_connection.unconnect_peer()
+
+        print(self)
+        print(ptp.profile_percent)
+        print(ptp.zero_time_polling_frequency)

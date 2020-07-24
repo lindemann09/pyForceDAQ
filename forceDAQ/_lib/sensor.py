@@ -17,6 +17,7 @@ from ..daq import ATI_CDLL, DAQConfiguration
 from .._lib.misc import find_calibration_file
 from .types import ForceData, DAQEvents
 from .timer import Timer
+from .._lib.polling_time_profile import PollingTimeProfile
 
 from ..daq import DAQReadAnalog
 
@@ -128,7 +129,7 @@ class Sensor(DAQReadAnalog):
             # TODO is bias required
             # for recoding of voltages, that is, not convert to forces
 
-    def poll_force_data(self):
+    def poll_data(self):
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
@@ -199,7 +200,7 @@ class SensorProcess(Process):
         self._determine_bias_flag = Event()
 
         self._bias_n_samples = 200
-        atexit.register(self.stop)
+        atexit.register(self.join)
 
     @property
     def Fx(self):
@@ -270,26 +271,23 @@ class SensorProcess(Process):
     def pause_polling(self):
         self._event_is_polling.clear()
 
-    def pause_polling_get_buffer(self):
-        """pause polling and return recorded buffer"""
-        self.pause_polling()
-        sleep(0.1) # wait data acquisition paused properly
+    def get_buffer(self):
+        """return recorded buffer"""
         rtn = []
         if self._event_sending_data.is_set() or self._buffer_size.value > 0:
+            #FIXME check self._event_sending_data and syncronization
             self._event_sending_data.wait()
             while self._buffer_size.value > 0:  # wait until buffer is empty
                 rtn.extend(self._pipe_i.recv())
             self._event_sending_data.clear() # stop sending
         return rtn
 
-    def stop(self):
-        rtn = self.pause_polling_get_buffer()
-        self.join()
-        return rtn
-
     def join(self, timeout=None):
         if self._event_is_polling.is_set():
-            self.pause_polling_get_buffer()
+            self.pause_polling()
+            sleep(0.1) # wait polling quitted
+            self.get_buffer() # empty buffer TODO maybe not required
+
         self._event_stop_request.set()
         super(SensorProcess, self).join(timeout)
 
@@ -301,6 +299,8 @@ class SensorProcess(Process):
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
+        ptp = PollingTimeProfile() #FIXME just debug
+
         while not self._event_stop_request.is_set():
             if self._event_is_polling.is_set():
                 # is polling
@@ -314,7 +314,9 @@ class SensorProcess(Process):
                         self._buffer_size.value = len(buffer)
                     is_polling = True
 
-                d = sensor.poll_force_data()
+                d = sensor.poll_data()
+                ptp.update(d.time)
+
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
 				                     self._last_Tx.value, self._last_Ty.value, \
                                      self._last_Tz.value = d.forces
@@ -337,6 +339,7 @@ class SensorProcess(Process):
                         self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
                     is_polling = False
+                    ptp.stop()
 
                 if self._return_buffer and self._buffer_size.value>0:
                     # sending data to recorder
@@ -348,6 +351,7 @@ class SensorProcess(Process):
                         self._pipe_o.send(buffer[0:chks])
                         buffer[0:chks] = []
                         self._buffer_size.value = len(buffer)
+
                     # wait that data are read
                     if self._event_sending_data.is_set():
                         sleep(0.01)
@@ -363,6 +367,10 @@ class SensorProcess(Process):
         # stop process
         self._buffer_size.value = 0
         sensor.stop_data_acquisition()
+
+        print(self)
+        print(ptp.profile_frequency)
+        print(ptp.zero_time_polling_frequency)
 
 
 """Sensor History with moving average filtering and distance, velocity"""
