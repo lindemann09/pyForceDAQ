@@ -8,7 +8,7 @@ class PollingTimeProfile(object):
         self._timing_range = 10
         self._zero_cnt = 0
 
-        self._zero_time_polling_frequency = {}
+        #self._zero_time_polling_frequency = {}
         self.profile_frequency = np.array([0] * (timing_range + 1))
 
     def stop(self):
@@ -40,6 +40,6 @@ class PollingTimeProfile(object):
         n = np.sum(self.profile_frequency)
         return self.profile_frequency / n
 
-    @property
-    def zero_time_polling_frequency(self):
-        return np.array(list(self._zero_time_polling_frequency.items()))
+    #@property
+    #def zero_time_polling_frequency(self):
+    #    return np.array(list(self._zero_time_polling_frequency.items()))

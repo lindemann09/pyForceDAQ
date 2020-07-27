@@ -734,7 +734,7 @@ def run_with_options(remote_control,
 
     if remote_control:
         logo_text_line("Waiting to connect (my IP: {0})".format(
-                    recorder.udp.ip_address)).present()
+                    recorder.udp.my_ip)).present()
         while not recorder.udp.event_is_connected.is_set():
             key = exp.keyboard.check(check_for_control_keys=False)
             if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:

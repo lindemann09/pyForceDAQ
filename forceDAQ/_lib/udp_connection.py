@@ -2,13 +2,12 @@
 """
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
-__version__ = "0.4"
+__version__ = "0.5"
 
 import atexit
 import os
 import socket
 from multiprocessing import Process, Event, Queue
-from multiprocessing.sharedctypes import Array
 from time import sleep, time
 import logging
 
@@ -41,18 +40,23 @@ class UDPConnection(object):
     COMMAND_REPLY = COMMAND_CHAR + b"ok"
     PING = COMMAND_CHAR + b"ping"
 
+    MY_IP = get_lan_ip()
+
     def __init__(self, udp_port=5005):
         self.udp_port = udp_port
 
         self._socket = socket.socket(socket.AF_INET,  # Internet
                                      socket.SOCK_DGRAM)  # UDP
-        self.my_ip = get_lan_ip()
-        self._socket.bind((self.my_ip, self.udp_port))
+        self._socket.bind((UDPConnection.MY_IP, self.udp_port))
         self._socket.setblocking(False)
         self.peer_ip = None
 
+    @property
+    def my_ip(self):
+        return UDPConnection.MY_IP
+
     def __str__(self):
-        return "ip: {0} (port: {1}); peer: {2}".format(self.my_ip,
+        return "ip: {0} (port: {1}); peer: {2}".format(UDPConnection.MY_IP,
                                                        self.udp_port, self.peer_ip)
 
     def receive(self, timeout):
@@ -237,7 +241,6 @@ class UDPConnectionProcess(Process):
         self.event_is_connected = Event()
         self._event_stop_request = Event()
         self._event_is_polling = Event()
-        self._ip_address = Array("c", b"xxx.xxx.xxx.xxx")
         self._event_ignore_tag = event_ignore_tag
 
         if isinstance(event_trigger, type(Event)  ):
@@ -250,17 +253,8 @@ class UDPConnectionProcess(Process):
         atexit.register(self.quit)
 
     @property
-    def ip_address(self):
-        rtn = self._ip_address.value
-        if PYTHON3:
-            rtn = rtn.decode()
-        return rtn
-
-    @ip_address.setter
-    def ip_address(self, ip):
-        if PYTHON3:
-            ip = ip.encode()
-        self._ip_address.value = ip
+    def my_ip(self):
+        return UDPConnection.MY_IP
 
     def quit(self):
         self._event_stop_request.set()
@@ -278,7 +272,7 @@ class UDPConnectionProcess(Process):
         logging.info("start {}".format(self))
         print("UDP process started")
         print(udp_connection)
-        self.ip_address = udp_connection.my_ip
+
         self.start_polling()
         timer = Timer(self._sync_timer)
         ptp = PollingTimeProfile()

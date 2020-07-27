@@ -2,11 +2,11 @@ import sys
 from os import path
 
 import PySimpleGUI as _sg
-from .. import __version__
+from .. import __version__, USE_DUMMY_SENSOR
 from .._lib.misc import find_calibration_file
 from ._settings import settings
 from ._run import run as _gui_run
-
+from .._lib.udp_connection import UDPConnection
 def _group(title, objects):
     return [_sg.Frame(title, [objects])]
 
@@ -54,9 +54,9 @@ def _run_window():
     s = settings.recording
     n_sensor = len(s.device_ids)
 
-    info = []
-    info.append([_sg.Text("Remote Control: {}".format(s.remote_control))])
-    info.append([_sg.Text("Number of sensors: {}".format(n_sensor))])
+    info_settings = []
+    info_settings.append([_sg.Text("Remote Control: {}".format(s.remote_control))])
+    info_settings.append([_sg.Text("Number of sensors: {}".format(n_sensor))])
 
     for d_id, name, cal, error in _check_sensor_calibration_settings(
                                                 s.device_ids,
@@ -67,20 +67,26 @@ def _run_window():
         else:
             col = _sg.DEFAULT_ELEMENT_TEXT_COLOR
 
-        info.append([_sg.Text("- {}{}: {}, {}".format(s.device_name_prefix,
+        info_settings.append([_sg.Text("- {}{}: {}, {}".format(s.device_name_prefix,
                                                       d_id, name, cal),
                               text_color=col)])
 
+    info = [[_sg.Text("forceDAQ version: {}".format(__version__))]]
+    info.append([_sg.Text("IP address: {}".format(UDPConnection.MY_IP))])
+    if USE_DUMMY_SENSOR:
+        info.append([_sg.Text("!!!  USING DUMMY SENSORS  !!!",
+                              text_color="red")])
 
     layout = [
               [_sg.Button("Start Recording", size=(29, 4),
                           button_color=('black', 'lightgreen'),
                           key="Start")],
-              [_sg.Frame('Settings', info)],
+              [_sg.Frame('Settings', info_settings)],
+              [_sg.Frame('Info', info)],
               [_sg.Button("Edit Settings", key="Settings", size=(12, 2)),
                _sg.Cancel(size=(12, 2))]]
 
-    window = _sg.Window('ForceGUI {}'.format(__version__), layout)
+    window = _sg.Window('ForceGUI'.format(), layout)
     event, values = window.read()
     window.close()
     return event, values
@@ -98,6 +104,7 @@ def _settings_window():
                           [_sg.Checkbox("Zip Data", s.zip_data,
                                        key="zip_data")]]
                            )])
+
 
     layout.append([_sg.Frame('Sensor',
                              [_input_text_list("Device Name Prefix:",
