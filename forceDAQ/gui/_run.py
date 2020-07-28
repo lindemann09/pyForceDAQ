@@ -626,6 +626,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
 
 def run():
+
     return run_with_options(remote_control = settings.recording.remote_control,
                             ask_filename = settings.recording.ask_filename,
                             device_ids = settings.recording.device_ids,
@@ -642,7 +643,8 @@ def run():
                             write_trigger2 = settings.recording.write_trigger2,
                             zip_data=settings.recording.zip_data,
                             reverse_scaling = settings.recording.reverse_scaling,
-                            convert_to_forces=settings.recording.convert_to_forces)
+                            convert_to_forces=settings.recording.convert_to_forces,
+                            polling_priority=settings.recording.priority)
 
 def run_with_options(remote_control,
                      ask_filename,
@@ -660,7 +662,8 @@ def run_with_options(remote_control,
                      write_trigger2 = False,
                      zip_data=False,
                      reverse_scaling = None,
-                     convert_to_forces = True):
+                     convert_to_forces = True,
+                     polling_priority=None):
 
     """start gui
     remote_control should be None (ask) or True or False
@@ -668,12 +671,15 @@ def run_with_options(remote_control,
     reverse scaling: dictionary with rescaling (see SensorSetting)
                 key: device_id, value: list of parameter names (e.g., ["Fx"])
 
+   polling_priority has to be types.PRIORITY_{HIGH}, {REALTIME} or
+                        {NORMAL} or None
+
     returns False only if quited by key while waiting for remote control
     """
     #
 
     log.set_logging(data_directory="data")
-    log.logging.info("Recording with forceDAQ {}".format(forceDAQVersion))
+    log.logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
     log.logging.info("Sensors {}".format(sensor_names))
 
     if not isinstance(device_ids, (list, tuple)):
@@ -726,7 +732,8 @@ def run_with_options(remote_control,
                  write_Ty = write_Ty,
                  write_Tz = write_Tz,
                  write_trigger1= write_trigger1,
-                 write_trigger2= write_trigger2)
+                 write_trigger2= write_trigger2,
+                 polling_priority=polling_priority)
 
     sleep(0.2) # wait for lib init
     recorder.determine_biases(n_samples=500)

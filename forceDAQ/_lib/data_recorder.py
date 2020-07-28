@@ -12,11 +12,11 @@ from time import localtime, strftime,asctime, sleep
 
 from .. import __version__ as forceDAQVersion
 from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
-                        TAG_UDPDATA, TAG_COMMENTS
+                        TAG_UDPDATA, TAG_COMMENTS, PollingPriority
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
 from .._lib.sensor import SensorSettings, SensorProcess
 from .._lib.udp_connection import UDPConnectionProcess
-from .._lib import process_priority_manager as ppm
+from .._lib.process_priority_manager import ProcessPriorityManager
 
 NEWLINE = "\n"
 
@@ -33,11 +33,15 @@ class DataRecorder(object):
                  write_Ty = False,
                  write_Tz = False,
                  write_trigger1 = True,
-                 write_trigger2 = False):
+                 write_trigger2 = False,
+                 polling_priority=None):
 
 
         """queue_data will be saved
         see sensorprocess.__init__
+
+        polling_priority has to be types.PollingPriority.{HIGH},
+        {REALTIME} or {NORMAL} or None
         """
 
         self._write_deviceid = write_deviceid
@@ -71,11 +75,18 @@ class DataRecorder(object):
             self.udp = None
 
         # process managing
-        self._proc_manager = ppm.ProcessPriorityManager()
+        self._proc_manager = ProcessPriorityManager()
         self._proc_manager.add_subprocess(self.udp)
         self._proc_manager.add_subprocess(self._force_sensor_processes)
-        self._proc_manager.set_subprocess_priorities(
-            level=ppm.REALTIME_PRIORITY, disable_gc=False) #FIXME in settings
+        if polling_priority is not None:
+            self._proc_manager.set_subprocess_priorities(
+                level=PollingPriority.get_priority(polling_priority),
+                disable_gc=False)
+
+        logging.info("Main process priority: {}".format(
+            self._proc_manager.get_main_priority()))
+        logging.info("Subprocess priorities: {}".format(
+            self._proc_manager.get_subprocess_priorities()))
 
         self._is_recording = False
         self._file = None

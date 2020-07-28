@@ -7,6 +7,10 @@ from .._lib.misc import find_calibration_file
 from ._settings import settings
 from ._run import run as _gui_run
 from .._lib.udp_connection import UDPConnection
+from .._lib.types import PollingPriority
+
+
+
 def _group(title, objects):
     return [_sg.Frame(title, [objects])]
 
@@ -50,7 +54,7 @@ def _check_sensor_calibration_settings(device_ids, sensor_names,
 
     return rtn
 
-def _run_window():
+def _windows_run():
     s = settings.recording
     n_sensor = len(s.device_ids)
 
@@ -91,7 +95,7 @@ def _run_window():
     window.close()
     return event, values
 
-def _settings_window():
+def _window_settings():
     s = settings.recording
     layout = []
 
@@ -102,8 +106,15 @@ def _settings_window():
                            _sg.Checkbox("Enter Filename Manually",
                                         s.ask_filename, key="ask_filename")],
                           [_sg.Checkbox("Zip Data", s.zip_data,
-                                       key="zip_data")]]
-                           )])
+                                       key="zip_data")],
+                          [_sg.Text('Process Priority'),
+                            _sg.Combo((PollingPriority.NORMAL,
+                                       PollingPriority.HIGH,
+                                       PollingPriority.REALTIME),
+                                      size=(10, 10),
+                                      default_value=s.priority,
+                                      key='priority')]
+                          ])])
 
 
     layout.append([_sg.Frame('Sensor',
@@ -134,7 +145,8 @@ def _settings_window():
                                        s.convert_to_forces,
                                       key="convert_to_forces")]
                           ])])
-    # reverse scaling
+
+    # reverse scaling FIXME DOES NOT WORK
     tmp = []
     for x in s.device_ids:
         try:
@@ -165,7 +177,7 @@ def _settings_window():
                     "write_Fx", "write_Fy", "write_Fz",
                     "write_Tx", "write_Ty", "write_Tz",
                     "write_trigger1", "write_trigger2", "convert_to_forces",
-                    "zip_data"):
+                    "zip_data", "priority"):
             d[key] = values[key]
 
         key = "device_ids"
@@ -213,12 +225,12 @@ def run():
         settings_error = True
 
     if settings_error:
-        _settings_window()
+        _window_settings()
 
     while True:
-        event, _ = _run_window()
+        event, _ = _windows_run()
         if event == "Settings":
-            if _settings_window() == "Error":
+            if _window_settings() == "Error":
                 _sg.PopupError("Something is wrong with the settings.")
         else:
             break

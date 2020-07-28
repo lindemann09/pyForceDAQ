@@ -1,7 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
-from .misc import MinMaxDetector
+from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
 TAG_COMMENTS = "#"
@@ -10,6 +10,25 @@ TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
 CTYPE_FORCES = ct.c_float * 600
 CTYPE_TRIGGER = ct.c_float * 2
+
+class PollingPriority(object):
+
+    NORMAL = 'normal'
+    HIGH = 'high'
+    REALTIME = 'real_time'
+
+    @staticmethod
+    def get_priority(priority_str):
+        """returns normal or the higher priority if detected """
+        if isinstance(priority_str, str):
+            if priority_str.find("real") >= 0 and \
+                    priority_str.find("time") >= 0:
+                return PollingPriority.REALTIME
+            elif priority_str.startswith("high"):
+                return PollingPriority.HIGH
+
+        return PollingPriority.NORMAL
+
 
 class CTypesForceData(ct.Structure):
     _fields_ = [("device_id", ct.c_int),
@@ -29,7 +48,7 @@ class ForceData(object):
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
-    def __init__(self, time=0, forces=[0] * 6, trigger=(0, 0),
+    def __init__(self, time=0, forces= [0] * 6, trigger=(0, 0),
                  device_id=0, trigger_threshold=0.9, reverse=()):
         """Create a ForceData object
         Parameters
@@ -290,10 +309,12 @@ class Thresholds(object):
         """
 
         level = None
+        cnt = 0
         for cnt, x in enumerate(self._thresholds):
             if value < x:
                 level = cnt
                 break
+
         if level is None:
             level = cnt + 1
         return level
@@ -337,7 +358,7 @@ class Thresholds(object):
         """
 
         lv = self.get_level(value)
-        self._minmax[channel] = MinMaxDetector(start_value=lv,
+        self._minmax[channel] = _MinMaxDetector(start_value=lv,
                                      duration=duration)
         self._prev_level[channel] = None
         return lv

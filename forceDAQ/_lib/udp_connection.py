@@ -13,6 +13,7 @@ import logging
 
 from .._lib.types import UDPData
 from .._lib.polling_time_profile import PollingTimeProfile
+from .._lib.process_priority_manager import get_priority
 from .timer import Timer, get_time
 from .. import PYTHON3
 
@@ -239,7 +240,7 @@ class UDPConnectionProcess(Process):
         self.receive_queue = Queue()
         self.send_queue = Queue()
         self.event_is_connected = Event()
-        self._event_stop_request = Event()
+        self._event_quit_request = Event()
         self._event_is_polling = Event()
         self._event_ignore_tag = event_ignore_tag
 
@@ -257,7 +258,7 @@ class UDPConnectionProcess(Process):
         return UDPConnection.MY_IP
 
     def quit(self):
-        self._event_stop_request.set()
+        self._event_quit_request.set()
         if self.is_alive():
             self.join()
 
@@ -269,14 +270,21 @@ class UDPConnectionProcess(Process):
 
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
-        logging.info("start {}".format(self))
-        print("UDP process started")
-        print(udp_connection)
-
         self.start_polling()
         timer = Timer(self._sync_timer)
         ptp = PollingTimeProfile()
-        while not self._event_stop_request.is_set():
+        prev_event_polling = self._event_is_polling.is_set()
+
+        while not self._event_quit_request.is_set():
+            if prev_event_polling != self._event_is_polling.is_set():
+                # event pooling changed
+                prev_event_polling = self._event_is_polling.is_set()
+                if prev_event_polling:
+                    logging.info("UDP start, priority {}".format(
+                                                get_priority(self.pid)))
+                else:
+                    logging.info("UDP stop")
+
             if not self._event_is_polling.is_set():
                 ptp.stop()
                 self._event_is_polling.wait(timeout=0.1)
@@ -304,11 +312,9 @@ class UDPConnectionProcess(Process):
                     else:
                         self.event_is_connected.clear()
 
-                if False and not udp_connection.is_connected:
-                    sleep(0.01)
+                if not udp_connection.is_connected:
+                    sleep(0.1)
 
         udp_connection.unconnect_peer()
 
-        logging.info("end {}".format(self))
-        logging.info("{}".format(ptp.profile_frequency))
-        #logging.info("{}".format(ptp.zero_time_polling_frequency))
+        logging.info("UDP quit, {}".format(ptp.get_profile_str()))

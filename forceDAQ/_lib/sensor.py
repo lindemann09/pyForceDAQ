@@ -19,6 +19,7 @@ from .._lib.misc import find_calibration_file
 from .types import ForceData, DAQEvents
 from .timer import Timer
 from .._lib.polling_time_profile import PollingTimeProfile
+from .._lib.process_priority_manager import get_priority
 
 
 from ..daq import DAQReadAnalog
@@ -87,6 +88,7 @@ class Sensor(DAQReadAnalog):
                     len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
 
         self.device_id = settings.device_id
+        self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
 
         if self.DAQ_TYPE == "dummy":
@@ -198,7 +200,7 @@ class SensorProcess(Process):
         self._last_Tz = sharedctypes.RawValue(ct.c_float)
         self._buffer_size = sharedctypes.RawValue(ct.c_uint64)
         self._sample_cnt = sharedctypes.Value(ct.c_uint64)
-        self._event_stop_request = Event()
+        self._event_quit_request = Event()
         self._determine_bias_flag = Event()
 
         self._bias_n_samples = 200
@@ -290,7 +292,7 @@ class SensorProcess(Process):
             sleep(0.1) # wait polling quitted
             self.get_buffer() # empty buffer TODO maybe not required
 
-        self._event_stop_request.set()
+        self._event_quit_request.set()
         super(SensorProcess, self).join(timeout)
 
 
@@ -298,19 +300,22 @@ class SensorProcess(Process):
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
+
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
-        ptp = PollingTimeProfile() #FIXME just debug
-        logging.info("start {}".format(self))
+        ptp = PollingTimeProfile() #TODO just for testing?
 
-        while not self._event_stop_request.is_set():
+        while not self._event_quit_request.is_set():
             if self._event_is_polling.is_set():
                 # is polling
                 if not is_polling:
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
+                    logging.info("Sensor start, name {}, priority {}".format(
+                        sensor.name, get_priority(self.pid)))
+
                     if self._return_buffer:
                         buffer.append(DAQEvents(time=sensor.timer.time,
                                     code="started:"+repr(sensor.device_id)))
@@ -341,6 +346,8 @@ class SensorProcess(Process):
                                     code="pause:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
+                    logging.info("Sensor stop, name {}, priority {}".format(
+                        sensor.name, get_priority(self.pid)))
                     is_polling = False
                     ptp.stop()
 
@@ -371,9 +378,8 @@ class SensorProcess(Process):
         self._buffer_size.value = 0
         sensor.stop_data_acquisition()
 
-        logging.info("end {}".format(self))
-        logging.info("{}".format(ptp.profile_frequency))
-        #logging.info("{}".format(ptp.zero_time_polling_frequency))
+        logging.info("Sensor quit, name {}, {}".format(
+            sensor.name, ptp.get_profile_str()))
 
 
 """Sensor History with moving average filtering and distance, velocity"""

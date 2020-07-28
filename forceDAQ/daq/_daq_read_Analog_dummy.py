@@ -31,7 +31,6 @@ class DAQReadAnalog(object):
         """
 
         if not self._task_is_started:
-            print("dummy: started")
             self._task_is_started = True
             self._runtimer = Timer()
             self._sample_cnt = 0
@@ -41,7 +40,6 @@ class DAQReadAnalog(object):
         """
 
         if self._task_is_started:
-            print("dummy: stopped")
             self._task_is_started = False
 
     def read_analog(self):

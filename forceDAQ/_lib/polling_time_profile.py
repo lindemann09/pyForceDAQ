@@ -40,6 +40,11 @@ class PollingTimeProfile(object):
         n = np.sum(self.profile_frequency)
         return self.profile_frequency / n
 
+    def get_profile_str(self):
+        rtn = str(list(self.profile_frequency)
+                  ).replace("[", "").replace("]", "").replace(" ", "")
+        return "profile [{}]".format(rtn)
+
     #@property
     #def zero_time_polling_frequency(self):
     #    return np.array(list(self._zero_time_polling_frequency.items()))
