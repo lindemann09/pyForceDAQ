@@ -690,7 +690,7 @@ def run_with_options(remote_control,
     sensors = []
     for d_id, sn in zip(device_ids, sensor_names):
         try:
-            reverse_parameter_names = reverse_scaling[d_id]
+            reverse_parameter_names = reverse_scaling[str(d_id)]
         except:
             reverse_parameter_names = []
 
