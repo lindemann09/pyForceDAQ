@@ -353,7 +353,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
-            sleep(0.01)
+            sleep(0.1)
 
         ################################ process keyboard
         s.process_key(exp.keyboard.check(check_for_control_keys=False))

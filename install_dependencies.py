@@ -4,6 +4,7 @@ try:
     import expyriment
     import PySimpleGUI
     import PyDAQmx
+    import psutil
     print("\nRequired packages are installed!")
 
 except:
@@ -11,4 +12,4 @@ except:
     import subprocess
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', "--upgrade", 'pip'])  # upgrade pkg
     subprocess.check_call([sys.executable, '-m', 'pip', 'install',
-        "numpy", "expyriment", "PySimpleGUI", "PyDAQmx"])
+        "numpy", "expyriment", "PySimpleGUI", "PyDAQmx", "psutil"])

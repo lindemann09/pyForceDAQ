@@ -71,7 +71,6 @@ class DAQReadAnalog(object):
 
         n_new_samples = self._runtimer.time - self._sample_cnt
         while n_new_samples <= 0:
-            sleep(0.0001) # simulate slow access time
             n_new_samples = self._runtimer.time - self._sample_cnt
 
         self._sample_cnt += 1

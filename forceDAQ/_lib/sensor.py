@@ -311,8 +311,8 @@ class SensorProcess(Process):
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    logging.info("Sensor start, name {}, priority {}".format(
-                        sensor.name, get_priority(self.pid)))
+                    logging.warning("Sensor start, pid {}, name {}, priority {}".format(
+                        self.pid, sensor.name, get_priority(self.pid))) #TODO should be info
 
                     if self._return_buffer:
                         buffer.append(DAQEvents(time=sensor.timer.time,
@@ -344,8 +344,8 @@ class SensorProcess(Process):
                                     code="pause:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
-                    logging.info("Sensor stop, name {}, priority {}".format(
-                        sensor.name, get_priority(self.pid)))
+                    logging.warning("Sensor stop, pid {}, name {}, priority {}".format(
+                        self.pid, sensor.name, get_priority(self.pid))) #TODO should be info
                     is_polling = False
                     ptp.stop()
 
@@ -362,7 +362,7 @@ class SensorProcess(Process):
 
                     # wait that data are read
                     if self._event_sending_data.is_set():
-                        sleep(0.01)
+                        sensor.timer.wait(2) #FIXME better data sending without wait
 
                 if self._determine_bias_flag.is_set():
                     sensor.determine_bias(n_samples=self._bias_n_samples)
@@ -376,8 +376,8 @@ class SensorProcess(Process):
         self._buffer_size.value = 0
         sensor.stop_data_acquisition()
 
-        logging.info("Sensor quit, name {}, {}".format(
-            sensor.name, ptp.get_profile_str()))
+        logging.warning("Sensor quit, name {}, {}".format(
+            sensor.name, ptp.get_profile_str())) #TODO
 
 
 """Sensor History with moving average filtering and distance, velocity"""

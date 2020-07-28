@@ -126,7 +126,7 @@ class UDPConnection(object):
                 #print("UDP send: {0}".format(data))
                 return True
             except:
-                sleep(0.001)  # wait 1 ms
+                pass
         return False
 
     def connect_peer(self, peer_ip, timeout=1):
@@ -273,17 +273,17 @@ class UDPConnectionProcess(Process):
         self.start_polling()
         timer = Timer(self._sync_timer)
         ptp = PollingTimeProfile()
-        prev_event_polling = self._event_is_polling.is_set()
+        prev_event_polling = None
 
         while not self._event_quit_request.is_set():
             if prev_event_polling != self._event_is_polling.is_set():
                 # event pooling changed
                 prev_event_polling = self._event_is_polling.is_set()
                 if prev_event_polling:
-                    logging.info("UDP start, priority {}".format(
-                                                get_priority(self.pid)))
+                    logging.warning("UDP start, pid {}, priority {}".format(
+                            self.pid, get_priority(self.pid)))
                 else:
-                    logging.info("UDP stop")
+                    logging.warning("UDP stop")
 
             if not self._event_is_polling.is_set():
                 ptp.stop()
@@ -313,8 +313,8 @@ class UDPConnectionProcess(Process):
                         self.event_is_connected.clear()
 
                 if not udp_connection.is_connected:
-                    sleep(0.1)
+                    sleep(0.1) # FIXME get ride of ALL sleep functions
 
         udp_connection.unconnect_peer()
 
-        logging.info("UDP quit, {}".format(ptp.get_profile_str()))
+        logging.warning("UDP quit, {}".format(ptp.get_profile_str()))
