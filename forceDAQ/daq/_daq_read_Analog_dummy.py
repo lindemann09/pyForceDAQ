@@ -1,6 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import numpy as np
+import logging
 from time import sleep
 from .._lib.timer import Timer
 from ._config import NUM_SAMPS_PER_CHAN, TIMEOUT, NI_DAQ_BUFFER_SIZE
@@ -18,7 +19,10 @@ class DAQReadAnalog(object):
         self._last_time = 0
         self._sample_cnt = 0
         self._runtimer = Timer()
-        print("Using dummy sensor: Maybe PyDAQmx or nidaqmx is not installed")
+        txt = "Using dummy sensor: Maybe PyDAQmx or nidaqmx is not  installed"
+        logging.warning(txt)
+        print(txt)
+
 
     @property
     def is_acquiring_data(self):
@@ -74,5 +78,3 @@ class DAQReadAnalog(object):
         x = self._sample_cnt / 2000
         y = 10 + np.array((np.sin(x/2), np.cos(x/5), np.sin(x)))*10
         return np.append(y, np.array((0, 0 , 0, 0, 0))), 1
-
-#FIXME why does pause not work for dummy sensors
