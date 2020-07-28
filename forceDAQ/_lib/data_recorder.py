@@ -16,6 +16,7 @@ from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
 from .._lib.sensor import SensorSettings, SensorProcess
 from .._lib.udp_connection import UDPConnectionProcess
+from .._lib import process_priority_manager as ppm
 
 NEWLINE = "\n"
 
@@ -68,6 +69,13 @@ class DataRecorder(object):
             self.udp.start()
         else:
             self.udp = None
+
+        # process managing
+        self._proc_manager = ppm.ProcessPriorityManager()
+        self._proc_manager.add_subprocess(self.udp)
+        self._proc_manager.add_subprocess(self._force_sensor_processes)
+        self._proc_manager.set_subprocess_priorities(
+            level=ppm.REALTIME_PRIORITY, disable_gc=False) #FIXME in settings
 
         self._is_recording = False
         self._file = None
