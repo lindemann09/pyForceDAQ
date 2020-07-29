@@ -276,6 +276,7 @@ class UDPConnectionProcess(Process):
         prev_event_polling = None
 
         while not self._event_quit_request.is_set():
+
             if prev_event_polling != self._event_is_polling.is_set():
                 # event pooling changed
                 prev_event_polling = self._event_is_polling.is_set()
@@ -284,9 +285,9 @@ class UDPConnectionProcess(Process):
                             self.pid, get_priority(self.pid)))
                 else:
                     logging.warning("UDP stop")
+                    ptp.stop()
 
             if not self._event_is_polling.is_set():
-                ptp.stop()
                 self._event_is_polling.wait(timeout=0.1)
             else:
                 data = udp_connection.poll()

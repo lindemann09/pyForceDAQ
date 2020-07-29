@@ -36,7 +36,7 @@ class GUISettings(object):
             plot_data_indicator_for_single_sensor = [(0, 0), (0, 1), (0, 2), (0, 3),
                                                      (0, 4), (0, 5)],  # sensor, parameter
             plot_data_plotter_for_single_sensor = [(0, 0), (0, 1), (0, 2)],
-                              # plotter can't plot torques # FIXME
+                              # plotter can't plot torques # TODO
 
             plot_data_indicator_for_two_sensors = [(0, 0), (0, 1), (0, 2), (1, 0),
                                                    (1, 1), (1, 2)],  # sensor,

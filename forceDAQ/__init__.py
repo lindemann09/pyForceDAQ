@@ -1,4 +1,4 @@
-__version__ = "0.8.9-lab"
+__version__ = "0.8.10"
 __author__ = "Oliver Lindemann"
 
 """
@@ -29,9 +29,3 @@ For function to support data handling see the folder pyForceDAQ/analysis
 import sys as _sys
 PYTHON3 = (_sys.version_info[0] == 3)
 USE_DUMMY_SENSOR = False
-
-
-#FIXME enter file name manually funktioniert nicht.
-#FIXME reversed scaling und thresholds mit real sensors funktionieren nicht
-#FIXME beim opensesam rechner muss ich manuell nicht mehr einstellen: A: "daq make connection "ip" hammer //
-#FIXME B. n_sensors=1 muss ich auch nicht mehr eintippen, Danke !

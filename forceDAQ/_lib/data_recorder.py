@@ -15,7 +15,8 @@ from .. import __version__ as forceDAQVersion
 from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
                         TAG_UDPDATA, TAG_COMMENTS, PollingPriority
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
-from .._lib.sensor import SensorSettings, SensorProcess
+from .._lib.sensor import SensorSettings
+from .._lib.sensor_process import SensorProcess
 from .._lib.udp_connection import UDPConnectionProcess
 from .._lib.process_priority_manager import ProcessPriorityManager
 from .._lib.timer import app_timer
@@ -152,7 +153,8 @@ class DataRecorder(object):
                 # until queue empty or no udp connection
                 break
             buffer.append(data)
-        self._save_data(buffer)
+        if len(buffer)>0:
+            self._save_data(buffer)
         return buffer
 
     def _save_data(self, data_buffer,
@@ -167,7 +169,7 @@ class DataRecorder(object):
         BLOCKSIZE = 10000 # for recording screen feedback only
 
         float_format = "{0:." + str(float_decimal_places) + "f},"
-        l = len(data_buffer)
+        buffer_len = len(data_buffer)
         for c, d in enumerate(data_buffer):
             if self._file is not None:
                 if isinstance(d, ForceData):
@@ -195,12 +197,10 @@ class DataRecorder(object):
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
                     "Writing {0} of {1} blocks".format(c//BLOCKSIZE,
-                                                       l//BLOCKSIZE)).present()
+                                                       buffer_len//BLOCKSIZE)).present()
 
     def _file_write(self, str):
         self._file.write(str.encode())
-
-
 
     def save_soft_trigger(self, code, time=None):
         """Set marker code in file
@@ -244,13 +244,14 @@ class DataRecorder(object):
         self._is_recording = False
 
         data = []
+        if recording_screen is not None:
+            recording_screen.stimulus("writing data ...").present()
+
         #pause polling
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
-        if recording_screen is not None:
-            recording_screen.stimulus("Getting data").present()
-        app_timer.wait(500)
+        app_timer.wait(100)
 
         # get data
         for fsp in self._force_sensor_processes:
@@ -259,13 +260,12 @@ class DataRecorder(object):
             data.extend(buffer)
 
         # udp event
-        buffer = self.process_and_write_udp_events()
-        data.extend(buffer)
+        data.extend(self.process_and_write_udp_events())
+
         # soft trigger
         self._save_data(self._soft_trigger)
         data.extend(self._soft_trigger)
         self._soft_trigger = []
-
         return data
 
     def determine_biases(self, n_samples):

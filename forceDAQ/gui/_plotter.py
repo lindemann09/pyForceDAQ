@@ -155,9 +155,6 @@ class PlotterThread(threading.Thread):
     def unpause(self):
         self._running.set()
 
-    def stop(self):
-        self.join()
-
     def join(self, timeout=None):
         self._stop_request.set()
         super(PlotterThread, self).join(timeout)

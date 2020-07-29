@@ -43,7 +43,7 @@ class PollingTimeProfile(object):
     def get_profile_str(self):
         rtn = str(list(self.profile_frequency)
                   ).replace("[", "").replace("]", "").replace(" ", "")
-        return "profile [{}]".format(rtn)
+        return "polling profile [{}]".format(rtn)
 
     #@property
     #def zero_time_polling_frequency(self):

@@ -5,8 +5,7 @@ program your own recorder
 
 __author__ = 'Oliver Lindemann'
 
-from .._lib.types import ForceData, DAQEvents, GUIRemoteControlCommands, \
-    Thresholds, UDPData
-from .._lib.timer import Timer
 from .._lib.data_recorder import DataRecorder
-from .._lib.sensor import SensorSettings, SensorProcess
+from .._lib.sensor import SensorSettings
+from .._lib.sensor_process import SensorProcess
+from .._lib import types, timer, misc

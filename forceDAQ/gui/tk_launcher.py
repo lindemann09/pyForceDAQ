@@ -146,7 +146,6 @@ def _window_settings():
                                       key="convert_to_forces")]
                           ])])
 
-    # reverse scaling FIXME DOES NOT WORK
     tmp = []
     for x in s.device_ids:
         try:
