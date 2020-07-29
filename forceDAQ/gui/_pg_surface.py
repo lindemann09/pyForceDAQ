@@ -15,7 +15,7 @@ class PGSurface(Canvas):
 
     @property
     def surface(self):
-        """todo"""
+        """DOC"""
         if not self.has_surface:
             ok = self._set_surface(self._get_surface())  # create surface
             if not ok:
@@ -24,7 +24,7 @@ class PGSurface(Canvas):
 
     @property
     def pixel_array(self):
-        """todo"""
+        """DOC"""
         if self._px_array is None:
             self._px_array = pygame.PixelArray(self.surface)
         return self._px_array
@@ -36,7 +36,7 @@ class PGSurface(Canvas):
         self._px_array = value
 
     def unlock_pixel_array(self):
-        """todo"""
+        """DOC"""
         self._px_array = None
 
     def preload(self, inhibit_ogl_compress=False):

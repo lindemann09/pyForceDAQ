@@ -12,7 +12,7 @@ class DAQReadAnalog(nidaqmx.Task):
     DAQ_TYPE = "nidaqmx"
 
     def __init__(self, configuration, read_array_size_in_samples):
-        """ TODO
+        """ DOC
         read_array_size_in_samples for ReadAnalogF64 call
 
         """

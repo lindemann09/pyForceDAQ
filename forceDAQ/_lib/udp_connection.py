@@ -33,7 +33,7 @@ def get_lan_ip():
 
 
 class UDPConnection(object):
-    # todo: document the usage "connecting" "unconnecting"
+    # DOC document the usage "connecting" "unconnecting"
     COMMAND_CHAR = b"$"
     CONNECT = COMMAND_CHAR + b"connect"
     UNCONNECT = COMMAND_CHAR + b"unconnect"
@@ -209,7 +209,7 @@ class UDPConnectionProcess(Process):
     Example::
 
         # connecting to a server
-    """        # todo docu
+    """        # DOC
 
     def __init__(self, event_trigger = (),
                  event_ignore_tag = None):
@@ -233,7 +233,7 @@ class UDPConnectionProcess(Process):
         event_ignore_tag:
             udp data that start with this tag will be ignored for event triggering
 
-        """ # todo docu
+        """ # DOC
 
         super(UDPConnectionProcess, self).__init__()
 

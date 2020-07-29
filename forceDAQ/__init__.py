@@ -11,6 +11,7 @@ launch the GUI recorder from your Python program:
                calibration_file="FT_sensor1.cal")
 ``
 
+
 import relevant stuff to program your own recorder:
 ``
     from forceDAQ import recorder

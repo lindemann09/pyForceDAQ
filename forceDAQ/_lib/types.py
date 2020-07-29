@@ -225,7 +225,7 @@ class GUIRemoteControlCommands(object):
     see also UDPConnection constants!
     """
 
-    #TODO DOCU REMOTECONTROL
+    #DOC REMOTECONTROL
 
     COMMAND_STR = b"$"
     # BASIC

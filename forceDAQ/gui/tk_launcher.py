@@ -172,7 +172,7 @@ def _window_settings():
 
     d = s._asdict()
     if event=="Save":
-        ## todo write settings
+
         for key in ("device_name_prefix", "remote_control", "ask_filename",
                     "write_Fx", "write_Fy", "write_Fz",
                     "write_Tx", "write_Ty", "write_Tz",

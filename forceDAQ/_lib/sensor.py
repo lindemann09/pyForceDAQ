@@ -74,7 +74,7 @@ class Sensor(DAQReadAnalog):
                                        # synchronization validation
 
     def __init__(self, settings):
-        """ TODO"""
+        """ DOC"""
 
         assert(isinstance(settings, SensorSettings))
 
@@ -91,8 +91,8 @@ class Sensor(DAQReadAnalog):
             self._atidaq = None
             self.convert_to_FT = False
         else:
-            # ATI voltage to force converter (#TODO ATI_CDLL also care about
-            # biases, this is mabye not needed, check c-code)
+            # ATI voltage to force converter (DLL also required for biases)
+            # TODO ATI_CDLL for biases mabye not needed for voltage recordings, check c-code
             self._atidaq = ATI_CDLL()
 
             # get calibration
@@ -125,7 +125,7 @@ class Sensor(DAQReadAnalog):
 
         if self._atidaq is not None:
             self._atidaq.bias(np.mean(data, axis=0))
-            # TODO is bias required
+            # not sure if bias required
             # for recoding of voltages, that is, not convert to forces
 
     def poll_data(self):
@@ -168,7 +168,7 @@ class SensorProcess(Process):
 
         """
 
-        # todo: docu explain usage
+        # DOC explain usage
 
         # type checks
         if not isinstance(settings, SensorSettings):
@@ -250,7 +250,7 @@ class SensorProcess(Process):
     def get_buffer_size(self):
         return int(self._buffer_size.value)
 
-    def determine_bias(self, n_samples=100):  # TODO changing no samples. Does that work?
+    def determine_bias(self, n_samples=100):
         """recording is paused after bias determination
 
         Bias determination is only possible while pause.
@@ -285,7 +285,7 @@ class SensorProcess(Process):
         if self._event_is_polling.is_set():
             self.pause_polling()
             app_timer.wait(100)
-            self.get_buffer() # empty buffer TODO maybe not required
+            self.get_buffer() # empty buffer, maybe not required
 
         self._event_quit_request.set()
         super(SensorProcess, self).join(timeout)
@@ -374,7 +374,7 @@ class SensorProcess(Process):
         sensor.stop_data_acquisition()
 
         logging.warning("Sensor quit, name {}, {}".format(
-            sensor.name, ptp.get_profile_str())) #TODO
+            sensor.name, ptp.get_profile_str())) #TODO should be info
 
 
 """Sensor History with moving average filtering and distance, velocity"""

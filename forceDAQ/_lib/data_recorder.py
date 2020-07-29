@@ -148,7 +148,7 @@ class DataRecorder(object):
 
         ignores UDP remote control commands
         """
-        #TODO docu output format
+        #DOC output format
 
         BLOCKSIZE = 10000 # for recording screen feedback only
 
