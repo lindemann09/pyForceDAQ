@@ -85,8 +85,7 @@ class DataRecorder(object):
 
         logging.info("Main process priority: {}".format(
             self._proc_manager.get_main_priority()))
-        logging.info("Subprocess priorities: {}".format(
-            self._proc_manager.get_subprocess_priorities()))
+        #logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
 
         self._is_recording = False
         self._file = None
@@ -172,7 +171,7 @@ class DataRecorder(object):
         for c, d in enumerate(data_buffer):
             if self._file is not None:
                 if isinstance(d, ForceData):
-                    line = "{0},".format(d.time)
+                    line = "{}, {},".format(d.time, d.acquisition_delay)
                     if self._write_deviceid:
                         line += "{0},".format(d.device_id)
                     for x in range(6):
@@ -378,7 +377,7 @@ class DataRecorder(object):
         if len(comment_line)>0:
             self._file_write(TAG_COMMENTS + comment_line + "\n")
         if varnames:
-            line = "time,"
+            line = "time,delay"
             if self._write_deviceid: line += "device_tag,"
             for x in range(6):
                 if self._write_forces[x]:

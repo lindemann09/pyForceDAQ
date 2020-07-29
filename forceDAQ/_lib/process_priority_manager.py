@@ -110,9 +110,9 @@ def set_priority(level, process_id, disable_gc):
         process = psutil.Process(process_id)
     except:
         return False
-
     nice_val = ProcessPriorityManager._normal_nice_value
     level = PollingPriority.get_priority(level)
+
     if level == PollingPriority.NORMAL:
         disable_gc = False
     elif level == PollingPriority.HIGH:

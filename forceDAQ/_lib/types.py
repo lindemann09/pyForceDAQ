@@ -40,6 +40,8 @@ class CTypesForceData(ct.Structure):
 class ForceData(object):
     """The Force data structure with the following properties
         * device_id
+        * time (time stamp)
+        * aquisition delay (time it took to receive the new data)
         * Fx,  Fy, & Fz
         * Tx, Ty, & Tz
         * trigger1 & trigger2
@@ -48,7 +50,8 @@ class ForceData(object):
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
-    def __init__(self, time=0, forces= [0] * 6, trigger=(0, 0),
+    def __init__(self, time=0, acquisition_delay = -1,
+                 forces= [0] * 6, trigger=(0, 0),
                  device_id=0, trigger_threshold=0.9, reverse=()):
         """Create a ForceData object
         Parameters
@@ -57,6 +60,8 @@ class ForceData(object):
             the id of the sensor device
         time: int, optional
             the timestamp
+        acquisition_delay: int, optional
+            time
         forces: array of six floats
             array of the force data defined as [Fx, Fy, Fz, Tx, Ty, Tz]
         trigger: array of two floats
@@ -69,6 +74,7 @@ class ForceData(object):
         """
 
         self.time = time
+        self.acquisition_delay = acquisition_delay
         self.device_id = device_id
         self.forces = forces
         self.trigger = list(trigger)

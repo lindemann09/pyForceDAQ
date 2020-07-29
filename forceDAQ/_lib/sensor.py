@@ -141,6 +141,7 @@ class Sensor(DAQReadAnalog):
 
         """
 
+        start = self.timer.time
         read_buffer, _read_samples = self.read_analog()
         if self.convert_to_FT:
             forces = self._atidaq.convertToFT( voltages=read_buffer[Sensor.SENSOR_CHANNELS],
@@ -148,10 +149,12 @@ class Sensor(DAQReadAnalog):
         else:
             # array
             forces = list(read_buffer[Sensor.SENSOR_CHANNELS])
-            for x in self._reverse_parameters:
-                forces[x] = -1 * forces[x]
 
-        return ForceData(time = self.timer.time,
+        for x in self._reverse_parameters:
+            forces[x] = -1 * forces[x]
+
+        t = self.timer.time
+        return ForceData(time = t, acquisition_delay = t-start,
                          device_id = self.device_id,
                          forces = forces,
                          trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
@@ -177,7 +180,7 @@ class SensorProcess(Process):
 
         super(SensorProcess, self).__init__()
         self.sensor_settings = settings
-        self._return_buffer = pipe_buffered_data_after_pause
+        self._pipe_buffer_after_pause = pipe_buffered_data_after_pause
         self._chunk_size = chunk_size
 
         self._pipe_i, self._pipe_o = Pipe()
@@ -308,13 +311,12 @@ class SensorProcess(Process):
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    logging.warning("Sensor start, pid {}, name {}, priority {}".format(
-                        self.pid, sensor.name, get_priority(self.pid))) #TODO should be info
+                    logging.info("Sensor start, name {},  pid {}, priority {}".format(
+                        self.pid, sensor.name, get_priority(self.pid)))
 
-                    if self._return_buffer:
-                        buffer.append(DAQEvents(time=sensor.timer.time,
-                                                code="started:"+repr(sensor.device_id)))
-                        self._buffer_size.value = len(buffer)
+                    buffer.append(DAQEvents(time=sensor.timer.time,
+                                            code="started:"+repr(sensor.device_id)))
+                    self._buffer_size.value = len(buffer)
                     is_polling = True
 
                 d = sensor.poll_data()
@@ -324,29 +326,26 @@ class SensorProcess(Process):
 				                     self._last_Tx.value, self._last_Ty.value, \
                                      self._last_Tz.value = d.forces
                 self._sample_cnt.value += 1
+                if self.event_trigger.is_set():
+                    self.event_trigger.clear()
+                    d.trigger[0] = 1
 
-                if self._return_buffer:
-                    if self.event_trigger.is_set():
-                        self.event_trigger.clear()
-                        d.trigger[0] = 1
-
-                    buffer.append(d)
-                    self._buffer_size.value = len(buffer)
+                buffer.append(d)
+                self._buffer_size.value = len(buffer)
 
             else:
                 # pause: not polling
                 if is_polling:
-                    if self._return_buffer:
-                        buffer.append(DAQEvents(time=sensor.timer.time,
-                                                code="pause:"+repr(sensor.device_id)))
-                        self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
-                    logging.warning("Sensor stop, pid {}, name {}, priority {}".format(
-                        self.pid, sensor.name, get_priority(self.pid))) #TODO should be info
+                    buffer.append(DAQEvents(time=sensor.timer.time,
+                                            code="pause:"+repr(sensor.device_id)))
+                    self._buffer_size.value = len(buffer)
+                    logging.info("Sensor stop, name {}".format(
+                        self.pid, sensor.name, get_priority(self.pid)))
                     is_polling = False
                     ptp.stop()
 
-                if self._return_buffer and self._buffer_size.value>0:
+                if self._pipe_buffer_after_pause and self._buffer_size.value>0:
                     # sending data to recorder
                     self._event_sending_data.set()
                     chks = self._chunk_size
@@ -373,8 +372,9 @@ class SensorProcess(Process):
         self._buffer_size.value = 0
         sensor.stop_data_acquisition()
 
-        logging.warning("Sensor quit, name {}, {}".format(
-            sensor.name, ptp.get_profile_str())) #TODO should be info
+        logging.info("Sensor quit, {}, {}".format(
+            sensor.name, ptp.get_profile_str()))
+
 
 
 """Sensor History with moving average filtering and distance, velocity"""
