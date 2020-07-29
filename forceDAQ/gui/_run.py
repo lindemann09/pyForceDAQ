@@ -12,9 +12,9 @@ except: #Python3
 
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
+import logging
 
 from .. import __version__ as forceDAQVersion
-from .._lib import log
 from .._lib.data_recorder import DataRecorder, SensorSettings
 from .._lib.sensor import SensorProcess, SensorHistory
 from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
@@ -677,9 +677,8 @@ def run_with_options(remote_control,
     """
     #
 
-    log.set_logging(data_directory="data")
-    log.logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
-    log.logging.info("Sensors {}".format(sensor_names))
+    logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
+    logging.info("Sensors {}".format(sensor_names))
 
     if not isinstance(device_ids, (list, tuple)):
         device_ids = [device_ids]
