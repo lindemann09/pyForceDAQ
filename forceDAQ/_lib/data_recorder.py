@@ -7,6 +7,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import os
+import sys
 import logging
 from time import localtime, strftime,asctime
 
@@ -90,8 +91,17 @@ class DataRecorder(object):
         self._is_recording = False
         self._file = None
         self._soft_trigger = []
+        self.filename = None
         atexit.register(self.quit)
 
+
+    @property
+    def is_alive(self):
+        """Property indicates whether the recording processes are alive"""
+        try:
+            return self._force_sensor_processes[0].is_alive()
+        except:
+            return False
 
     @property
     def is_recording(self):
@@ -116,6 +126,9 @@ class DataRecorder(object):
 
         """
 
+        if not self.is_alive:
+            return
+
         buffer = self.pause_recording()
         self.close_data_file()
 
@@ -125,6 +138,8 @@ class DataRecorder(object):
         # wait that all processes are quitted
         for fsp in self._force_sensor_processes:
             fsp.join()
+
+        logging.info("Quit recording")
 
         return buffer
 
@@ -275,7 +290,8 @@ class DataRecorder(object):
         for x in self._force_sensor_processes:
             x.event_bias_is_available.wait()
 
-    def open_data_file(self, filename, directory="data",
+    def open_data_file(self, filename,
+                       subdirectory="data",
                        time_stamp_filename=False,
                        varnames = True,
                        comment_line="",
@@ -288,7 +304,7 @@ class DataRecorder(object):
         ----------
         filename : string
             the filename
-        directory : string, optional
+        subdirectory : string, optional
             the data subdirectory
         time_stamp_filename : boolean, optional
             if True all filename will contain a timestamp. This is usefull to
@@ -304,12 +320,14 @@ class DataRecorder(object):
         Returns
         -------
         filename : string
-                the actually used filename (incl. timestamp)
+                full path the actually used file (incl. timestamp)
 
         """
 
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
+        base_dir = os.path.split(sys.argv[0])[0]
+        data_dir = os.path.join(base_dir, subdirectory)
+        if not os.path.isdir(data_dir):
+            os.mkdir(data_dir)
         self.close_data_file()
 
         if filename is None or len(filename) == 0:
@@ -335,17 +353,18 @@ class DataRecorder(object):
             else:
                 self.filename = flname + suffix
 
-            if os.path.isfile(directory + os.path.sep + self.filename):
+            full_path_file = os.path.join(data_dir, self.filename)
+            if os.path.isfile(full_path_file):
                 # print "data file already exists, adding counter"
                 cnt += 1
             else:
                 break
 
         if zipped:
-            self._file = gzip.open(directory + os.path.sep + self.filename, 'w+')
+            self._file = gzip.open(full_path_file, 'w+')
         else:
-            self._file = open(directory + os.path.sep + self.filename, 'w+')
-        print("Data file: {}".format(self.filename))
+            self._file = open(full_path_file, 'w+')
+        print("Data file: {}".format(full_path_file))
 
         self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
@@ -368,7 +387,7 @@ class DataRecorder(object):
             if self._write_trigger[1]: line += "trigger2,"
             self._file_write(line[:-1] + NEWLINE)
 
-        return self.filename
+        return full_path_file
 
     def close_data_file(self):
         """Close the data file

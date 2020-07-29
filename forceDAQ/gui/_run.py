@@ -768,7 +768,7 @@ def run_with_options(remote_control,
 
 
     recorder.open_data_file(filename,
-                            directory="data",
+                            subdirectory="data",
                             zipped=zip_data,
                             time_stamp_filename=False,
                             comment_line="")

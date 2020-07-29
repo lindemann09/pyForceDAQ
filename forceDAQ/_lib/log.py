@@ -1,8 +1,10 @@
 import os
+import sys
 import logging
 
 def set_logging(data_directory, log_file= "recording.log"):
-    log_dir = data_directory
+    base_dir = os.path.split(sys.argv[0])[0]
+    log_dir = os.path.join(base_dir, data_directory)
     try:
         os.mkdir(log_dir)
     except:
