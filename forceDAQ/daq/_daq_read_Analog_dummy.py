@@ -2,7 +2,6 @@ __author__ = 'Oliver Lindemann'
 
 import numpy as np
 import logging
-from time import sleep
 from .._lib.timer import Timer
 from ._config import NUM_SAMPS_PER_CHAN, TIMEOUT, NI_DAQ_BUFFER_SIZE
 
@@ -18,7 +17,7 @@ class DAQReadAnalog(object):
         self._task_is_started = False
         self._last_time = 0
         self._sample_cnt = 0
-        self._runtimer = Timer()
+        self._simulation_timer = Timer()
         txt = "Using dummy sensor: Maybe PyDAQmx or nidaqmx is not  installed"
         logging.warning(txt)
         print(txt)
@@ -36,7 +35,7 @@ class DAQReadAnalog(object):
 
         if not self._task_is_started:
             self._task_is_started = True
-            self._runtimer = Timer()
+            self._simulation_timer = Timer() #reset
             self._sample_cnt = 0
 
     def stop_data_acquisition(self):
@@ -69,9 +68,9 @@ class DAQReadAnalog(object):
         if not self._task_is_started:
             return None, None
 
-        n_new_samples = self._runtimer.time - self._sample_cnt
+        n_new_samples = self._simulation_timer.time - self._sample_cnt
         while n_new_samples <= 0:
-            n_new_samples = self._runtimer.time - self._sample_cnt
+            n_new_samples = self._simulation_timer.time - self._sample_cnt
 
         self._sample_cnt += 1
         x = self._sample_cnt / 2000

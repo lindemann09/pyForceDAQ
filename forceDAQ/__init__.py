@@ -1,4 +1,4 @@
-__version__ = "0.8.8"
+__version__ = "0.8.9"
 __author__ = "Oliver Lindemann"
 
 """
@@ -24,8 +24,6 @@ import relevant stuff for remote control of the GUI recorder:
 For function to support data handling see the folder pyForceDAQ/analysis
 
 """
-
-#TODO why pausing in dummy mode crashes
 
 import sys as _sys
 PYTHON3 = (_sys.version_info[0] == 3)

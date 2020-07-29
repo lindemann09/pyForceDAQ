@@ -9,7 +9,6 @@ import atexit
 import ctypes as ct
 from copy import copy
 from multiprocessing import Process, Event, sharedctypes, Pipe
-from time import sleep
 import logging
 
 import numpy as np
@@ -17,7 +16,7 @@ import numpy as np
 from ..daq import ATI_CDLL, DAQConfiguration
 from .._lib.misc import find_calibration_file
 from .types import ForceData, DAQEvents
-from .timer import Timer
+from .timer import Timer, app_timer
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
 
@@ -29,7 +28,6 @@ class SensorSettings(DAQConfiguration):
                  device_id,
                  sensor_name,
                  calibration_folder,
-                 sync_timer,
                  channels="ai0:7",
                  device_name_prefix = "Dev",
                  rate=1000,
@@ -49,7 +47,6 @@ class SensorSettings(DAQConfiguration):
                                   device_name = "{0}{1}".format(device_name_prefix, device_id),
                                   channels=channels,
                                   rate=rate, minVal=minVal, maxVal=maxVal)
-        self.sync_timer = sync_timer
         self.device_id = device_id
         self.sensor_name = sensor_name
         self.convert_to_FT = convert_to_FT
@@ -88,7 +85,8 @@ class Sensor(DAQReadAnalog):
         self.device_id = settings.device_id
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
-
+        self.timer = Timer(sync_timer=app_timer) # own timer, because this
+        # class is used in own process
         if self.DAQ_TYPE == "dummy":
             self._atidaq = None
             self.convert_to_FT = False
@@ -103,7 +101,6 @@ class Sensor(DAQReadAnalog):
             self._atidaq.setForceUnits("N")
             self._atidaq.setTorqueUnits("N-m")
 
-        self.timer = Timer(sync_timer=settings.sync_timer)
         self._reverse_parameters = copy(settings.reverse_parameters)
 
 
@@ -287,7 +284,7 @@ class SensorProcess(Process):
     def join(self, timeout=None):
         if self._event_is_polling.is_set():
             self.pause_polling()
-            sleep(0.1) # wait polling quitted
+            app_timer.wait(100)
             self.get_buffer() # empty buffer TODO maybe not required
 
         self._event_quit_request.set()
@@ -316,7 +313,7 @@ class SensorProcess(Process):
 
                     if self._return_buffer:
                         buffer.append(DAQEvents(time=sensor.timer.time,
-                                    code="started:"+repr(sensor.device_id)))
+                                                code="started:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     is_polling = True
 
@@ -341,7 +338,7 @@ class SensorProcess(Process):
                 if is_polling:
                     if self._return_buffer:
                         buffer.append(DAQEvents(time=sensor.timer.time,
-                                    code="pause:"+repr(sensor.device_id)))
+                                                code="pause:"+repr(sensor.device_id)))
                         self._buffer_size.value = len(buffer)
                     sensor.stop_data_acquisition()
                     logging.warning("Sensor stop, pid {}, name {}, priority {}".format(

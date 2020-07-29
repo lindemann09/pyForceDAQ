@@ -113,6 +113,8 @@ if _use_time_module:
             """Get high-resolution time stamp (float) """
             return time.time()
 
+
+
 class Timer(object):#
     """A simple timer"""
 
@@ -136,3 +138,8 @@ class Timer(object):#
             sleep((waiting_time - looptime) / 1000)
         while self.time < start + waiting_time:
             pass
+
+def get_time_ms():
+    return int(1000*get_time())
+
+app_timer = Timer()

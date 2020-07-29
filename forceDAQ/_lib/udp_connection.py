@@ -8,13 +8,12 @@ import atexit
 import os
 import socket
 from multiprocessing import Process, Event, Queue
-from time import sleep, time
 import logging
 
 from .._lib.types import UDPData
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
-from .timer import Timer, get_time
+from .timer import Timer, app_timer, get_time_ms
 from .. import PYTHON3
 
 def get_lan_ip():
@@ -51,6 +50,8 @@ class UDPConnection(object):
         self._socket.bind((UDPConnection.MY_IP, self.udp_port))
         self._socket.setblocking(False)
         self.peer_ip = None
+        self.timer = Timer(sync_timer=app_timer) # own timer, because often
+        # used in own process
 
     @property
     def my_ip(self):
@@ -70,13 +71,14 @@ class UDPConnection(object):
 
         """
 
-        t = get_time()
+        t = get_time_ms()
+        timeout_ms = int(timeout*1000)
         while True:
             rtn = self.poll()
             if rtn is not None:
                 #print("UDP receive: {0}".format(rtn))
                 return rtn
-            if (get_time() - t) > timeout:
+            if (get_time_ms() - t) > timeout_ms:
                 return None
 
     def poll(self):
@@ -91,9 +93,6 @@ class UDPConnection(object):
         except:
             return None
 
-        #if PYTHON3 and isinstance(data, bytes):
-        #    data = data.decode()
-
         # process data
         if data == UDPConnection.CONNECT:
             #connection request
@@ -106,6 +105,7 @@ class UDPConnection(object):
             self.send(UDPConnection.COMMAND_REPLY)
         elif data == self.UNCONNECT:
             self.unconnect_peer()
+
         return data
 
     def send(self, data, timeout=1.0):
@@ -114,13 +114,14 @@ class UDPConnection(object):
         return False if failed to send
 
         """
+        timeout_ms = int(timeout*1000)
         if self.peer_ip is None:
             return False
-        start = time()
+        start = get_time_ms()
         if PYTHON3 and isinstance(data, str):
             data = data.encode() # force to byte
 
-        while time() - start < timeout:
+        while get_time_ms() - start < timeout_ms:
             try:
                 self._socket.sendto(data, (self.peer_ip, self.udp_port))
                 #print("UDP send: {0}".format(data))
@@ -129,7 +130,8 @@ class UDPConnection(object):
                 pass
         return False
 
-    def connect_peer(self, peer_ip, timeout=1):
+    def connect_peer(self, peer_ip, timeout=1.0):
+
         self.unconnect_peer()
         self.peer_ip = peer_ip
         if self.send(UDPConnection.CONNECT, timeout=timeout) and \
@@ -140,8 +142,9 @@ class UDPConnection(object):
 
     def wait_input(self, input_string, duration=1.0):
         """poll the connection and waits for a specific input"""
-        start = time()
-        while time() - start < duration:
+        start = get_time_ms()
+        duration_ms = int(duration*1000)
+        while get_time_ms() - start < duration_ms:
             in_ = self.poll()
             if in_ == input_string:
                 return True
@@ -156,14 +159,15 @@ class UDPConnection(object):
         return self.peer_ip is not None
 
     def ping(self, timeout=0.5):
-        """returns boolean if suceeded and ping time"""
+        """returns boolean if succeeded and ping time in ms"""
+
         if self.peer_ip == None:
-            return (False, None)
-        start = time()
+            return False, None
+        start = get_time_ms()
         if self.send(UDPConnection.PING, timeout=timeout) and \
                 self.wait_input(UDPConnection.COMMAND_REPLY, duration=timeout):
-            return (True, ((time() - start) * 1000))
-        return (False, None)
+            return True, get_time_ms() - start
+        return False, None
 
     def clear_receive_buffer(self):
         data = ""
@@ -207,7 +211,7 @@ class UDPConnectionProcess(Process):
         # connecting to a server
     """        # todo docu
 
-    def __init__(self, sync_timer=None, event_trigger = (),
+    def __init__(self, event_trigger = (),
                  event_ignore_tag = None):
         """Initialize UDPConnectionProcess
 
@@ -232,10 +236,6 @@ class UDPConnectionProcess(Process):
         """ # todo docu
 
         super(UDPConnectionProcess, self).__init__()
-        if isinstance(sync_timer, Timer):
-            self._sync_timer = sync_timer
-        else:
-            self._sync_timer = None
 
         self.receive_queue = Queue()
         self.send_queue = Queue()
@@ -271,7 +271,7 @@ class UDPConnectionProcess(Process):
     def run(self):
         udp_connection = UDPConnection(udp_port=5005)
         self.start_polling()
-        timer = Timer(self._sync_timer)
+
         ptp = PollingTimeProfile()
         prev_event_polling = None
 
@@ -290,7 +290,7 @@ class UDPConnectionProcess(Process):
                 self._event_is_polling.wait(timeout=0.1)
             else:
                 data = udp_connection.poll()
-                t = timer.time
+                t = udp_connection.timer.time
                 ptp.update(t)
                 if data is not None:
                     d = UDPData(string=data, time=t)
@@ -313,7 +313,7 @@ class UDPConnectionProcess(Process):
                         self.event_is_connected.clear()
 
                 if not udp_connection.is_connected:
-                    sleep(0.1) # FIXME get ride of ALL sleep functions
+                    udp_connection.timer.wait(200)
 
         udp_connection.unconnect_peer()
 

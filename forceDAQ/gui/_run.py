@@ -9,7 +9,6 @@ try:
     from cPickle import dumps, loads
 except: #Python3
     from pickle import dumps, loads
-from time import sleep
 
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
@@ -19,7 +18,7 @@ from .._lib import log
 from .._lib.data_recorder import DataRecorder, SensorSettings
 from .._lib.sensor import SensorProcess, SensorHistory
 from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
-from .._lib.timer import Timer
+from .._lib.timer import app_timer
 
 from . import settings
 from ._plotter import PlotterThread
@@ -353,7 +352,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
-            sleep(0.1)
+            app_timer.wait(100)
 
         ################################ process keyboard
         s.process_key(exp.keyboard.check(check_for_control_keys=False))
@@ -686,7 +685,7 @@ def run_with_options(remote_control,
         device_ids = [device_ids]
     if not isinstance(sensor_names, (list, tuple)):
         sensor_names = [sensor_names]
-    timer = Timer()
+
     sensors = []
     for d_id, sn in zip(device_ids, sensor_names):
         try:
@@ -697,7 +696,6 @@ def run_with_options(remote_control,
         sensors.append(SensorSettings(device_id = d_id,
                                       device_name_prefix=device_name_prefix,
                                       sensor_name = sn,
-                                      sync_timer=timer,
                                       calibration_folder=calibration_folder,
                                       reverse_parameter_names=reverse_parameter_names,
                                       rate = settings.gui.sampling_rate,
@@ -722,7 +720,7 @@ def run_with_options(remote_control,
     remote_control = _initialize(exp, remote_control=remote_control)
     logo_text_line("Initializing Force Recording").present()
 
-    recorder = DataRecorder(sensors, timer=timer,
+    recorder = DataRecorder(sensors,
                  poll_udp_connection=True,
                  write_deviceid = len(device_ids)>1,
                  write_Fx = write_Fx,
@@ -735,7 +733,7 @@ def run_with_options(remote_control,
                  write_trigger2= write_trigger2,
                  polling_priority=polling_priority)
 
-    sleep(0.2) # wait for lib init
+    app_timer.wait(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
 
@@ -748,7 +746,7 @@ def run_with_options(remote_control,
                 recorder.quit()
                 control.end()
                 return False
-            sleep(0.01)#
+            app_timer.wait(100)
 
         logo_text_line("Wait for filename").present()
         while True:
@@ -761,7 +759,7 @@ def run_with_options(remote_control,
                 filename = x.byte_string[len(RcCmd.FILENAME):].decode('utf-8', 'replace')
                 break
             exp.keyboard.check()
-            sleep(0.01)
+            app_timer.wait(100)
     else:
         if ask_filename:
             bkg = logo_text_line("")

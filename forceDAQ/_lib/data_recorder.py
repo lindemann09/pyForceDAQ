@@ -8,7 +8,7 @@ import atexit
 import gzip
 import os
 import logging
-from time import localtime, strftime,asctime, sleep
+from time import localtime, strftime,asctime
 
 from .. import __version__ as forceDAQVersion
 from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
@@ -17,13 +17,14 @@ from .._lib.types import GUIRemoteControlCommands as RemoteCmd
 from .._lib.sensor import SensorSettings, SensorProcess
 from .._lib.udp_connection import UDPConnectionProcess
 from .._lib.process_priority_manager import ProcessPriorityManager
+from .._lib.timer import app_timer
 
 NEWLINE = "\n"
 
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensor_settings, timer,
+    def __init__(self, force_sensor_settings,
                  poll_udp_connection=False,
                  write_deviceid = False,
                  write_Fx = True,
@@ -48,7 +49,6 @@ class DataRecorder(object):
         self._write_forces = [write_Fx, write_Fy, write_Fz, write_Tx, write_Ty, write_Tz]
         self._write_trigger = [write_trigger1, write_trigger2]
 
-        self.timer = timer
         #create sensor processes
         if not isinstance(force_sensor_settings, list):
             force_sensor_settings = [force_sensor_settings]
@@ -67,8 +67,7 @@ class DataRecorder(object):
 
         # create udp connection process
         if poll_udp_connection:
-            self.udp = UDPConnectionProcess(sync_timer=self.timer,
-                                            event_trigger=event_trigger,
+            self.udp = UDPConnectionProcess(event_trigger=event_trigger,
                                             event_ignore_tag = RemoteCmd.COMMAND_STR)
             self.udp.start()
         else:
@@ -196,7 +195,7 @@ class DataRecorder(object):
 
         """
         if time is None:
-            time = self.timer.time
+            time = app_timer.time
         self._soft_trigger.append(DAQEvents(time = time, code = code))
 
 
@@ -237,7 +236,7 @@ class DataRecorder(object):
 
         if recording_screen is not None:
             recording_screen.stimulus("Getting data").present()
-        sleep(0.5)  # wait data acquisition paused properly
+        app_timer.wait(500)
 
         # get data
         for fsp in self._force_sensor_processes:
