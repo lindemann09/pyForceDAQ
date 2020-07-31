@@ -140,9 +140,8 @@ class Sensor(DAQReadAnalog):
         else:
             # array
             forces = list(read_buffer[Sensor.SENSOR_CHANNELS])
-
-        for x in self._reverse_parameters:
-            forces[x] = -1 * forces[x]
+            for x in self._reverse_parameters:
+                forces[x] = -1 * forces[x]
 
         t = self.timer.time
         return ForceData(time = t, acquisition_delay = t-start,
