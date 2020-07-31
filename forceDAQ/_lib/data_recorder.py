@@ -377,7 +377,7 @@ class DataRecorder(object):
         if len(comment_line)>0:
             self._file_write(TAG_COMMENTS + comment_line + "\n")
         if varnames:
-            line = "time,delay"
+            line = "time,delay,"
             if self._write_deviceid: line += "device_tag,"
             for x in range(6):
                 if self._write_forces[x]:
