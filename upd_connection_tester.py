@@ -2,7 +2,6 @@
 from expyriment import control, stimuli, io, misc
 from expyriment.misc import Clock
 
-from forceDAQ import PYTHON3
 from forceDAQ._lib.udp_connection import UDPConnection, \
     UDPConnectionProcess
 
@@ -80,11 +79,7 @@ def server():
 
 if __name__ == "__main__":
 
-    if PYTHON3:
-        x = input("Is this a Server (y/n)? ")
-    else:
-        x = raw_input("Is this a Server (y/n)? ")
-
+    x = input("Is this a Server (y/n)? ")
     if x=="y" or x=="yes":
         server()
     else:

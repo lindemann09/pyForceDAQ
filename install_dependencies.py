@@ -1,3 +1,10 @@
+import sys
+if sys.version_info[0] != 3 or sys.version_info[1]<5:
+    raise RuntimeError("pyForceDAQ is not compatible with Python {0}.{1}.".format(
+                                                    sys.version_info[0],
+                                                    sys.version_info[1]) +
+                       " Please use Python 3.5+.")
+
 try:
     import numpy
     #import pandas

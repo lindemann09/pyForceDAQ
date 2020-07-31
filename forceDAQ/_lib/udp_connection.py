@@ -10,8 +10,6 @@ import socket
 from multiprocessing import Process, Event, Queue
 import logging
 
-from .. import PYTHON3
-
 from .types import UDPData
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
@@ -22,9 +20,7 @@ def get_lan_ip():
         # linux
         from subprocess import check_output
         rtn = check_output("hostname -I".split(" "))
-        if PYTHON3:
-            rtn = rtn.decode()
-        rtn = rtn.split(" ")
+        rtn = rtn.decode().split(" ")
         return rtn[0].strip()
 
     else:
@@ -119,7 +115,7 @@ class UDPConnection(object):
         if self.peer_ip is None:
             return False
         start = get_time_ms()
-        if PYTHON3 and isinstance(data, str):
+        if isinstance(data, str):
             data = data.encode() # force to byte
 
         while get_time_ms() - start < timeout_ms:
