@@ -10,11 +10,12 @@ import socket
 from multiprocessing import Process, Event, Queue
 import logging
 
-from .._lib.types import UDPData
-from .._lib.polling_time_profile import PollingTimeProfile
-from .._lib.process_priority_manager import get_priority
-from .timer import Timer, app_timer, get_time_ms
 from .. import PYTHON3
+
+from .types import UDPData
+from .polling_time_profile import PollingTimeProfile
+from .process_priority_manager import get_priority
+from .timer import Timer, app_timer, get_time_ms
 
 def get_lan_ip():
     if os.name != "nt":

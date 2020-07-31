@@ -15,11 +15,11 @@ from .. import __version__ as forceDAQVersion
 from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
                         TAG_UDPDATA, TAG_COMMENTS, PollingPriority
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
-from .._lib.sensor import SensorSettings
-from .._lib.sensor_process import SensorProcess
 from .._lib.udp_connection import UDPConnectionProcess
 from .._lib.process_priority_manager import ProcessPriorityManager
 from .._lib.timer import app_timer
+from .sensor import SensorSettings
+from .sensor_process import SensorProcess
 
 NEWLINE = "\n"
 

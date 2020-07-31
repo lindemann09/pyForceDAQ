@@ -5,26 +5,23 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import pygame
-try:
-    from cPickle import dumps, loads
-except: #Python3
-    from pickle import dumps, loads
-import json
+from pickle import dumps
+
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 import logging
 
 from .. import __version__ as forceDAQVersion
-from .._lib.data_recorder import DataRecorder, SensorSettings
-from .._lib.sensor_process import SensorProcess
 from .._lib.types import ForceData, GUIRemoteControlCommands as RcCmd
 from .._lib.timer import app_timer
+from ..force  import DataRecorder, SensorSettings,  SensorProcess
 
 from . import settings
 from ._plotter import PlotterThread
 from ._level_indicator import level_indicator
 from ._layout import logo_text_line, colours, get_pygame_rect
 from ._gui_status import GUIStatus
+
 
 def _initialize(exp, remote_control=None):
     control.initialize(exp)
@@ -401,7 +398,7 @@ def run_with_options(remote_control,
 
     logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
     logging.info("Sensors {}".format(sensor_names))
-    logging.info("settings=" + settings.recording_as_json())
+    logging.info("Settings " + settings.recording_as_json())
 
 
     if not isinstance(device_ids, (list, tuple)):

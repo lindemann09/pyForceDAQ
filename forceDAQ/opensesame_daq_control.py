@@ -19,7 +19,6 @@ from openexp.keyboard import keyboard
 FORCE_SERVER_IP = "192.168.1.1"
 WEAK, FINE, STRONG = [0, 1, 2]
 
-
 class OpensesameDAQControl():
 
     def __init__(self, opensesame_experiment):

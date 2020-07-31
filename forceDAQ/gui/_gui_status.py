@@ -1,16 +1,13 @@
 __author__ = "Oliver Lindemann"
 
-try:
-    from cPickle import dumps, loads
-except: #Python3
-    from pickle import dumps, loads
+from pickle import dumps, loads
 
 from expyriment import io, misc
 
 from .. import __version__ as forceDAQVersion
 from .._lib.misc import SensorHistory
-from .._lib.sensor_process import SensorProcess
 from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
+from ..force.sensor_process import SensorProcess
 
 from . import settings
 from ._scaling import Scaling

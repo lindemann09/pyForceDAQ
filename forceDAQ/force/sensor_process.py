@@ -5,11 +5,12 @@ import ctypes as ct
 from multiprocessing import Process, Event, sharedctypes, Pipe
 import logging
 
-from .types import DAQEvents
-from .timer import app_timer
+from .._lib.types import DAQEvents
+from .._lib.timer import app_timer
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
-from .._lib.sensor import SensorSettings, Sensor
+
+from .sensor import SensorSettings, Sensor
 
 class SensorProcess(Process):
     def __init__(self, settings, pipe_buffered_data_after_pause=True,
@@ -196,7 +197,7 @@ class SensorProcess(Process):
                     ptp.stop()
 
                 if self._pipe_buffer_after_pause and self._buffer_size.value>0:
-                    # sending data to recorder
+                    # sending data to force
                     self._event_sending_data.set()
                     chks = self._chunk_size
                     while len(buffer)>0:

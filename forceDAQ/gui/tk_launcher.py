@@ -4,11 +4,11 @@ from os import path
 import PySimpleGUI as _sg
 from .. import __version__, USE_DUMMY_SENSOR
 from .._lib.misc import find_calibration_file
-from ._settings import settings
-from ._run import run as _gui_run
 from .._lib.udp_connection import UDPConnection
 from .._lib.types import PollingPriority
 
+from . import settings
+from ._run import run as _gui_run
 
 
 def _group(title, objects):

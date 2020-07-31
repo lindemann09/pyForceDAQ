@@ -5,11 +5,7 @@ import this module to have all relevant classes and function for the remote_cont
 __author__ = 'Oliver Lindemann'
 
 import atexit
-
-try:
-    from cPickle import dumps, loads
-except:
-    from pickle import dumps, loads
+from pickle import dumps, loads
 
 from ._lib.types import Thresholds, bytes_startswith
 from ._lib.types import GUIRemoteControlCommands as Command

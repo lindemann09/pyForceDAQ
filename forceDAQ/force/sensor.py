@@ -9,11 +9,10 @@ import ctypes as ct
 from copy import copy
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQConfiguration
+from ..daq import ATI_CDLL, DAQConfiguration,  DAQReadAnalog
 from .._lib.misc import find_calibration_file
-from .types import ForceData
-from .timer import Timer, app_timer
-from ..daq import DAQReadAnalog
+from .._lib.types import ForceData
+from .._lib.timer import Timer, app_timer
 
 class SensorSettings(DAQConfiguration):
     def __init__(self,
@@ -156,7 +155,7 @@ if __name__ == "__main__":
     #test sensor history
     import random
     from forceDAQ import Thresholds
-    from .misc import SensorHistory
+    from forceDAQ._lib.misc import SensorHistory
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)
         thr = Thresholds([35, 20, 50, 80, 90])

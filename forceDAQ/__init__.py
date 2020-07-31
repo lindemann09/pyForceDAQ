@@ -2,7 +2,7 @@ __version__ = "0.8.11b"
 __author__ = "Oliver Lindemann"
 
 """
-launch the GUI recorder from your Python program:
+launch the GUI force from your Python program:
 ``
     from forceDAQ import gui
 
@@ -12,12 +12,12 @@ launch the GUI recorder from your Python program:
 ``
 
 
-import relevant stuff to program your own recorder:
+import relevant stuff to program your own force:
 ``
-    from forceDAQ import recorder
+    from forceDAQ import force
 ``
 
-import relevant stuff for remote control of the GUI recorder:
+import relevant stuff for remote control of the GUI force:
 ``
     from forceDAQ import remote_control
 ``
