@@ -7,7 +7,6 @@ __author__ = 'Oliver Lindemann'
 import gzip
 import pandas as pd
 
-
 TAG_COMMENTS = "#"
 TAG_UDPDATA  = TAG_COMMENTS + "UDP"
 TAG_SOFTTRIGGER = TAG_COMMENTS +"T"
@@ -45,7 +44,7 @@ def read_event_data(path):
                 trigger.append(ln[len(TAG_SOFTTRIGGER)+1:].strip().split(","))
     fl.close()
 
-    trigger =  pd.DataFrame(trigger, columns=["time", "value"])
+    trigger = pd.DataFrame(trigger, columns=["time", "value"])
     trigger["type"] = "softtrigger"
     udp = pd.DataFrame(udp, columns=["time", "value"])
     udp["type"] = "udp"

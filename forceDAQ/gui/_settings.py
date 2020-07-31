@@ -88,5 +88,7 @@ class GUISettings(object):
         with open(self.filename, 'w') as fl:
             json.dump(self._asdict(), fl, indent=2)
 
-            
+    def recording_as_json(self):
+        return json.dumps(self.recording._asdict())
+
 settings = GUISettings(filename="pyForceDAQ.settings")

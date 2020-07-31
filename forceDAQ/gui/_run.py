@@ -9,7 +9,7 @@ try:
     from cPickle import dumps, loads
 except: #Python3
     from pickle import dumps, loads
-
+import json
 import numpy as np
 from expyriment import control, design, stimuli, io, misc
 import logging
@@ -401,6 +401,8 @@ def run_with_options(remote_control,
 
     logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
     logging.info("Sensors {}".format(sensor_names))
+    logging.info("settings=" + settings.recording_as_json())
+
 
     if not isinstance(device_ids, (list, tuple)):
         device_ids = [device_ids]

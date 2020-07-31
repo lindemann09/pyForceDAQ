@@ -1,4 +1,4 @@
-__version__ = "0.8.10"
+__version__ = "0.8.11b"
 __author__ = "Oliver Lindemann"
 
 """
