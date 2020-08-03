@@ -7,15 +7,12 @@ __author__ = 'Oliver Lindemann'
 import os
 import sys
 import gzip
-from copy import copy
 from collections import OrderedDict
 import numpy as np
 
-
 TAG_COMMENTS = "#"
 TAG_UDPDATA  = TAG_COMMENTS + "UDP"
-TAG_SOFTTRIGGER = TAG_COMMENTS +"T"
-
+TAG_DAQEVENTS = TAG_COMMENTS + "T"
 
 def _csv(line):
     return list(map(lambda x: x.strip(), line.split(",")))
@@ -50,15 +47,13 @@ def data_frame_to_text(data_frame):
 def read_raw_data(path):
     """reading trigger and udp data
 
-    Returns: data, udp_event, soft_trigger and comments
+    Returns: data, udp_event, daq_events and comments
 
-            data, udp_event, soft_trigger: DataFrameDict
+            data, udp_event, daq_events: DataFrameDict
             comments: text string
     """
 
-
-
-    trigger = []
+    daq_events = []
     udp_events = []
     comments = ""
     data = []
@@ -67,17 +62,17 @@ def read_raw_data(path):
     path = os.path.abspath(os.path.join(app_dir, path))
 
     if path.endswith("gz"):
-        fl = gzip.open(path, "r")
+        fl = gzip.open(path, "rt")
     else:
-        fl = open(path, "r")
+        fl = open(path, "rt")
 
     for ln in fl:
         if ln.startswith(TAG_COMMENTS):
             comments += ln
             if ln.startswith(TAG_UDPDATA + ","):
                 udp_events.append(_csv(ln[len(TAG_UDPDATA) + 1:]))
-            elif ln.startswith(TAG_SOFTTRIGGER):
-                trigger.append(_csv(ln[len(TAG_SOFTTRIGGER) + 1:]))
+            elif ln.startswith(TAG_DAQEVENTS):
+                daq_events.append(_csv(ln[len(TAG_DAQEVENTS) + 1:]))
         else:
             # data
             if varnames is None:
@@ -89,36 +84,5 @@ def read_raw_data(path):
 
     return (DataFrameDict(data, varnames),
             DataFrameDict(udp_events, ["time", "value"]),
-            DataFrameDict(trigger, ["time", "value"]),
+            DataFrameDict(daq_events, ["time", "value"]),
             comments)
-
-
-def convert_raw_data(filepath):
-    """preprocessing raw pyForceData:
-
-    """
-
-    filepath = os.path.join(os.path.split(sys.argv[0])[0], filepath)
-    print("converting {}".format(filepath))
-
-    if filepath.endswith(".gz"):
-        new_filename = filepath[:-7]
-    else:
-        new_filename = filepath[:-4]
-    new_filename += ".conv.csv.gz"
-
-    data, udp_event, trigger, comments = read_raw_data(filepath)
-    print("{} samples".format(len(data["time"])))
-
-    # adapt timestamps
-    new_data = copy(data)
-    delay = new_data.pop("delay")
-    time = new_data["time"]
-    newtime = range(0, len(time))
-    new_data["time"] = newtime
-
-
-
-    with gzip.open(new_filename, "wt") as fl:
-        fl.write(comments.strip() + "\n")
-        fl.write(data_frame_to_text(new_data))
