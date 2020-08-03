@@ -162,11 +162,11 @@ class SensorProcess(Process):
                     # start NI device and acquire one first dummy sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
+                    buffer.append(DAQEvents(time=sensor.timer.time,
+                                            code="started:"+repr(sensor.device_id)))
                     logging.info("Sensor start, name {},  pid {}, priority {}".format(
                         self.pid, sensor.name, get_priority(self.pid)))
 
-                    buffer.append(DAQEvents(time=sensor.timer.time,
-                                            code="started:"+repr(sensor.device_id)))
                     self._buffer_size.value = len(buffer)
                     is_polling = True
 

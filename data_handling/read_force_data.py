@@ -110,12 +110,14 @@ def convert_raw_data(filepath):
     data, udp_event, trigger, comments = read_raw_data(filepath)
     print("{} samples".format(len(data["time"])))
 
-    # adapt timestamps TODO
+    # adapt timestamps
     new_data = copy(data)
     delay = new_data.pop("delay")
     time = new_data["time"]
     newtime = range(0, len(time))
     new_data["time"] = newtime
+
+
 
     with gzip.open(new_filename, "wt") as fl:
         fl.write(comments.strip() + "\n")

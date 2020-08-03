@@ -12,7 +12,7 @@ import logging
 from time import localtime, strftime,asctime
 
 from .. import __version__ as forceDAQVersion
-from .._lib.types import ForceData, UDPData, DAQEvents, TAG_SOFTTRIGGER, \
+from .._lib.types import ForceData, UDPData, DAQEvents, TAG_DAQEVENT, \
                         TAG_UDPDATA, TAG_COMMENTS, PollingPriority
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
 from .._lib.udp_connection import UDPConnectionProcess
@@ -90,7 +90,7 @@ class DataRecorder(object):
 
         self._is_recording = False
         self._file = None
-        self._soft_trigger = []
+        self._daq_event = []
         self.filename = None
         atexit.register(self.quit)
 
@@ -188,7 +188,7 @@ class DataRecorder(object):
                     self._file_write(line[:-1] + NEWLINE)
 
                 elif isinstance(d, DAQEvents):
-                    self._file_write("{0},{1},{2}".format(TAG_SOFTTRIGGER, d.time, str(d.code)) + NEWLINE)
+                    self._file_write("{0},{1},{2}".format(TAG_DAQEVENT, d.time, str(d.code)) + NEWLINE)
 
                 elif isinstance(d, UDPData):
                     if not d.is_remote_control_command:
@@ -202,15 +202,15 @@ class DataRecorder(object):
     def _file_write(self, str):
         self._file.write(str.encode())
 
-    def save_soft_trigger(self, code, time=None):
+    def save_daq_event(self, code, time=None):
         """Set marker code in file
 
-        Trigger will be timestamps and occur in the data output
+        DAQEvent will be timestamps and occur in the data output
 
         """
         if time is None:
             time = app_timer.time
-        self._soft_trigger.append(DAQEvents(time = time, code = code))
+        self._daq_event.append(DAQEvents(time = time, code = code))
 
 
     def start_recording(self, determine_bias=False):
@@ -251,7 +251,7 @@ class DataRecorder(object):
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
-        app_timer.wait(100)
+        app_timer.wait(500)
 
         # get data
         for fsp in self._force_sensor_processes:
@@ -263,9 +263,9 @@ class DataRecorder(object):
         data.extend(self.process_and_write_udp_events())
 
         # soft trigger
-        self._save_data(self._soft_trigger)
-        data.extend(self._soft_trigger)
-        self._soft_trigger = []
+        self._save_data(self._daq_event)
+        data.extend(self._daq_event)
+        self._daq_event = []
         return data
 
     def determine_biases(self, n_samples):

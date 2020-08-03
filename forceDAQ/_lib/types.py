@@ -5,7 +5,7 @@ from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
 TAG_COMMENTS = "#"
-TAG_SOFTTRIGGER = TAG_COMMENTS + "T"
+TAG_DAQEVENT = TAG_COMMENTS + "T"
 TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
 CTYPE_FORCES = ct.c_float * 600
@@ -201,7 +201,7 @@ class DAQEvents(object):
 
     See Also
     --------
-    DataRecorder.set_soft_trigger()
+    DataRecorder.set_daq_event()
 
     """
 
