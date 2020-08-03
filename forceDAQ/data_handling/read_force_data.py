@@ -86,3 +86,4 @@ def read_raw_data(path):
             DataFrameDict(udp_events, ["time", "value"]),
             DataFrameDict(daq_events, ["time", "value"]),
             comments)
+

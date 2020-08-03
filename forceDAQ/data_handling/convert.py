@@ -17,6 +17,8 @@ from .read_force_data import read_raw_data, data_frame_to_text
 PAUSE_CRITERION = 500
 MSEC_PER_SAMPLES = 1
 REFERENCE_SAMPLE = 1000
+CONVERTED_SUFFIX = ".conv.csv.gz"
+CONVERTED_SUBFOLDER = "converted"
 
 def _periods_from_daq_events(daq_events):
 
@@ -116,6 +118,16 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
 
     return rtn.astype(int)
 
+def converted_filename(flname):
+    """returns path and filename of the converted data file"""
+    if flname.endswith(".gz"):
+        tmp = flname[:-7]
+    else:
+        tmp = flname[:-4]
+
+    path, new_filename = os.path.split(tmp)
+    converted_path = os.path.join(path, CONVERTED_SUBFOLDER)
+    return converted_path, new_filename + CONVERTED_SUFFIX
 
 def convert_raw_data(filepath):
     """preprocessing raw pyForceData:
@@ -125,12 +137,6 @@ def convert_raw_data(filepath):
 
     filepath = os.path.join(os.path.split(sys.argv[0])[0], filepath)
     print("converting {}".format(filepath))
-
-    if filepath.endswith(".gz"):
-        new_filename = filepath[:-7]
-    else:
-        new_filename = filepath[:-4]
-    new_filename += ".conv.csv.gz"
 
     data, udp_event, daq_events, comments = read_raw_data(filepath)
     print("{} samples".format(len(data["time"])))
@@ -151,7 +157,35 @@ def convert_raw_data(filepath):
                                             pauses_idx=pauses_idx,
                                             evt_periods=evt_periods[sensor_id])
 
-    print("Saving {}".format(new_filename))
+    folder, new_filename = converted_filename(filepath)
+    try:
+        os.makedirs(folder)
+    except:
+        pass
+    new_filename = os.path.join(folder, new_filename)
+
     with gzip.open(new_filename, "wt") as fl:
         fl.write(comments.strip() + "\n")
         fl.write(data_frame_to_text(data))
+
+
+
+def get_all_unconverted_data_files(folder):
+    rtn = []
+    files = os.listdir(folder)
+
+    try:
+        c_path, _ = converted_filename(os.path.join(folder, files[0]))
+        converted_files = os.listdir(c_path)
+    except:
+        converted_files = []
+
+    for flname in files:
+        if (flname.endswith(".csv") or flname.endswith(".csv.gz")) and not \
+                flname.endswith(CONVERTED_SUFFIX):
+            flname = os.path.join(folder, flname)
+            _, c_flname = converted_filename(flname)
+            if c_flname not in converted_files:
+                rtn.append(flname)
+    return rtn
+

@@ -88,6 +88,7 @@ def _windows_run():
               [_sg.Frame('Settings', info_settings)],
               [_sg.Frame('Info', info)],
               [_sg.Button("Edit Settings", key="Settings", size=(12, 2)),
+               _sg.Button("Data Converter", key="Converter", size=(12, 2)),
                _sg.Cancel(size=(12, 2))]]
 
     window = _sg.Window('ForceGUI'.format(), layout)
@@ -208,6 +209,37 @@ def _window_settings():
     window.close()
     return event
 
+def _window_converter():
+    from ..data_handling import convert
+    layout = []
+    data_default = path.join(path.split(sys.modules['__main__'].__file__)[0],
+                          "data")
+
+    layout.append([_sg.Frame('Converter',
+                             [[_sg.Text("Folder:", size=(5, 1)), _sg.InputText(
+                                 data_default, size=(40, 1),
+                                 key="data_dir"),
+                               _sg.FolderBrowse(size=(6, 1))],
+                              [_sg.Button("Convert", key="convert",
+                                         size=(12, 2)),
+                               _sg.Button("Cancel", key="cancel",
+                                          size=(12, 2))]
+                              ])])
+    window = _sg.Window('ForceGUI {}: Converter'.format(__version__), layout)
+    event, values = window.read()
+    window.Refresh()
+    if event == "convert":
+        unconv = convert.get_all_unconverted_data_files(values["data_dir"])
+        for flname in unconv:
+            print("Converting {}".format(flname)) # FIXME TK-window output
+            try:
+                convert.convert_raw_data(flname)
+            except:
+                print("Can't process {}".format(flname))
+
+    window.close()
+
+
 def run():
     _sg.theme('DarkBlue14')  # please make your windows colorful
     s = settings.recording
@@ -231,6 +263,8 @@ def run():
         if event == "Settings":
             if _window_settings() == "Error":
                 _sg.PopupError("Something is wrong with the settings.")
+        elif event == "Converter":
+            _window_converter()
         else:
             break
 
