@@ -214,12 +214,25 @@ def _window_converter():
     layout = []
     data_default = path.join(path.split(sys.modules['__main__'].__file__)[0],
                           "data")
+    methods = (convert.Method(1).description, convert.Method(2).description)
 
     layout.append([_sg.Frame('Converter',
                              [[_sg.Text("Folder:", size=(5, 1)), _sg.InputText(
                                  data_default, size=(40, 1),
                                  key="data_dir"),
                                _sg.FolderBrowse(size=(6, 1))],
+                              [_sg.Text('Match timestamps by '),
+                               _sg.Combo(methods,
+                                         size=(50, 10),
+                                         default_value=methods[2 - 1],
+                                         key='method')],
+                              [_sg.Checkbox("Keep Delay Variable",
+                                            False, key="delay"),
+                               _sg.Checkbox("Save Time Adjustments",
+                                            False, key="time_adjustments"),
+                               _sg.Checkbox("Rewrite All Converted Data",
+                                            False, key="reconvert"),
+                               ],
                               [_sg.Output(size=(80, 20), key='-OUTPUT-')],
                               [_sg.Button("Convert", key="convert",
                                          size=(12, 2)),
@@ -231,15 +244,22 @@ def _window_converter():
         event, values = window.read()
         window.Refresh()
         if event == "convert":
-            unconv = convert.get_all_unconverted_data_files(values["data_dir"])
-            l = len(unconv)
+            if values["reconvert"]:
+                files = convert.get_all_data_files(values["data_dir"])
+            else:
+                files = convert.get_all_unconverted_data_files(values["data_dir"])
+            l = len(files)
             if l==0:
                 print("No data to be converted.")
             else:
-                for cnt, flname in enumerate(unconv):
+                for cnt, flname in enumerate(files):
                     print("\n[{}/{}]".format(cnt+1, l)) #
+                    method = convert.Method.get_method_from_description(
+                                    values["method"])
                     try:
-                        convert.convert_raw_data(flname)
+                        convert.convert_raw_data(flname, method= method,
+                                 save_time_adjustments=values["time_adjustments"],
+                                 keep_delay_variable=values["delay"])
                     except:
                         print("Can't process {}".format(flname))
                 print("\nDone!")

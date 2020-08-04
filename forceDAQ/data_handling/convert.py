@@ -86,8 +86,8 @@ def _end_stream_sample(timestamps, min_delay=MIN_DELAY_ENDSTREAM):
         return None
 
 
-def _regular_timeline_matched_by_reference_sample(irregular_timeline,
-                                                  id_ref_sample, msec_per_sample):
+def _linear_timeline_matched_by_single_reference_sample(irregular_timeline,
+                                                        id_ref_sample, msec_per_sample):
     """match timeline that differences between the two is minimal
     new times can not be after irregular times
     """
@@ -97,8 +97,8 @@ def _regular_timeline_matched_by_reference_sample(irregular_timeline,
     return np.arange(t_first, t_last + msec_per_sample, step=msec_per_sample)
 
 
-def _timeline_matched_by_delays(times, msec_per_sample):
-    """method 2 TODO"""
+def _timeline_matched_by_delay_chunked_samples(times, msec_per_sample):
+
     rtn = np.empty(len(times))*np.NaN
     p = 0
     while p<len(times):
@@ -118,7 +118,33 @@ def _timeline_matched_by_delays(times, msec_per_sample):
 
     return rtn
 
+class Method(object):
+
+    types = {1: "single reference sample (forced linearity)",
+             2: "multiple delayed chunked samples (no linearity assumed)"}
+
+    def __init__(self, id):
+        if id not in Method.types:
+            raise RuntimeError("Unkown resampling method")
+        self.id = id
+
+    @property
+    def description(self):
+        return Method.types[self.id]
+
+    @staticmethod
+    def get_method_from_description(description):
+        for id, desc in Method.types.items():
+            if desc == description:
+                return Method(id)
+        return None
+
+
 def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method):
+    """
+        method=Method(1): _linear_timeline_matched_by_single_reference_sample
+        method=Method(2): _timeline_matched_by_delay_chunked_samples
+    """
 
     # adapting timestamps
     rtn = np.empty(len(timestamps))*np.NaN
@@ -139,18 +165,20 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method):
 
         #convert times
         times = timestamps[idx[0]:idx[1] + 1]
-        if method==1:
+        if method.id==1:
             # match refe samples
             next_ref = _end_stream_sample(times[REF_SAMPLE_PROBE:(REF_SAMPLE_PROBE + 1000)])
             if next_ref is None:
                 next_ref = 0
-            newtimes = _regular_timeline_matched_by_reference_sample(
+            newtimes = _linear_timeline_matched_by_single_reference_sample(
                         times, id_ref_sample=REF_SAMPLE_PROBE + next_ref,
                         msec_per_sample=MSEC_PER_SAMPLES)
-        else:
+        elif method.id==2:
             # using delays
-            newtimes = _timeline_matched_by_delays(times,
-                                                   msec_per_sample=MSEC_PER_SAMPLES)
+            newtimes = _timeline_matched_by_delay_chunked_samples(times,
+                                                                  msec_per_sample=MSEC_PER_SAMPLES)
+        else:
+            newtimes = times
 
         rtn[idx[0]:idx[1] + 1] = newtimes
 
@@ -168,23 +196,27 @@ def converted_filename(flname):
     converted_path = os.path.join(path, CONVERTED_SUBFOLDER)
     return converted_path, new_filename + CONVERTED_SUFFIX
 
-def convert_raw_data(filepath, method=1):
+def convert_raw_data(filepath, method, save_time_adjustments=False,
+                     keep_delay_variable=False):
     """preprocessing raw pyForceData:
 
     """
     # todo only one sensor
+    assert(isinstance(method, Method))
 
     filepath = os.path.join(os.path.split(sys.argv[0])[0], filepath)
-    print("converting {}".format(filepath))
+    print("Converting {}".format(filepath))
+    print("Method: {}".format(method.description))
 
     data, udp_event, daq_events, comments = read_raw_data(filepath)
     print("{} samples".format(len(data["time"])))
 
     sensor_id = 1
-    # adapt timestamps
-    #delay = np.array(data.pop("delay")).astype(int) # remove delays
+    if not keep_delay_variable:
+        data.pop("delay", None)
 
     timestamps = np.array(data["time"]).astype(int)
+
     #pauses
     pauses_idx = _pauses_idx_from_timeline(timestamps, pause_criterion=PAUSE_CRITERION)
     evt_periods = _periods_from_daq_events(daq_events)
@@ -195,17 +227,13 @@ def convert_raw_data(filepath, method=1):
         data["time"] = _adjusted_timestamps(timestamps=timestamps,
                                             pauses_idx=pauses_idx,
                                             evt_periods=evt_periods[
-                                            sensor_id], method=method)
+                                            sensor_id],
+                                            method=method)
 
-    #data["diff"] = data["time1"]-data["time2"]
-    #data["diff1"] = timestamps -data["time1"]
-    #data["diff2"] = timestamps -data["time2"]
-    #print("Time difference historgram")
-    #print_histogram(data["diff"])
-    #print("-- 2 --")
-    #print_histogram(data["diff1"])
-    #print("-- 3 --")
-    #print_histogram(data["diff2"])
+    if save_time_adjustments:
+        data["time_adjustment"] = timestamps-data["time"]
+        #print("Time difference historgram")
+        #print_histogram(data["time_adjustment"])
 
     #save
     folder, new_filename = converted_filename(filepath)
@@ -219,24 +247,29 @@ def convert_raw_data(filepath, method=1):
         fl.write(comments.strip() + "\n")
         fl.write(data_frame_to_text(data))
 
-
+def get_all_data_files(folder):
+    rtn = []
+    for flname in os.listdir(folder):
+        if (flname.endswith(".csv") or flname.endswith(".csv.gz")) and not \
+                flname.endswith(CONVERTED_SUFFIX):
+            flname = os.path.join(folder, flname)
+            rtn.append(flname)
+    return rtn
 
 def get_all_unconverted_data_files(folder):
     rtn = []
-    files = os.listdir(folder)
+    files = get_all_data_files(folder)
 
-    try:
-        c_path, _ = converted_filename(os.path.join(folder, files[0]))
+
+    try:  # make subfolder
+        c_path, _ = converted_filename(files[0])
         converted_files = os.listdir(c_path)
     except:
         converted_files = []
 
     for flname in files:
-        if (flname.endswith(".csv") or flname.endswith(".csv.gz")) and not \
-                flname.endswith(CONVERTED_SUFFIX):
-            flname = os.path.join(folder, flname)
-            _, c_flname = converted_filename(flname)
-            if c_flname not in converted_files:
-                rtn.append(flname)
+        _, c_flname = converted_filename(flname)
+        if c_flname not in converted_files:
+            rtn.append(flname)
     return rtn
 
