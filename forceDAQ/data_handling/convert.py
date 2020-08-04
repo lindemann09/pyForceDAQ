@@ -75,17 +75,6 @@ def _most_frequent_value(values):
 #        print("{} -- {}".format(a,b))
 
 
-def _regular_timeline_matched_by_reference_sample(irregular_timeline,
-                                                  id_ref_sample, msec_per_sample):
-    """match timeline that differences between the two is minimal
-    new times can not be after irregular times
-    """
-    t_ref = irregular_timeline[id_ref_sample]
-    t_first = t_ref - (id_ref_sample*msec_per_sample)
-    t_last = t_first + ((len(irregular_timeline) - 1) * msec_per_sample)
-    return np.arange(t_first, t_last + msec_per_sample, step=msec_per_sample)
-
-
 def _end_stream_sample(timestamps, min_delay=MIN_DELAY_ENDSTREAM):
     """finds end of the data stream, that is, sample before next long waiting
     sample or returns None if no end can be detected"""
@@ -97,12 +86,30 @@ def _end_stream_sample(timestamps, min_delay=MIN_DELAY_ENDSTREAM):
         return None
 
 
-def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
+def _regular_timeline_matched_by_reference_sample(irregular_timeline,
+                                                  id_ref_sample, msec_per_sample):
+    """match timeline that differences between the two is minimal
+    new times can not be after irregular times
+    """
+    t_ref = irregular_timeline[id_ref_sample]
+    t_first = t_ref - (id_ref_sample*msec_per_sample)
+    t_last = t_first + ((len(irregular_timeline) - 1) * msec_per_sample)
+    return np.arange(t_first, t_last + msec_per_sample, step=msec_per_sample)
+
+
+def _timeline_matched_by_delays(times):
+    #FIXME TODO _timeline_matched_by_delays
+    return times
+
+def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method=1):
 
     # adapting timestamps
     rtn = np.empty(len(timestamps))*np.NaN
     period_counter = 0
     for idx, evt_per in zip(pauses_idx, evt_periods):
+        # loop over periods
+
+        # logging
         period_counter += 1
         n_samples = idx[1] - idx[0] + 1
         if evt_per[1]: # end time
@@ -113,11 +120,17 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
         else:
             print("Period {}: No pause sampling time.".format(period_counter))
 
+        #convert times
         times = timestamps[idx[0]:idx[1] + 1]
-        next_ref = _end_stream_sample(times[REF_SAMPLE_PROBE:(REF_SAMPLE_PROBE + 1000)])
-        newtimes = _regular_timeline_matched_by_reference_sample(
+        if method==1:
+            # match refe samples
+            next_ref = _end_stream_sample(times[REF_SAMPLE_PROBE:(REF_SAMPLE_PROBE + 1000)])
+            newtimes = _regular_timeline_matched_by_reference_sample(
                         times, id_ref_sample=REF_SAMPLE_PROBE + next_ref,
                         msec_per_sample=MSEC_PER_SAMPLES)
+        else:
+            # using delays
+            newtimes = _timeline_matched_by_delays(times)
 
         rtn[idx[0]:idx[1] + 1] = newtimes
 
