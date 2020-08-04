@@ -16,7 +16,8 @@ from .read_force_data import read_raw_data, data_frame_to_text
 
 PAUSE_CRITERION = 500
 MSEC_PER_SAMPLES = 1
-REFERENCE_SAMPLE = 1000
+REF_SAMPLE_PROBE = 1000
+MIN_DELAY_ENDSTREAM = 2
 CONVERTED_SUFFIX = ".conv.csv.gz"
 CONVERTED_SUBFOLDER = "converted"
 
@@ -74,15 +75,27 @@ def _most_frequent_value(values):
 #        print("{} -- {}".format(a,b))
 
 
-def _matched_regular_timeline(irregular_timeline,
-                              id_ref_sample, msec_per_sample):
+def _regular_timeline_matched_by_reference_sample(irregular_timeline,
+                                                  id_ref_sample, msec_per_sample):
     """match timeline that differences between the two is minimal
     new times can not be after irregular times
     """
-    t_ref = irregular_timeline[id_ref_sample-1]
-    t_first = t_ref - ((id_ref_sample-1)*msec_per_sample)
+    t_ref = irregular_timeline[id_ref_sample]
+    t_first = t_ref - (id_ref_sample*msec_per_sample)
     t_last = t_first + ((len(irregular_timeline) - 1) * msec_per_sample)
     return np.arange(t_first, t_last + msec_per_sample, step=msec_per_sample)
+
+
+def _end_stream_sample(timestamps, min_delay=MIN_DELAY_ENDSTREAM):
+    """finds end of the data stream, that is, sample before next long waiting
+    sample or returns None if no end can be detected"""
+
+    next_t_diffs = np.diff(timestamps)
+    try:
+        return np.where(next_t_diffs >= min_delay)[0][0] #+1-1
+    except:
+        return None
+
 
 def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
 
@@ -100,23 +113,16 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
         else:
             print("Period {}: No pause sampling time.".format(period_counter))
 
-        irregular_times = timestamps[idx[0]:idx[1] + 1]
-        # find ref sample or find next 10+ delay
-        next_t_diffs = np.diff(irregular_times[REFERENCE_SAMPLE:(REFERENCE_SAMPLE+1000)])
-        try:
-            next_delayed = 1 + np.where(next_t_diffs>=10)[0][0]
-        except:
-            try:
-                next_delayed = 1 + np.where(next_t_diffs>0)[0][0]
-            except:
-                next_delayed = 0
+        times = timestamps[idx[0]:idx[1] + 1]
+        next_ref = _end_stream_sample(times[REF_SAMPLE_PROBE:(REF_SAMPLE_PROBE + 1000)])
+        newtimes = _regular_timeline_matched_by_reference_sample(
+                        times, id_ref_sample=REF_SAMPLE_PROBE + next_ref,
+                        msec_per_sample=MSEC_PER_SAMPLES)
 
-        newtimes = _matched_regular_timeline(irregular_times,
-                                    id_ref_sample=REFERENCE_SAMPLE + next_delayed,
-                                    msec_per_sample=MSEC_PER_SAMPLES)
         rtn[idx[0]:idx[1] + 1] = newtimes
 
     return rtn.astype(int)
+
 
 def converted_filename(flname):
     """returns path and filename of the converted data file"""
@@ -143,7 +149,7 @@ def convert_raw_data(filepath):
 
     sensor_id = 1
     # adapt timestamps
-    _delay = np.array(data.pop("delay")).astype(int) # remove delays
+    delay = np.array(data.pop("delay")).astype(int) # remove delays
 
     timestamps = np.array(data["time"]).astype(int)
     #pauses
@@ -153,7 +159,7 @@ def convert_raw_data(filepath):
     if len(pauses_idx) != len(evt_periods[sensor_id]):
         raise RuntimeError("Pauses in DAQ events do not match recording pauses")
     else:
-        data["adj_time"] = _adjusted_timestamps(timestamps=timestamps,
+        data["time"] = _adjusted_timestamps(timestamps=timestamps,
                                             pauses_idx=pauses_idx,
                                             evt_periods=evt_periods[sensor_id])
 
