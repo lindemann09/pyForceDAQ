@@ -125,6 +125,8 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method=1):
         if method==1:
             # match refe samples
             next_ref = _end_stream_sample(times[REF_SAMPLE_PROBE:(REF_SAMPLE_PROBE + 1000)])
+            if next_ref is None:
+                next_ref = 0
             newtimes = _regular_timeline_matched_by_reference_sample(
                         times, id_ref_sample=REF_SAMPLE_PROBE + next_ref,
                         msec_per_sample=MSEC_PER_SAMPLES)
