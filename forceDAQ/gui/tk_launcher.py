@@ -220,22 +220,32 @@ def _window_converter():
                                  data_default, size=(40, 1),
                                  key="data_dir"),
                                _sg.FolderBrowse(size=(6, 1))],
+                              [_sg.Output(size=(80, 20), key='-OUTPUT-')],
                               [_sg.Button("Convert", key="convert",
                                          size=(12, 2)),
                                _sg.Button("Cancel", key="cancel",
                                           size=(12, 2))]
                               ])])
     window = _sg.Window('ForceGUI {}: Converter'.format(__version__), layout)
-    event, values = window.read()
-    window.Refresh()
-    if event == "convert":
-        unconv = convert.get_all_unconverted_data_files(values["data_dir"])
-        for flname in unconv:
-            print("Converting {}".format(flname)) # FIXME TK-window output
-            try:
-                convert.convert_raw_data(flname)
-            except:
-                print("Can't process {}".format(flname))
+    while True:
+        event, values = window.read()
+        window.Refresh()
+        if event == "convert":
+            unconv = convert.get_all_unconverted_data_files(values["data_dir"])
+            l = len(unconv)
+            if l==0:
+                print("No data to be converted.")
+            else:
+                for cnt, flname in enumerate(unconv):
+                    print("\n[{}/{}]".format(cnt+1, l)) #
+                    try:
+                        convert.convert_raw_data(flname)
+                    except:
+                        print("Can't process {}".format(flname))
+                print("\nDone!")
+
+        else:
+            break
 
     window.close()
 

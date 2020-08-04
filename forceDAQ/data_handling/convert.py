@@ -95,8 +95,8 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods):
         if evt_per[1]: # end time
             sample_diff  = n_samples - (1+(evt_per[1]-evt_per[0])//MSEC_PER_SAMPLES)
             if sample_diff!=0:
-                print("Period {}: Sample differences: {}".format(period_counter,
-                    sample_diff))
+                print("Period {}: Sample difference of {}".format(
+                    period_counter, sample_diff))
         else:
             print("Period {}: No pause sampling time.".format(period_counter))
 
