@@ -69,10 +69,10 @@ def _most_frequent_value(values):
     idx = np.argmax(cnt)
     return v[idx]
 
-#def _hist(values):
-#    (v, cnt) = np.unique(values, return_counts=True)
-#    for a,b in zip(v,cnt):
-#        print("{} -- {}".format(a,b))
+def print_histogram(values):
+    (v, cnt) = np.unique(values, return_counts=True)
+    for a,b in zip(v,cnt):
+        print("{} -- {}".format(a,b))
 
 
 def _end_stream_sample(timestamps, min_delay=MIN_DELAY_ENDSTREAM):
@@ -97,11 +97,28 @@ def _regular_timeline_matched_by_reference_sample(irregular_timeline,
     return np.arange(t_first, t_last + msec_per_sample, step=msec_per_sample)
 
 
-def _timeline_matched_by_delays(times):
-    #FIXME TODO _timeline_matched_by_delays
-    return times
+def _timeline_matched_by_delays(times, msec_per_sample):
+    """method 2 TODO"""
+    rtn = np.empty(len(times))*np.NaN
+    p = 0
+    while p<len(times):
+        next_ref_sample = _end_stream_sample(times[p:])
+        if next_ref_sample is not None:
+            ref_time = times[p+next_ref_sample]
+            rtn[p:(p+next_ref_sample+1)] = np.arange(
+                                  start = ref_time - (next_ref_sample*msec_per_sample),
+                                  stop  = ref_time + msec_per_sample,
+                                  step  = msec_per_sample)
+            p = p + next_ref_sample + 1
 
-def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method=1):
+        else:
+            # no further refence samples
+            rtn[p:] = times[p:]
+            break
+
+    return rtn
+
+def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method):
 
     # adapting timestamps
     rtn = np.empty(len(timestamps))*np.NaN
@@ -132,7 +149,8 @@ def _adjusted_timestamps(timestamps, pauses_idx, evt_periods, method=1):
                         msec_per_sample=MSEC_PER_SAMPLES)
         else:
             # using delays
-            newtimes = _timeline_matched_by_delays(times)
+            newtimes = _timeline_matched_by_delays(times,
+                                                   msec_per_sample=MSEC_PER_SAMPLES)
 
         rtn[idx[0]:idx[1] + 1] = newtimes
 
@@ -150,7 +168,7 @@ def converted_filename(flname):
     converted_path = os.path.join(path, CONVERTED_SUBFOLDER)
     return converted_path, new_filename + CONVERTED_SUFFIX
 
-def convert_raw_data(filepath):
+def convert_raw_data(filepath, method=1):
     """preprocessing raw pyForceData:
 
     """
@@ -164,7 +182,7 @@ def convert_raw_data(filepath):
 
     sensor_id = 1
     # adapt timestamps
-    delay = np.array(data.pop("delay")).astype(int) # remove delays
+    #delay = np.array(data.pop("delay")).astype(int) # remove delays
 
     timestamps = np.array(data["time"]).astype(int)
     #pauses
@@ -176,8 +194,20 @@ def convert_raw_data(filepath):
     else:
         data["time"] = _adjusted_timestamps(timestamps=timestamps,
                                             pauses_idx=pauses_idx,
-                                            evt_periods=evt_periods[sensor_id])
+                                            evt_periods=evt_periods[
+                                            sensor_id], method=method)
 
+    #data["diff"] = data["time1"]-data["time2"]
+    #data["diff1"] = timestamps -data["time1"]
+    #data["diff2"] = timestamps -data["time2"]
+    #print("Time difference historgram")
+    #print_histogram(data["diff"])
+    #print("-- 2 --")
+    #print_histogram(data["diff1"])
+    #print("-- 3 --")
+    #print_histogram(data["diff2"])
+
+    #save
     folder, new_filename = converted_filename(filepath)
     try:
         os.makedirs(folder)
