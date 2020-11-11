@@ -5,7 +5,7 @@ Python DAQ library and application for ATI force sensors and NI-DAQ
 
 *Released under the MIT License*
 
- Oliver Lindemann <oliver.lindemann@cognitive-psychology.eu>
+ Oliver Lindemann <lindemann@cognitive-psychology.eu>
 
 Dependencies
 ------------
