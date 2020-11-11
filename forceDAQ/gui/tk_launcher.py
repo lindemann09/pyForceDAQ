@@ -19,9 +19,11 @@ def _input_text_list(lable, list, key, x_sizes=(19, 20)):
     return [_sg.Text(lable, size=(x_sizes[0], 1)),
             _sg.Input(default_text=_l2s(list), size=(x_sizes[1], 1), key=key)]
 
+
 def _l2s(the_list): #convert list to str
     text_list = "{}".format(the_list)
     return text_list.replace("[","").replace("]","").replace("'", "")
+
 
 def _s2l(csv_string, is_integer=False, is_float=False): # convert csv string to list
     rtn = []
@@ -33,6 +35,7 @@ def _s2l(csv_string, is_integer=False, is_float=False): # convert csv string to 
             x = int(x)
         rtn.append(x)
     return rtn
+
 
 def _check_sensor_calibration_settings(device_ids, sensor_names,
                                        calibration_folder):
@@ -53,6 +56,7 @@ def _check_sensor_calibration_settings(device_ids, sensor_names,
         rtn.append([d_id, sensor_name, cal, error])
 
     return rtn
+
 
 def _windows_run():
     s = settings.recording
@@ -95,6 +99,7 @@ def _windows_run():
     event, values = window.read()
     window.close()
     return event, values
+
 
 def _window_settings():
     s = settings.recording
@@ -208,6 +213,7 @@ def _window_settings():
 
     window.close()
     return event
+
 
 def _window_converter():
     from ..data_handling import convert
