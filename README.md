@@ -46,4 +46,4 @@ Development
 https://github.com/lindemann09/pyForceDAQ
 
 Please [submit](https://github.com/lindemann09/pyForceDAQ/issues/new)
-any bugs you encounter to the Github issue tracker.
+any bug you encounter to the Github issue tracker.
