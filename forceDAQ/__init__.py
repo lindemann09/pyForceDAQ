@@ -1,7 +1,7 @@
-__version__ = "0.9.2"
-__author__ = "Oliver Lindemann"
+"""pyForceDAQ
 
-"""
+DAQ tool to record response force data
+
 launch the GUI force from your Python program:
 ``
     from forceDAQ import gui
@@ -24,7 +24,11 @@ import relevant stuff for remote control of the GUI force:
 
 For function to support data handling see the folder pyForceDAQ/analysis
 
+Oliver Lindemann
 """
+
+__version__ = "2.0.0"
+__author__ = "Oliver Lindemann"
 
 USE_DUMMY_SENSOR = False
 
