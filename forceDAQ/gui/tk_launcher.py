@@ -1,7 +1,7 @@
 import sys
 from os import path
 
-import PySimpleGUI as _sg
+import freesimplegui as _sg
 from .. import __version__, USE_DUMMY_SENSOR
 from .._lib.misc import find_calibration_file
 from .._lib.udp_connection import UDPConnection

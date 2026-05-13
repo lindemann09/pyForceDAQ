@@ -1,0 +1,13 @@
+[project]
+name = "pyforcedaq"
+version = "2.0.0"
+requires-python = ">=3.14"
+dependencies = [
+    "atiiaftt>=0.1.1",
+    "expyriment>=1.0.1",
+    "freesimplegui>=5.2.0.post1",
+    "nidaqmx>=1.5.0",
+    "numpy>=2.4.4",
+    "pylsl>=1.18.2",
+    "pyutil>=3.3.6",
+]
