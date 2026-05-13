@@ -1,7 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import forceDAQ
-forceDAQ.USE_DUMMY_SENSOR = True # <-- change for usage in lab to False
+forceDAQ.USE_DUMMY_SENSOR = False # <-- change for usage in lab to False
 
 if __name__ == "__main__": # required because of threading
     from forceDAQ.gui import run

@@ -5,11 +5,11 @@
       1
     ],
     "sensor_names": [
-      "FT30436"
+      "FT9334"
     ],
     "remote_control": false,
     "ask_filename": false,
-    "calibration_folder": "C:\\Users\\Force\\Desktop\\calibration",
+    "calibration_folder": "calibration",
     "zip_data": true,
     "write_Fx": true,
     "write_Fy": true,
