@@ -4,23 +4,23 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-import pygame
+import logging
 from pickle import dumps
 
 import numpy as np
-from expyriment import control, design, stimuli, io, misc
-import logging
+import pygame
+from expyriment import control, design, io, misc, stimuli
 
 from .. import __version__ as forceDAQVersion
-from .._lib.types import ForceData, GUIRemoteControlCommands as RcCmd
 from .._lib.timer import app_timer
-from ..force  import DataRecorder, SensorSettings,  SensorProcess
-
+from .._lib.types import ForceData
+from .._lib.types import GUIRemoteControlCommands as RcCmd
+from ..force import DataRecorder, SensorProcess, SensorSettings
 from . import settings
-from ._plotter import PlotterThread
-from ._level_indicator import level_indicator
-from ._layout import logo_text_line, colours, get_pygame_rect
 from ._gui_status import GUIStatus
+from ._layout import colours, get_pygame_rect, logo_text_line
+from ._level_indicator import level_indicator
+from ._plotter import PlotterThread
 
 
 def _initialize(exp, remote_control=None):
@@ -441,7 +441,7 @@ def run_with_options(remote_control,
     logo_text_line("Initializing Force Recording").present()
 
     recorder = DataRecorder(sensors,
-                 poll_udp_connection=True,
+                 poll_udp_connection=False, # FIXME remove UDP polling from recorder and put it in main loop
                  write_deviceid = len(device_ids)>1,
                  write_Fx = write_Fx,
                  write_Fy = write_Fy,

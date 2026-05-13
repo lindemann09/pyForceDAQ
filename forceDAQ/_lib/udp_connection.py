@@ -5,29 +5,36 @@ __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 __version__ = "0.5"
 
 import atexit
+import logging
 import os
 import socket
-from multiprocessing import Process, Event, Queue
-import logging
+from multiprocessing import Event, Process, Queue
+from subprocess import check_output
 
-from .types import UDPData
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
 from .timer import Timer, app_timer, get_time_ms
+from .types import UDPData
+
 
 def get_lan_ip():
-    if os.name != "nt":
-        # linux
-        from subprocess import check_output
-        rtn = check_output("hostname -I".split(" "))
-        rtn = rtn.decode().split(" ")
-        return rtn[0].strip()
-
-    else:
-        # windows
-        # code bas on http://stackoverflow.com/questions/11735821/python-get-localhost-ip
+    if os.name == "nt":
+        # Windows
         return socket.gethostbyname(socket.gethostname())
-
+    else:
+        # Linux and macOS
+        try:
+            # Try Linux command first
+            rtn = check_output(["hostname", "-I"]).decode().strip()
+            return rtn.split()[0] if rtn else None
+        except:
+            try:
+                # Fallback to macOS command
+                rtn = check_output(["ipconfig", "getifaddr", "en0"]).decode().strip()
+                return rtn if rtn else None
+            except:
+                # Fallback to socket method if both commands fail
+                return socket.gethostbyname(socket.gethostname())
 
 class UDPConnection(object):
     # DOC document the usage "connecting" "unconnecting"

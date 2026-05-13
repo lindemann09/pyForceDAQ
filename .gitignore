@@ -64,6 +64,5 @@ events/
 doc/_build
 expyriment/
 .venv/
-*.settings.json
 uv.lock
 
