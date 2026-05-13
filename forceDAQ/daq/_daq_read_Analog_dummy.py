@@ -1,14 +1,16 @@
 __author__ = 'Oliver Lindemann'
 
-import numpy as np
 import logging
+
+import numpy as np
+
 from .._lib.timer import Timer
-from ._config import NUM_SAMPS_PER_CHAN, TIMEOUT, NI_DAQ_BUFFER_SIZE
+
 
 class DAQReadAnalog(object):
-    NUM_SAMPS_PER_CHAN =  NUM_SAMPS_PER_CHAN
-    TIMEOUT = TIMEOUT
-    NI_DAQ_BUFFER_SIZE = NI_DAQ_BUFFER_SIZE
+    NUM_SAMPS_PER_CHAN =  1
+    TIMEOUT = 1.0
+    NI_DAQ_BUFFER_SIZE = 1000
     DAQ_TYPE = "dummy"
 
     def __init__(self, configuration=None,

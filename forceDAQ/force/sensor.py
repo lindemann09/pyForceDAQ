@@ -7,14 +7,17 @@ __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 from copy import copy
+
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQConfiguration,  DAQReadAnalog
 from .._lib.misc import find_calibration_file
-from .._lib.types import ForceData
 from .._lib.timer import Timer, app_timer
+from .._lib.types import ForceData
+from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
+
 
 class SensorSettings(DAQConfiguration):
+
     def __init__(self,
                  device_id,
                  sensor_name,
@@ -34,13 +37,13 @@ class SensorSettings(DAQConfiguration):
                 Sensors take this into account and correct data online
         """
 
-        DAQConfiguration.__init__(self,
-                                  device_name = "{0}{1}".format(device_name_prefix, device_id),
-                                  channels=channels,
-                                  rate=rate, minVal=minVal, maxVal=maxVal)
+        super().__init__(device_name = "{0}{1}".format(device_name_prefix, device_id),
+                         channels=channels,
+                         rate=rate, minVal=minVal, maxVal=maxVal)
         self.device_id = device_id
         self.sensor_name = sensor_name
         self.convert_to_FT = convert_to_FT
+
         if self.convert_to_FT:
             self.calibration_file = find_calibration_file(
                                         calibration_folder=calibration_folder,
@@ -153,6 +156,7 @@ class Sensor(DAQReadAnalog):
 if __name__ == "__main__":
     #test sensor history
     import random
+
     from forceDAQ import Thresholds
     from forceDAQ._lib.misc import SensorHistory
     def run():

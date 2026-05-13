@@ -10,18 +10,21 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
+
 import numpy as np
 import PyDAQmx
 
-from ._config import NUM_SAMPS_PER_CHAN, TIMEOUT, NI_DAQ_BUFFER_SIZE\
+from ._config import DAQConfiguration
+
 
 class DAQReadAnalog(PyDAQmx.Task):
-    NUM_SAMPS_PER_CHAN = NUM_SAMPS_PER_CHAN
-    TIMEOUT = TIMEOUT
-    NI_DAQ_BUFFER_SIZE = NI_DAQ_BUFFER_SIZE
+
+    NUM_SAMPS_PER_CHAN = ct.c_int32(1)
+    TIMEOUT = ct.c_longdouble(1.0)  # one second
+    NI_DAQ_BUFFER_SIZE = 1000
     DAQ_TYPE = "PyDAQmx"
 
-    def __init__(self, configuration, read_array_size_in_samples):
+    def __init__(self, configuration: DAQConfiguration, read_array_size_in_samples: int ):
         """ DOC
         read_array_size_in_samples for ReadAnalogF64 call
 
@@ -34,7 +37,8 @@ class DAQReadAnalog(PyDAQmx.Task):
                                  # physicalChannel
                                  "",  # nameToAssignToChannel,
                                  PyDAQmx.DAQmx_Val_Diff,  # terminalConfig
-                                 configuration.minVal, configuration.maxVal,
+                                 ct.c_double(configuration.minVal),
+                                 ct.c_double(configuration.maxVal),
                                  # min max Val
                                  PyDAQmx.DAQmx_Val_Volts,  # units
                                  None  # customScaleName
@@ -42,7 +46,7 @@ class DAQReadAnalog(PyDAQmx.Task):
 
         # CfgSampClkTiming
         self.CfgSampClkTiming("",  # source
-                              configuration.rate,  # rate
+                              ct.c_double(configuration.rate),  # rate
                               PyDAQmx.DAQmx_Val_Rising,  # activeEdge
                               PyDAQmx.DAQmx_Val_ContSamps,  # sampleMode
                               ct.c_uint64(DAQReadAnalog.NI_DAQ_BUFFER_SIZE)
@@ -50,9 +54,7 @@ class DAQReadAnalog(PyDAQmx.Task):
                               )
 
         self._task_is_started = False
-        self.read_array_size_in_samples = ct.c_uint32(
-            read_array_size_in_samples)
-        # print(self.read_array_size_in_samples )
+        self.read_array_size_in_samples = read_array_size_in_samples
 
     @property
     def is_acquiring_data(self):
@@ -97,15 +99,15 @@ class DAQReadAnalog(PyDAQmx.Task):
 
         # fill in data
         read_samples = ct.c_int32()
-        read_buffer = np.zeros((self.read_array_size_in_samples.value,),
+        read_buffer = np.zeros((self.read_array_size_in_samples,),
                                dtype=np.float64)
 
-        error = self.ReadAnalogF64(DAQReadAnalog.NUM_SAMPS_PER_CHAN,
-                                   DAQReadAnalog.TIMEOUT,
+        error = self.ReadAnalogF64(self.NUM_SAMPS_PER_CHAN,
+                                   self.TIMEOUT,
                                    PyDAQmx.DAQmx_Val_GroupByScanNumber,
                                    # fillMode
                                    read_buffer,
-                                   self.read_array_size_in_samples,
+                                   ct.c_uint32(self.read_array_size_in_samples),
                                    ct.byref(read_samples),
                                    None)
 
