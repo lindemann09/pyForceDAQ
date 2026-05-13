@@ -429,7 +429,7 @@ def run_with_options(remote_control,
     control.defaults.window_mode = True
     control.defaults.window_size = (1000, 700)
     control.defaults.fast_quit = True
-    control.defaults.open_gl = False
+    control.defaults.opengl = False
     control.defaults.event_logging = 0
     control.defaults.audiosystem_autostart = False
     exp = design.Experiment(text_font=settings.gui.window_font)
