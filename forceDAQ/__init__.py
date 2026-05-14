@@ -27,15 +27,15 @@ For function to support data handling see the folder pyForceDAQ/analysis
 Oliver Lindemann
 """
 
-__version__ = "2.0.0"
+__version__ = "2.0.0-dev"
 __author__ = "Oliver Lindemann"
 
 USE_DUMMY_SENSOR = False
 
 import sys as _sys
-if _sys.version_info[0] != 3 or _sys.version_info[1]<5:
+if _sys.version_info[0] != 3 or _sys.version_info[1]<12:
     raise RuntimeError("pyForceDAQ {0} ".format(__version__) +
                       "is not compatible with Python {0}.{1}. ".format(
                                                     _sys.version_info[0],
                                                     _sys.version_info[1]) +
-                       "Please use Python 3.5+.")
+                       "Please use Python 3.12+.")
