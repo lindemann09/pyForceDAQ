@@ -1,9 +1,9 @@
 # test client sever connection
-from expyriment import control, stimuli, io, misc
+from expyriment import control, io, misc, stimuli
 from expyriment.misc import Clock
 
-from forceDAQ._lib.udp_connection import UDPConnection, \
-    UDPConnectionProcess
+from forceDAQ._lib.udp_connection import UDPConnection, UDPConnectionProcess
+
 
 def client(server_ip):
     # t : test connect
@@ -21,7 +21,7 @@ def client(server_ip):
         print("error connecting to peer")
         exit()
 
-    stimuli.TextScreen("connected to " + udp_connection.peer_ip,
+    stimuli.TextScreen(f"connected to {udp_connection.peer_ip}",
                      "\nSPACE: send text\nT: trigger test\nQ: quit").present()
 
     c = Clock()

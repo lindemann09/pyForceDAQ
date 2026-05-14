@@ -16,8 +16,8 @@ def get_time_ms() -> int:
     """Get high-resolution time stamp (int) """
     return int(1000 * perf_counter())
 
-class Clock(object):#
-    """A simple timer"""
+class Timer(object):#
+    """A simple clock class that can be used to measure elapsed time in milliseconds."""
 
     def __init__(self, sync_timer=None):
         if sync_timer is None:
@@ -42,4 +42,4 @@ def wait(waiting_time):
         pass
 
 
-app_clock = Clock()
+app_clock = Timer()

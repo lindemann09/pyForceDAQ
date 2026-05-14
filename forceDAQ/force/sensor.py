@@ -11,7 +11,7 @@ from copy import copy
 import numpy as np
 
 from .._lib.misc import find_calibration_file
-from .._lib.timer import Clock, clock
+from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
 
@@ -79,7 +79,7 @@ class Sensor(DAQReadAnalog):
         self.device_id = settings.device_id
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
-        self.timer = Clock(sync_timer=clock) # own timer, because this class is used in own process
+        self.timer = Timer(sync_timer=app_clock) # own timer, because this class is used in own process
         if self.DAQ_TYPE == "dummy":
             self._atidaq = None
             self.convert_to_FT = False

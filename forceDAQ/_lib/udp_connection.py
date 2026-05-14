@@ -15,7 +15,7 @@ from forceDAQ._lib import timer
 
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
-from .timer import Clock, clock, get_time_ms
+from .timer import Timer, app_clock, get_time_ms
 from .types import UDPData
 
 
@@ -56,7 +56,7 @@ class UDPConnection(object):
         self._socket.bind((UDPConnection.MY_IP, self.udp_port))
         self._socket.setblocking(False)
         self.peer_ip = None
-        self.timer = Clock(sync_timer=clock) # own timer, because often
+        self.timer = Timer(sync_timer=app_clock) # own timer, because often
         # used in own process
 
     @property
@@ -229,7 +229,7 @@ class UDPConnectionProcess(Process):
         peer_ip : string
             the IP of the peer to which the connection should be established
 
-        sync_clock : Clock
+        sync_clock : Timer
             the internal clock for timestamps will synchronized with this clock
 
         event_trigger: multiprocessing.Event() (or list of..)

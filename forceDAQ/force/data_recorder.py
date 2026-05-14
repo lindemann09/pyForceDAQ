@@ -15,7 +15,7 @@ from forceDAQ._lib import timer
 
 from .. import __version__ as forceDAQVersion
 from .._lib.process_priority_manager import ProcessPriorityManager
-from .._lib.timer import clock
+from .._lib.timer import app_clock
 from .._lib.types import (
     TAG_COMMENTS,
     TAG_DAQEVENT,
@@ -218,7 +218,7 @@ class DataRecorder(object):
 
         """
         if time is None:
-            time = clock.time
+            time = app_clock.time
         self._daq_event.append(DAQEvents(time = time, code = code))
 
 
