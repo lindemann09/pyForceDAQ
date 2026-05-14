@@ -35,17 +35,9 @@ NEWLINE = "\n"
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensor_settings,
+    def __init__(self, force_sensor_settings:SensorSettings | list,
                  poll_udp_connection=False,
                  write_deviceid = False,
-                 write_Fx = True,
-                 write_Fy = True,
-                 write_Fz = True,
-                 write_Tx = False,
-                 write_Ty = False,
-                 write_Tz = False,
-                 write_trigger1 = True,
-                 write_trigger2 = False,
                  polling_priority=None):
 
 
@@ -57,14 +49,15 @@ class DataRecorder(object):
         """
 
         self._write_deviceid = write_deviceid
-        self._write_forces = [write_Fx, write_Fy, write_Fz, write_Tx, write_Ty, write_Tz]
-        self._write_trigger = [write_trigger1, write_trigger2]
 
-        #create sensor processes
         if not isinstance(force_sensor_settings, list):
             force_sensor_settings = [force_sensor_settings]
-        self._force_sensor_processes =[]
+        # write forces and triggers as define in sensor1
+        self._write_forces = force_sensor_settings[0].array_write_forces()
+        self._write_trigger = force_sensor_settings[0].array_write_trigger()
 
+        # create sensor processes
+        self._force_sensor_processes =[]
         event_trigger = []
         for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
@@ -182,26 +175,24 @@ class DataRecorder(object):
         for c, d in enumerate(data_buffer):
             if self._file is not None:
                 if isinstance(d, ForceSensorData):
-                    line = "{}, {},".format(d.time, d.acquisition_delay)
+                    line = f"{d.time}, {d.acquisition_delay},"
                     if self._write_deviceid:
-                        line += "{0},".format(d.device_id)
-                    for x in range(6):
-                        if self._write_forces[x]:
-                            line += float_format.format(d.forces[x])
-                    for x in range(2):
-                        if self._write_trigger[x]:
-                            if isinstance(d.trigger[x], int):
-                                line += "{0},".format(d.trigger[x])
-                            else:
-                                line += float_format.format(d.trigger[x])
+                        line += f"{d.device_id},"
+                    for x in d.selected_forces(select=self._write_forces):
+                        line += float_format.format(x)
+                    for x in d.selected_trigger(select=self._write_trigger):
+                        if isinstance(x, int):
+                            line += f"{x},"
+                        else:
+                            line += float_format.format(x)
                     self._file_write(line[:-1] + NEWLINE)
 
                 elif isinstance(d, DAQEvents):
-                    self._file_write("{0},{1},{2}".format(TAG_DAQEVENT, d.time, str(d.code)) + NEWLINE)
+                    self._file_write(f"{TAG_DAQEVENT},{d.time},{str(d.code)}" + NEWLINE)
 
                 elif isinstance(d, UDPData):
                     if not d.is_remote_control_command:
-                        self._file_write("{0},{1},{2}".format(TAG_UDPDATA, d.time, d.unicode) + NEWLINE)
+                        self._file_write(f"{TAG_UDPDATA},{d.time},{d.unicode}" + NEWLINE)
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(

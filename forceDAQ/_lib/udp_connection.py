@@ -305,8 +305,8 @@ class UDPConnectionProcess(Process):
                     if self._event_ignore_tag is not None and \
                             not d.startswith(self._event_ignore_tag):
                         for ev in self._event_trigger:
-                            # set all connected trigger
-                            ev.set()
+                            # set all connected software trigger
+                            ev.set() ## FIXME LSL trigger
                 try:
                     udp_connection.send(self.send_queue.get_nowait())
                 except:

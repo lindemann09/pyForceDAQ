@@ -1,7 +1,7 @@
 class DAQConfiguration(object):
     """Settings required for NI-DAQ"""
     def __init__(self, device_name: str, channels: str = "ai0:7",
-                 rate: float = 1000, minVal: float = -10,  maxVal: float = 10):
+                 rate: int = 1000, minVal: float = -10,  maxVal: float = 10):
         self.device_name = device_name
         self.channels = channels
         self.rate = rate

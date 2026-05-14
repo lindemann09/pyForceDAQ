@@ -28,7 +28,7 @@ class DAQReadAnalog(nidaqmx.Task):
                             )
         print('added channels')
         #CfgSampClkTiming
-        self.timing.cfg_samp_clk_timing(rate=configuration.rate,
+        self.timing.cfg_samp_clk_timing(rate=float(configuration.rate),
                             active_edge=nidaq_consts.Edge.RISING,
                             sample_mode=nidaq_consts.AcquisitionType.CONTINUOUS
                             )

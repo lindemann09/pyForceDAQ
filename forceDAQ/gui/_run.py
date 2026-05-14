@@ -362,6 +362,7 @@ def run():
                             zip_data=settings.recording.zip_data,
                             reverse_scaling = settings.recording.reverse_scaling,
                             convert_to_forces=settings.recording.convert_to_forces,
+                            has_lsl_stream=settings.recording.has_lsl_stream,
                             polling_priority=settings.recording.priority)
 
 def run_with_options(remote_control,
@@ -381,7 +382,8 @@ def run_with_options(remote_control,
                      zip_data=False,
                      reverse_scaling = None,
                      convert_to_forces = True,
-                     polling_priority=None):
+                     has_lsl_stream = False,
+                     polling_priority = None):
 
     """start gui
     remote_control should be None (ask) or True or False
@@ -413,13 +415,23 @@ def run_with_options(remote_control,
         except:
             reverse_parameter_names = []
 
-        sensors.append(SensorSettings(device_id = d_id,
-                                      device_name_prefix=device_name_prefix,
-                                      sensor_name = sn,
-                                      calibration_folder=calibration_folder,
-                                      reverse_parameter_names=reverse_parameter_names,
-                                      rate = settings.gui.sampling_rate,
-                                      convert_to_FT=convert_to_forces))
+        ss = SensorSettings(device_id = d_id,
+                    device_name_prefix=device_name_prefix,
+                    sensor_name = sn,
+                    calibration_folder=calibration_folder,
+                    reverse_parameter_names=reverse_parameter_names,
+                    rate = settings.gui.sampling_rate,
+                    convert_to_FT=convert_to_forces,
+                    has_lsl_stream=has_lsl_stream,
+                    write_Fx = write_Fx,
+                    write_Fy = write_Fy,
+                    write_Fz = write_Fz,
+                    write_Tx = write_Tx,
+                    write_Ty = write_Ty,
+                    write_Tz = write_Tz,
+                    write_trigger1= write_trigger1,
+                    write_trigger2= write_trigger2)
+        sensors.append(ss)
 
 
 
@@ -443,14 +455,6 @@ def run_with_options(remote_control,
     recorder = DataRecorder(sensors,
                  poll_udp_connection=False, # FIXME remove UDP polling from recorder and put it in main loop
                  write_deviceid = len(device_ids)>1,
-                 write_Fx = write_Fx,
-                 write_Fy = write_Fy,
-                 write_Fz = write_Fz,
-                 write_Tx = write_Tx,
-                 write_Ty = write_Ty,
-                 write_Tz = write_Tz,
-                 write_trigger1= write_trigger1,
-                 write_trigger2= write_trigger2,
                  polling_priority=polling_priority)
 
     timer.wait(200) # wait for lib init

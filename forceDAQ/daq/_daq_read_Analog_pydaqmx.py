@@ -46,7 +46,7 @@ class DAQReadAnalog(PyDAQmx.Task):
 
         # CfgSampClkTiming
         self.CfgSampClkTiming("",  # source
-                              ct.c_double(configuration.rate),  # rate
+                              ct.c_double(float(configuration.rate)),  # rate
                               PyDAQmx.DAQmx_Val_Rising,  # activeEdge
                               PyDAQmx.DAQmx_Val_ContSamps,  # sampleMode
                               ct.c_uint64(DAQReadAnalog.NI_DAQ_BUFFER_SIZE)

@@ -1,6 +1,6 @@
-import os
 import collections
 import json
+import os
 
 _GUISettings = collections.namedtuple('GUISettings', 'sampling_rate '
         'level_detection_parameter window_font moving_average_size '
@@ -14,7 +14,7 @@ _RecordingSetting = collections.namedtuple('RecordingSetting',
           'ask_filename calibration_folder '
           ' zip_data write_Fx write_Fy '
           'write_Fz write_Tx write_Ty write_Tz  write_trigger1 '
-          'write_trigger2  reverse_scaling convert_to_forces priority')
+          'write_trigger2  has_lsl_stream reverse_scaling convert_to_forces priority')
 
 
 class GUISettings(object):
@@ -55,8 +55,9 @@ class GUISettings(object):
                        remote_control=False, ask_filename= False, write_Fx=True,
                        write_Fy=True, write_Fz=True, write_Tx=False, write_Ty=False,
                        write_Tz=False, write_trigger1=True, write_trigger2=False,
+                       has_lsl_stream=False,
                        zip_data=True, convert_to_forces=True,
-                       priority='normal')
+                       priority='normal') # default recording settings
         self.recording_section = "Recording"
 
         self.filename = filename

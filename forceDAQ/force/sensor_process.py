@@ -5,7 +5,9 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from .._lib import timer
+from pylsl import StreamOutlet
+
+from .._lib import lsl_stream, timer
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
 from .._lib.types import DAQEvents
@@ -40,7 +42,7 @@ class SensorProcess(Process):
         self._event_sending_data = Event()
         self._event_new_data = Event()
         self.event_bias_is_available = Event()
-        self.event_trigger = Event()
+        self.event_trigger = Event()  #  software trigger
 
         self._last_Fx = sharedctypes.RawValue(ct.c_float)
         self._last_Fy = sharedctypes.RawValue(ct.c_float)
@@ -146,11 +148,32 @@ class SensorProcess(Process):
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
+        stream_forces = self.sensor_settings.array_write_forces()
+        stream_trigger = self.sensor_settings.array_write_trigger()
 
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
         ptp = PollingTimeProfile() #TODO just for testing?
+
+        ## create init LSL
+        lsl_data_steam = None
+        lsl_hardware_trigger_stream = None
+        if self.sensor_settings.has_lsl_stream:
+            lsl_data_steam = lsl_stream.init(
+                    name=f"Force {self.sensor_settings.device_name}",
+                    n_channels=sum(stream_forces),
+                    stream_id=f"RF_{self.sensor_settings.device_name}",
+                    freq=self.sensor_settings.rate,
+                    metadata={"sensor_name": self.sensor_settings.sensor_name})
+            n_hardware_trigger = sum(stream_trigger)
+            if n_hardware_trigger > 0:
+                lsl_hardware_trigger_stream = lsl_stream.init(
+                    name=f"Trigger {self.sensor_settings.device_name}",
+                    n_channels=n_hardware_trigger,
+                    stream_id=f"Tr_{self.sensor_settings.device_name}",
+                    freq=self.sensor_settings.rate)
+
 
         while not self._event_quit_request.is_set():
             if self._event_is_polling.is_set():
@@ -166,13 +189,18 @@ class SensorProcess(Process):
                     is_polling = True
 
                 d = sensor.poll_data()
-                ptp.update(d.time)
+                ## LSL
+                if lsl_data_steam is not None:
+                    lsl_data_steam.push_sample(list(d.selected_forces(stream_forces))) # steam only select forces
+                if lsl_hardware_trigger_stream is not None:
+                    lsl_hardware_trigger_stream.push_sample(list(d.selected_trigger(stream_trigger))) # stream only triggers
 
+                ptp.update(d.time) # needed? TODO
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
 				                     self._last_Tx.value, self._last_Ty.value, \
                                      self._last_Tz.value = d.forces
-
                 self._sample_cnt.value += 1
+
                 if self.event_trigger.is_set():
                     self.event_trigger.clear()
                     d.trigger[0] = 1
