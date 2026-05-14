@@ -10,6 +10,7 @@ from copy import copy
 
 import numpy as np
 
+from .._lib import lsl_stream
 from .._lib.misc import find_calibration_file
 from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
@@ -19,16 +20,25 @@ from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
 class SensorSettings(DAQConfiguration):
 
     def __init__(self,
-                 device_id,
-                 sensor_name,
-                 calibration_folder,
+                 device_id:int,
+                 sensor_name:str,
+                 calibration_folder:str,
                  channels="ai0:7",
                  device_name_prefix = "Dev",
-                 rate=1000,
+                 rate:int=1000,
                  minVal=-10,
                  maxVal=10,
                  reverse_parameter_names=(),
-                 convert_to_FT=True):
+                 convert_to_FT:bool=True,
+                 has_lsl_stream:bool=False,
+                 write_Fx:bool=True,
+                 write_Fy:bool=True,
+                 write_Fz:bool=True,
+                 write_Tx:bool=False,
+                 write_Ty:bool=False,
+                 write_Tz:bool=False,
+                 write_trigger1:bool=False,
+                 write_trigger2:bool=False):
 
         """
         :parameter:
@@ -43,6 +53,15 @@ class SensorSettings(DAQConfiguration):
         self.device_id = device_id
         self.sensor_name = sensor_name
         self.convert_to_FT = convert_to_FT
+        self.has_lsl_stream = has_lsl_stream
+        self.write_Fx = write_Fx
+        self.write_Fy = write_Fy
+        self.write_Fz = write_Fz
+        self.write_Tx = write_Tx
+        self.write_Ty = write_Ty
+        self.write_Tz = write_Tz
+        self.write_trigger1 = write_trigger1
+        self.write_trigger2 = write_trigger2
 
         if self.convert_to_FT:
             self.calibration_file = find_calibration_file(
@@ -57,8 +76,14 @@ class SensorSettings(DAQConfiguration):
         for para in reverse_parameter_names:
             try:
                 self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
-            except:
+            except Exception:
                 pass
+
+    def array_write_forces(self):
+        return [self.write_Fx, self.write_Fy, self.write_Fz, self.write_Tx, self.write_Ty, self.write_Tz]
+
+    def array_write_trigger(self):
+        return [self.write_trigger1, self.write_trigger2]
 
 
 class Sensor(DAQReadAnalog):
@@ -121,7 +146,7 @@ class Sensor(DAQReadAnalog):
             # not sure if bias required
             # for recoding of voltages, that is, not convert to forces
 
-    def poll_data(self):
+    def poll_data(self) -> ForceSensorData:
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
