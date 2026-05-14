@@ -2,17 +2,18 @@ __author__ = 'Oliver Lindemann'
 
 import atexit
 import ctypes as ct
-from multiprocessing import Process, Event, sharedctypes, Pipe
 import logging
+from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from .._lib.types import DAQEvents
-from .._lib.timer import app_timer
+from .._lib import timer
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
+from .._lib.types import DAQEvents
+from .sensor import Sensor, SensorSettings
 
-from .sensor import SensorSettings, Sensor
 
 class SensorProcess(Process):
+
     def __init__(self, settings, pipe_buffered_data_after_pause=True,
                   chunk_size=10000):
         """ForceSensorProcess
@@ -94,10 +95,6 @@ class SensorProcess(Process):
     def Txyz(self):
         return (self._last_Tx.value, self._last_Ty.value, self._last_Tz.value)
 
-    @property
-    def sample_cnt(self):
-        return self._sample_cnt.value
-
     def get_sample_cnt(self):
         return int(self._sample_cnt.value)
 
@@ -138,7 +135,7 @@ class SensorProcess(Process):
 
         if self._event_is_polling.is_set():
             self.pause_polling()
-            app_timer.wait(100)
+            timer.wait(100)
             self.get_buffer() # empty buffer, required to quit process run loop
 
         self._event_quit_request.set()
@@ -164,10 +161,8 @@ class SensorProcess(Process):
                     sensor.start_data_acquisition()
                     buffer.append(DAQEvents(time=sensor.timer.time,
                                             code="started:"+repr(sensor.device_id)))
-                    logging.info("Sensor start, name {},  pid {}, priority {}".format(
-                        self.pid, sensor.name, get_priority(self.pid)))
-
-                    self._buffer_size.value = len(buffer)
+                    logging.info("Sensor start, name %s, pid %s, priority %s",
+                        sensor.name,self.pid, get_priority(self.pid))
                     is_polling = True
 
                 d = sensor.poll_data()
@@ -176,6 +171,7 @@ class SensorProcess(Process):
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
 				                     self._last_Tx.value, self._last_Ty.value, \
                                      self._last_Tz.value = d.forces
+
                 self._sample_cnt.value += 1
                 if self.event_trigger.is_set():
                     self.event_trigger.clear()
@@ -191,8 +187,12 @@ class SensorProcess(Process):
                     buffer.append(DAQEvents(time=sensor.timer.time,
                                             code="pause:"+repr(sensor.device_id)))
                     self._buffer_size.value = len(buffer)
-                    logging.info("Sensor stop, name {}".format(
-                        self.pid, sensor.name, get_priority(self.pid)))
+                    logging.info(
+                        "Sensor stop, name %s, pid %s, priority %s",
+                        sensor.name,
+                        self.pid,
+                        get_priority(self.pid),
+                    )
                     is_polling = False
                     ptp.stop()
 
@@ -204,11 +204,11 @@ class SensorProcess(Process):
                         if chks > len(buffer):
                             chks = len(buffer)
                         self._pipe_o.send(buffer[0:chks])
-                        buffer[0:chks] = []
+                        buffer[0:chks] = [] # clear buffer
                         self._buffer_size.value = len(buffer)
 
                     while self._event_sending_data.is_set():
-                        sensor.timer.wait(2)
+                        timer.wait(2)
 
                 if self._determine_bias_flag.is_set():
                     sensor.determine_bias(n_samples=self._bias_n_samples)
@@ -222,5 +222,4 @@ class SensorProcess(Process):
         sensor.stop_data_acquisition()
         self._buffer_size.value = 0
 
-        logging.info("Sensor quit, {}, {}".format(
-            sensor.name, ptp.get_profile_str()))
+        logging.info("Sensor quit, %s, %s", sensor.name, ptp.get_profile_str())

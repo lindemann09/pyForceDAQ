@@ -11,9 +11,11 @@ import socket
 from multiprocessing import Event, Process, Queue
 from subprocess import check_output
 
+from forceDAQ._lib import timer
+
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
-from .timer import Timer, app_timer, get_time_ms
+from .timer import Clock, clock, get_time_ms
 from .types import UDPData
 
 
@@ -54,7 +56,7 @@ class UDPConnection(object):
         self._socket.bind((UDPConnection.MY_IP, self.udp_port))
         self._socket.setblocking(False)
         self.peer_ip = None
-        self.timer = Timer(sync_timer=app_timer) # own timer, because often
+        self.timer = Clock(sync_timer=clock) # own timer, because often
         # used in own process
 
     @property
@@ -318,7 +320,7 @@ class UDPConnectionProcess(Process):
                         self.event_is_connected.clear()
 
                 if not udp_connection.is_connected:
-                    udp_connection.timer.wait(200)
+                    timer.wait(200)
 
         udp_connection.unconnect_peer()
 

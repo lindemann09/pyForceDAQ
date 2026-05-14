@@ -6,18 +6,27 @@ __author__ = "Oliver Lindemann"
 
 import atexit
 import gzip
+import logging
 import os
 import sys
-import logging
-from time import localtime, strftime,asctime
+from time import asctime, localtime, strftime
+
+from forceDAQ._lib import timer
 
 from .. import __version__ as forceDAQVersion
-from .._lib.types import ForceData, UDPData, DAQEvents, TAG_DAQEVENT, \
-                        TAG_UDPDATA, TAG_COMMENTS, PollingPriority
+from .._lib.process_priority_manager import ProcessPriorityManager
+from .._lib.timer import clock
+from .._lib.types import (
+    TAG_COMMENTS,
+    TAG_DAQEVENT,
+    TAG_UDPDATA,
+    DAQEvents,
+    ForceSensorData,
+    PollingPriority,
+    UDPData,
+)
 from .._lib.types import GUIRemoteControlCommands as RemoteCmd
 from .._lib.udp_connection import UDPConnectionProcess
-from .._lib.process_priority_manager import ProcessPriorityManager
-from .._lib.timer import app_timer
 from .sensor import SensorSettings
 from .sensor_process import SensorProcess
 
@@ -59,7 +68,7 @@ class DataRecorder(object):
         event_trigger = []
         for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
-                RuntimeError("Recorder needs a list of Force Sensor Settings!")
+                raise RuntimeError("Recorder needs a list of Force Sensor Settings!")
             else:
                 fst = SensorProcess(settings = fs,
                                     pipe_buffered_data_after_pause=True)
@@ -172,7 +181,7 @@ class DataRecorder(object):
         buffer_len = len(data_buffer)
         for c, d in enumerate(data_buffer):
             if self._file is not None:
-                if isinstance(d, ForceData):
+                if isinstance(d, ForceSensorData):
                     line = "{}, {},".format(d.time, d.acquisition_delay)
                     if self._write_deviceid:
                         line += "{0},".format(d.device_id)
@@ -209,7 +218,7 @@ class DataRecorder(object):
 
         """
         if time is None:
-            time = app_timer.time
+            time = clock.time
         self._daq_event.append(DAQEvents(time = time, code = code))
 
 
@@ -251,7 +260,7 @@ class DataRecorder(object):
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
-        app_timer.wait(500)
+        timer.wait(500)
 
         # get data
         for fsp in self._force_sensor_processes:
@@ -381,7 +390,7 @@ class DataRecorder(object):
             if self._write_deviceid: line += "device_tag,"
             for x in range(6):
                 if self._write_forces[x]:
-                    line += ForceData.forces_names[x] + ","
+                    line += ForceSensorData.forces_names[x] + ","
             if self._write_trigger[0]: line += "trigger1,"
             if self._write_trigger[1]: line += "trigger2,"
             self._file_write(line[:-1] + NEWLINE)

@@ -6,12 +6,13 @@ from expyriment import io, misc
 
 from .. import __version__ as forceDAQVersion
 from .._lib.misc import SensorHistory
-from .._lib.types import ForceData, Thresholds, GUIRemoteControlCommands as RcCmd
+from .._lib.types import ForceSensorData, Thresholds
+from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ..force.sensor_process import SensorProcess
-
 from . import settings
+from ._layout import RecordingScreen, logo_text_line
 from ._scaling import Scaling
-from ._layout import logo_text_line, RecordingScreen
+
 
 def _text2number_array(txt):
     """helper function"""
@@ -91,12 +92,12 @@ class GUIStatus(object):
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
             self.plot_data_indicator_names.append(self.recorder.sensor_settings_list[x[0]].device_name +\
-                                                  "_" + ForceData.forces_names[ x[1]])
+                                                  "_" + ForceSensorData.forces_names[ x[1]])
 
 
         self.plot_data_plotter_names = []
         for x in self.plot_data_plotter:
-            self.plot_data_plotter_names.append(str(x[0]) + "_" + ForceData.forces_names[ x[1]])
+            self.plot_data_plotter_names.append(str(x[0]) + "_" + ForceSensorData.forces_names[ x[1]])
 
 
     def set_start_recording_time(self):
@@ -128,7 +129,7 @@ class GUIStatus(object):
     def check_new_samples(self):
         """returns list of sensors with new samples"""
         rtn = []
-        for i,cnt in enumerate(map(SensorProcess.get_sample_cnt, self.sensor_processes)):
+        for i,  cnt in enumerate(map(SensorProcess.get_sample_cnt, self.sensor_processes)):
             if self._last_processed_smpl[i] < cnt:
                 # new sample
                 self._last_processed_smpl[i] = cnt

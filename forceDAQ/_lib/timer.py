@@ -12,36 +12,34 @@ __date__ = ''
 from time import perf_counter, sleep
 
 
-def get_time():
-    """Get high-resolution time stamp (float) """
-    return perf_counter()
+def get_time_ms() -> int:
+    """Get high-resolution time stamp (int) """
+    return int(1000 * perf_counter())
 
-
-class Timer(object):#
+class Clock(object):#
     """A simple timer"""
 
     def __init__(self, sync_timer=None):
         if sync_timer is None:
-            self._init_time = get_time()
+            self._init_time = get_time_ms()
         else:
             self._init_time = sync_timer._init_time
 
     @property
     def time(self):
-        return int((get_time() - self._init_time) * 1000)
+        return get_time_ms() - self._init_time
 
-    def wait(self, waiting_time, function=None):
-        """Wait for a certain amount of milliseconds.
-        """
 
-        start = self.time
-        looptime = 200
-        if waiting_time > looptime:
-            sleep((waiting_time - looptime) / 1000)
-        while self.time < start + waiting_time:
-            pass
+def wait(waiting_time):
+    """Wait for a certain amount of milliseconds.
+    """
 
-def get_time_ms():
-    return int(1000*get_time())
+    start = get_time_ms()
+    looptime = 200
+    if waiting_time > looptime:
+        sleep((waiting_time - looptime) / 1000)
+    while get_time_ms() < start + waiting_time:
+        pass
 
-app_timer = Timer()
+
+app_clock = Clock()

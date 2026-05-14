@@ -1,6 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
+
 from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
@@ -30,14 +31,14 @@ class PollingPriority(object):
         return PollingPriority.NORMAL
 
 
-class CTypesForceData(ct.Structure):
+class CTypesForceSensorData(ct.Structure):
     _fields_ = [("device_id", ct.c_int),
             ("time", ct.c_int),
             ("forces", CTYPE_FORCES),
             ("trigger", CTYPE_TRIGGER)]
 
 
-class ForceData(object):
+class ForceSensorData(object):
     """The Force data structure with the following properties
         * device_id
         * time (time stamp)
@@ -53,7 +54,7 @@ class ForceData(object):
     def __init__(self, time=0, acquisition_delay = -1,
                  forces= [0] * 6, trigger=(0, 0),
                  device_id=0, trigger_threshold=0.9, reverse=()):
-        """Create a ForceData object
+        """Create a ForceSensorData object
         Parameters
         ----------
         device_id: int, optional
@@ -148,7 +149,7 @@ class ForceData(object):
 
     @property
     def ctypes_struct(self):
-        return CTypesForceData(self.device_id, self.time,
+        return CTypesForceSensorData(self.device_id, self.time,
               CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
 
     @ctypes_struct.setter

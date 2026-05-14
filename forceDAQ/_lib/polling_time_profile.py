@@ -1,5 +1,7 @@
-from .timer import get_time
 import numpy as np
+
+from .timer import get_time_ms
+
 
 class PollingTimeProfile(object):
 
@@ -33,7 +35,7 @@ class PollingTimeProfile(object):
         self._last = time_ms
 
     def tick(self):
-        self.update(int(1000*get_time()))
+        self.update(get_time_ms())
 
     @property
     def profile_percent(self):

@@ -12,8 +12,8 @@ import pygame
 from expyriment import control, design, io, misc, stimuli
 
 from .. import __version__ as forceDAQVersion
-from .._lib.timer import app_timer
-from .._lib.types import ForceData
+from .._lib import timer
+from .._lib.types import ForceSensorData
 from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ..force import DataRecorder, SensorProcess, SensorSettings
 from . import settings
@@ -54,7 +54,7 @@ def _main_loop(exp, recorder, remote_control=False):
                   screen_refresh_interval_plotter = settings.gui.gui_screen_refresh_interval_plotter,
                   recorder = recorder,
                   remote_control=remote_control,
-                  level_detection_parameter = ForceData.forces_names.index(
+                  level_detection_parameter = ForceSensorData.forces_names.index(
                                                         settings.gui.level_detection_parameter),  # only one dimension
                   screen_size = exp.screen.size,
                   data_min_max=settings.gui.data_min_max,
@@ -68,7 +68,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
-            app_timer.wait(100)
+            timer.wait(100)
 
         ################################ process keyboard
         s.process_key(exp.keyboard.check(check_for_control_keys=False))
@@ -453,7 +453,7 @@ def run_with_options(remote_control,
                  write_trigger2= write_trigger2,
                  polling_priority=polling_priority)
 
-    app_timer.wait(200) # wait for lib init
+    timer.wait(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
 
@@ -466,7 +466,7 @@ def run_with_options(remote_control,
                 recorder.quit()
                 control.end()
                 return False
-            app_timer.wait(100)
+            timer.wait(100)
 
         logo_text_line("Wait for filename").present()
         while True:
@@ -479,7 +479,7 @@ def run_with_options(remote_control,
                 filename = x.byte_string[len(RcCmd.FILENAME):].decode('utf-8', 'replace')
                 break
             exp.keyboard.check()
-            app_timer.wait(100)
+            timer.wait(100)
     else:
         if ask_filename:
             bkg = logo_text_line("")

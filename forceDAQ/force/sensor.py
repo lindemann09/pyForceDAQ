@@ -11,8 +11,8 @@ from copy import copy
 import numpy as np
 
 from .._lib.misc import find_calibration_file
-from .._lib.timer import Timer, app_timer
-from .._lib.types import ForceData
+from .._lib.timer import Clock, clock
+from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
 
 
@@ -56,7 +56,7 @@ class SensorSettings(DAQConfiguration):
             reverse_parameter_names = [reverse_parameter_names]
         for para in reverse_parameter_names:
             try:
-                self.reverse_parameters.append(ForceData.forces_names.index(para))
+                self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
             except:
                 pass
 
@@ -79,8 +79,7 @@ class Sensor(DAQReadAnalog):
         self.device_id = settings.device_id
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
-        self.timer = Timer(sync_timer=app_timer) # own timer, because this
-        # class is used in own process
+        self.timer = Clock(sync_timer=clock) # own timer, because this class is used in own process
         if self.DAQ_TYPE == "dummy":
             self._atidaq = None
             self.convert_to_FT = False
@@ -130,8 +129,8 @@ class Sensor(DAQReadAnalog):
 
         Returns
         -------
-        data: ForceData
-            the converted force data as ForceData object
+        data: ForceSensorData
+            the converted force data as ForceSensorData object
 
         """
 
@@ -145,9 +144,9 @@ class Sensor(DAQReadAnalog):
             forces = list(read_buffer[Sensor.SENSOR_CHANNELS])
             for x in self._reverse_parameters:
                 forces[x] = -1 * forces[x]
-
         t = self.timer.time
-        return ForceData(time = t, acquisition_delay = t-start,
+
+        return ForceSensorData(time = t, acquisition_delay = t-start,
                          device_id = self.device_id,
                          forces = forces,
                          trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
@@ -157,8 +156,8 @@ if __name__ == "__main__":
     #test sensor history
     import random
 
-    from forceDAQ import Thresholds
     from forceDAQ._lib.misc import SensorHistory
+    from forceDAQ._lib.types import Thresholds
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)
         thr = Thresholds([35, 20, 50, 80, 90])
