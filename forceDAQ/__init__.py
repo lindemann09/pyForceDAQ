@@ -1,6 +1,7 @@
-"""pyForceDAQ
+"""DAQ tool to record response force data
 
-DAQ tool to record response force data
+Oliver Lindemann, 2026
+
 
 launch the GUI force from your Python program:
 ``

@@ -1,5 +1,5 @@
 [project]
-name = "pyforcedaq"
+name = "pyForceDAQ"
 version = "2.0.0"
 requires-python = ">=3.13.0, <3.14"
 dependencies = [
@@ -13,7 +13,6 @@ dependencies = [
     "pydaqmx>=1.4.7",
     "pylsl>=1.18.2",
 ]
-
 
 [tool.uv.extra-build-dependencies]
     pygame = ["setuptools._distutils.msvccompiler"]

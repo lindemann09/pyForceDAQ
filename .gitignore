@@ -64,5 +64,4 @@ events/
 doc/_build
 expyriment/
 .venv/
-uv.lock
 

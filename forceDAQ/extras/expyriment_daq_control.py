@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Expyriment convenience functions for the force DAQ remote control
+Expyriment convinient functions for the force DAQ remote control
 
 (c) O. Lindemann
 
@@ -9,13 +9,13 @@ for two sensor setups
 
 """
 
-from expyriment import control, io, misc, stimuli
-
+from expyriment import misc, control, stimuli, io
 from . import remote_control as rc
+
 
 FORCE_SERVER_IP = "192.168.1.2"
 WEAK, FINE, STRONG = [0, 1, 2]
-STR_FULL_FORCE = u"kräftig"
+STR_FULL_FORCE = u"kräftig" 
 STR_LESS_FORCE = u"sacht"
 
 stopwatch = misc.Clock()

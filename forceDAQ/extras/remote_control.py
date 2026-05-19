@@ -7,9 +7,9 @@ __author__ = 'Oliver Lindemann'
 import atexit
 from pickle import dumps, loads
 
-from ._lib.types import Thresholds, bytes_startswith
-from ._lib.types import GUIRemoteControlCommands as Command
-from ._lib.udp_connection import UDPConnection
+from .._lib.types import Thresholds, bytes_startswith
+from .._lib.types import GUIRemoteControlCommands as Command
+from .._lib.udp_connection import UDPConnection
 
 udp = None
 

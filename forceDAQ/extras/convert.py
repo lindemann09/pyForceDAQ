@@ -8,13 +8,11 @@ This module can be also executed.
 
 __author__ = 'Oliver Lindemann'
 
-import gzip
 import os
 import sys
-
+import gzip
 import numpy as np
-
-from .read_force_data import data_frame_to_text, read_raw_data
+from .read_force_data import read_raw_data, data_frame_to_text
 
 PAUSE_CRITERION = 500
 MSEC_PER_SAMPLES = 1
@@ -200,7 +198,7 @@ def converted_filename(flname):
 
 def convert_raw_data(filepath, method, save_time_adjustments=False,
                      keep_delay_variable=False):
-    """preprocessing raw pyForceSensorData:
+    """preprocessing raw pyForceData:
 
     """
     # todo only one sensor
