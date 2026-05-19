@@ -14,7 +14,7 @@ import ctypes as ct
 import numpy as np
 import PyDAQmx
 
-from ._config import DAQConfiguration
+from . import DAQConfiguration
 
 
 class DAQReadAnalog(PyDAQmx.Task):

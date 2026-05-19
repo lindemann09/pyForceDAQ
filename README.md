@@ -35,11 +35,10 @@ To install pyForceDAQ from release-zipfile
 4. run `forceDAQ_GUI.py`
 5. edit settings via GUI if required
 
-**Note:** The software uses per default a dummy-sensor and simulates
-data. For the use of force sensors in the lab, please change
-`forceDAQ_GUI.py` accordingly:
+**Note:** The software uses a mock sensor and simulates
+data, if no device is connected. It enforce mock sensor set (before importing further packages modules):
 
-``forceDAQ.USE_DUMMY_SENSOR = False``
+``forceDAQ.USE_MOCK_SENSOR = True``
 
 Development
 -----------

@@ -2,7 +2,7 @@ import nidaqmx
 import numpy as np
 from nidaqmx import constants as nidaq_consts
 
-from ._config import DAQConfiguration
+from . import DAQConfiguration
 
 
 class DAQReadAnalog(nidaqmx.Task):

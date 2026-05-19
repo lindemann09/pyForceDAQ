@@ -2,11 +2,11 @@ import sys
 from os import path
 
 import FreeSimpleGUI as _sg
-from .. import __version__, USE_DUMMY_SENSOR
-from .._lib.misc import find_calibration_file
-from .._lib.udp_connection import UDPConnection
-from .._lib.types import PollingPriority
 
+from .. import USE_MOCK_SENSOR, __version__
+from .._lib.misc import find_calibration_file
+from .._lib.types import PollingPriority
+from .._lib.udp_connection import UDPConnection
 from . import settings
 from ._run import run as _gui_run
 
@@ -81,8 +81,8 @@ def _windows_run():
 
     info = [[_sg.Text("forceDAQ version: {}".format(__version__))]]
     info.append([_sg.Text("IP address: {}".format(UDPConnection.MY_IP))])
-    if USE_DUMMY_SENSOR:
-        info.append([_sg.Text("!!!  USING DUMMY SENSORS  !!!",
+    if USE_MOCK_SENSOR:
+        info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!",
                               text_color="red")])
 
     layout = [

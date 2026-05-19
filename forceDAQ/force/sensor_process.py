@@ -5,9 +5,7 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from pylsl import StreamOutlet
-
-from .._lib import lsl_stream, timer
+from .._lib import lsl, timer
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
 from .._lib.types import DAQEvents
@@ -160,7 +158,7 @@ class SensorProcess(Process):
         lsl_data_steam = None
         lsl_hardware_trigger_stream = None
         if self.sensor_settings.has_lsl_stream:
-            lsl_data_steam = lsl_stream.init(
+            lsl_data_steam = lsl.init(
                     name=f"Force {self.sensor_settings.device_name}",
                     n_channels=sum(stream_forces),
                     stream_id=f"RF_{self.sensor_settings.device_name}",
@@ -168,7 +166,7 @@ class SensorProcess(Process):
                     metadata={"sensor_name": self.sensor_settings.sensor_name})
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
-                lsl_hardware_trigger_stream = lsl_stream.init(
+                lsl_hardware_trigger_stream = lsl.init(
                     name=f"Trigger {self.sensor_settings.device_name}",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{self.sensor_settings.device_name}",
@@ -179,7 +177,7 @@ class SensorProcess(Process):
             if self._event_is_polling.is_set():
                 # is polling
                 if not is_polling:
-                    # start NI device and acquire one first dummy sample to
+                    # start NI device and acquire one first sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
                     buffer.append(DAQEvents(time=sensor.timer.time,

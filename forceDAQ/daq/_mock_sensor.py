@@ -11,7 +11,7 @@ class DAQReadAnalog(object):
     NUM_SAMPS_PER_CHAN =  1
     TIMEOUT = 1.0
     NI_DAQ_BUFFER_SIZE = 1000
-    DAQ_TYPE = "dummy"
+    DAQ_TYPE = "mock_sensor"
 
     def __init__(self, configuration=None,
                  read_array_size_in_samples=None):
@@ -20,7 +20,7 @@ class DAQReadAnalog(object):
         self._last_time = 0
         self._sample_cnt = 0
         self._simulation_timer = Timer()
-        txt = "Using dummy sensor: Maybe PyDAQmx or nidaqmx is not  installed"
+        txt = "Using mock sensor: Maybe PyDAQmx or nidaqmx is not  installed"
         logging.warning(txt)
         print(txt)
 

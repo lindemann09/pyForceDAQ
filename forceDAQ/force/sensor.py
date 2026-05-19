@@ -10,7 +10,7 @@ from copy import copy
 
 import numpy as np
 
-from .._lib import lsl_stream
+from .._lib import lsl
 from .._lib.misc import find_calibration_file
 from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
@@ -105,7 +105,7 @@ class Sensor(DAQReadAnalog):
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
         self.timer = Timer(sync_timer=app_clock) # own timer, because this class is used in own process
-        if self.DAQ_TYPE == "dummy":
+        if self.DAQ_TYPE == "mock":
             self._atidaq = None
             self.convert_to_FT = False
         else:

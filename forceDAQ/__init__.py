@@ -31,9 +31,10 @@ Oliver Lindemann
 __version__ = "2.0.0-dev"
 __author__ = "Oliver Lindemann"
 
-USE_DUMMY_SENSOR = False
-
 import sys as _sys
+
+USE_MOCK_SENSOR = False # <-- change for usage in lab to False
+
 if _sys.version_info[0] != 3 or _sys.version_info[1]<12:
     raise RuntimeError("pyForceDAQ {0} ".format(__version__) +
                       "is not compatible with Python {0}.{1}. ".format(
