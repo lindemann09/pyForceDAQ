@@ -1,4 +1,15 @@
-from pylsl import StreamInfo, StreamOutlet
+from pylsl import (
+    StreamInfo,
+    StreamOutlet,
+    cf_double64,
+    cf_float32,
+    cf_int8,
+    cf_int16,
+    cf_int32,
+    cf_int64,
+    cf_string,
+    cf_undefined,
+)
 
 
 def init(
@@ -6,6 +17,7 @@ def init(
     n_channels: int,
     stream_id: str,
     freq: int,
+    channel_format: int,
     metadata: dict | None = None,
 ) -> StreamOutlet:
     """
@@ -30,6 +42,7 @@ def init(
     info = StreamInfo(name, "force",
                       channel_count=n_channels,
                       nominal_srate=freq,
+                      channel_format=channel_format,
                       source_id=stream_id)
 
     # Check if there is metadata to add to the lsl stream
