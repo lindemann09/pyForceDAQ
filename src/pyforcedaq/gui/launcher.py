@@ -7,8 +7,8 @@ from .. import USE_MOCK_SENSOR, __version__
 from .._lib.misc import find_calibration_file
 from .._lib.types import PollingPriority
 from .._lib.udp_connection import UDPConnection
-from . import settings
 from ._run import run as _gui_run
+from ._settings import settings
 
 
 def _group(title, objects):
@@ -92,7 +92,6 @@ def _windows_run():
               [_sg.Frame('Settings', info_settings)],
               [_sg.Frame('Info', info)],
               [_sg.Button("Edit Settings", key="Settings", size=(12, 2)),
-               _sg.Button("Data Converter", key="Converter", size=(12, 2)),
                _sg.Cancel(size=(12, 2))]]
 
     window = _sg.Window('ForceGUI'.format(), layout)
@@ -214,66 +213,6 @@ def _window_settings():
     window.close()
     return event
 
-
-def _window_converter():
-    from ..data_handling import convert
-    layout = []
-    data_default = path.join(path.split(sys.modules['__main__'].__file__)[0],
-                          "data")
-    methods = (convert.Method(1).description, convert.Method(2).description)
-
-    layout.append([_sg.Frame('Converter',
-                             [[_sg.Text("Folder:", size=(5, 1)), _sg.InputText(
-                                 data_default, size=(40, 1),
-                                 key="data_dir"),
-                               _sg.FolderBrowse(size=(6, 1))],
-                              [_sg.Text('Match timestamps by '),
-                               _sg.Combo(methods,
-                                         size=(50, 10),
-                                         default_value=methods[2 - 1],
-                                         key='method')],
-                              [_sg.Checkbox("Keep Delay Variable",
-                                            False, key="delay"),
-                               _sg.Checkbox("Save Time Adjustments",
-                                            False, key="time_adjustments"),
-                               _sg.Checkbox("Rewrite All Converted Data",
-                                            False, key="reconvert"),
-                               ],
-                              [_sg.Output(size=(80, 20), key='-OUTPUT-')],
-                              [_sg.Button("Convert", key="convert",
-                                         size=(12, 2)),
-                               _sg.Button("Cancel", key="cancel",
-                                          size=(12, 2))]
-                              ])])
-    window = _sg.Window('ForceGUI {}: Converter'.format(__version__), layout)
-    while True:
-        event, values = window.read()
-        window.Refresh()
-        if event == "convert":
-            if values["reconvert"]:
-                files = convert.get_all_data_files(values["data_dir"])
-            else:
-                files = convert.get_all_unconverted_data_files(values["data_dir"])
-            l = len(files)
-            if l==0:
-                print("No data to be converted.")
-            else:
-                for cnt, flname in enumerate(files):
-                    print("\n[{}/{}]".format(cnt+1, l)) #
-                    method = convert.Method.get_method_from_description(
-                                    values["method"])
-                    try:
-                        convert.convert_raw_data(flname, method= method,
-                                 save_time_adjustments=values["time_adjustments"],
-                                 keep_delay_variable=values["delay"])
-                    except:
-                        print("Can't process {}".format(flname))
-                print("\nDone!")
-
-        else:
-            break
-
-    window.close()
 
 
 def run():

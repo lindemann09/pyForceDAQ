@@ -9,13 +9,13 @@ for two sensor setups
 
 """
 
-from expyriment import misc, control, stimuli, io
-from . import remote_control as rc
+from expyriment import control, io, misc, stimuli
 
+from . import remote_control as rc
 
 FORCE_SERVER_IP = "192.168.1.2"
 WEAK, FINE, STRONG = [0, 1, 2]
-STR_FULL_FORCE = u"kräftig" 
+STR_FULL_FORCE = u"kräftig"
 STR_LESS_FORCE = u"sacht"
 
 stopwatch = misc.Clock()
@@ -68,7 +68,7 @@ def pause(exp, time_for_feedback=60 * 2):
 # make connection #
 def make_connection(exp, experiment_name="force_daq"):
     """hand shake and filename,
-    returns forceDAQ version
+    returns pyforcedaq version
     """
 
     stimuli.TextScreen("Prepare force recording", "press key if ready").present()

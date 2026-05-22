@@ -11,7 +11,7 @@ import os
 import sys
 from time import asctime, localtime, strftime
 
-from forceDAQ._lib import timer
+from pyforcedaq._lib import timer
 
 from .. import __version__ as forceDAQVersion
 from .._lib.process_priority_manager import ProcessPriorityManager

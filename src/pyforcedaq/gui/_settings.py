@@ -2,6 +2,8 @@ import collections
 import json
 import os
 
+import tomlkit
+
 _GUISettings = collections.namedtuple('GUISettings', 'sampling_rate '
         'level_detection_parameter window_font moving_average_size '
         'screen_refresh_interval_indicator gui_screen_refresh_interval_plotter '
@@ -49,9 +51,9 @@ class GUISettings(object):
 
         self.recording = _RecordingSetting(device_name_prefix="Dev",
                        device_ids = [1],
-                       sensor_names = ["FT30436"],
-                       calibration_folder="C:\\Users\\Force\\Desktop\\calibration",
-                       reverse_scaling = {1: ["Fz"], 2:["Fz"]},  # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
+                       sensor_names = ["FT9334"],
+                       calibration_folder="calibration",
+                       reverse_scaling = {"1": ["Fz"], "2":["Fz"]},  # key: device_id, parameter. E.g.:if x & z dimension of sensor 1 and z dimension of sensor 2 has to be flipped use {1: ["Fx", "Fz"], 2: ["Fz"]}
                        remote_control=False, ask_filename= False, write_Fx=True,
                        write_Fy=True, write_Fz=True, write_Tx=False, write_Ty=False,
                        write_Tz=False, write_trigger1=True, write_trigger2=False,
@@ -79,17 +81,18 @@ class GUISettings(object):
     def load(self, filename=None):
         if filename is not None:
             self.filename = filename
-
         with open(self.filename, 'r') as fl:
-            d = json.load(fl)
+            d = tomlkit.load(fl)
         self.set_gui_settings(d[self.gui_section])
         self.set_recoding_setting(d[self.recording_section])
 
+
     def save(self):
         with open(self.filename, 'w') as fl:
-            json.dump(self._asdict(), fl, indent=2)
+            tomlkit.dump(self._asdict(), fl)
+
 
     def recording_as_json(self):
         return json.dumps(self.recording._asdict())
 
-settings = GUISettings(filename="pyForceDAQ.settings.json")
+settings = GUISettings(filename="pyForceDAQ.defaults.settings.toml")

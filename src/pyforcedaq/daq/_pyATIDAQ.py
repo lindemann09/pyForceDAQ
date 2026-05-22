@@ -9,10 +9,11 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from sys import platform
 from ctypes import *
+from sys import platform
 
 from .._lib.misc import find_calibration_file
+
 # ### DATA TYPES ####
 VOLTAGE_SAMPLE_TYPE = c_float * 7
 FT_SAMPLE_TYPE = c_float * 6
@@ -271,7 +272,7 @@ class ATI_CDLL(object):
         return self.cdll.printCalInfo(self._calibration)
 
 def print_calibration_info(calibration_file):
-    """convinient function to print calibration file infos"""
+    """convenient function to print calibration file infos"""
     atidaq = ATI_CDLL()
     index = c_short(1)
     calibration = atidaq.createCalibration(calibration_file, index)
@@ -291,8 +292,7 @@ if __name__ == "__main__":
     #   -0.065867  0.123803 111.156731  0.039974  0.040417  0.079049
 
     #filename = raw_input("Calibration file: ")
-    filename = find_calibration_file("C:\\Users\\Force\\Desktop\\calibration",
-                                     "FT30436")
+    filename = find_calibration_file("calibration", "FT30436")
     atidaq = ATI_CDLL()
     # get calibration
     index = c_short(1)

@@ -7,14 +7,21 @@ dependencies = [
     "expyriment>=1.0.1",
     "freesimplegui>=5.2.0.post1",
     "icecream>=2.2.0",
-    "ipython>=9.13.0",
     "nidaqmx>=1.5.0",
     "numpy>=2.4.4",
     "psutil>=7.2.2",
     "pydaqmx>=1.4.7",
     "pylsl>=1.18.2",
     "pyxdf>=1.17.4",
+    "tomlkit>=0.15.0",
 ]
 
 [tool.uv.extra-build-dependencies]
     pygame = ["setuptools._distutils.msvccompiler"]
+
+[build-system]
+requires = ["uv_build>=0.11.15,<0.12.0"]
+build-backend = "uv_build"
+
+[project.scripts]
+pyforcedaq = "pyforcedaq.__main__:cli"

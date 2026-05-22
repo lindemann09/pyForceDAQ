@@ -5,7 +5,7 @@ Oliver Lindemann, 2026
 
 launch the GUI force from your Python program:
 ``
-    from forceDAQ import gui
+    from pyforcedaq import gui
 
     gui.run_with_options(remote_control=False,
               ask_filename=True,
@@ -15,12 +15,12 @@ launch the GUI force from your Python program:
 
 import relevant stuff to program your own force:
 ``
-    from forceDAQ import force
+    from pyforcedaq import force
 ``
 
 import relevant stuff for remote control of the GUI force:
 ``
-    from forceDAQ import remote_control
+    from pyforcedaq import remote_control
 ``
 
 For function to support data handling see the folder pyForceDAQ/analysis
@@ -28,7 +28,7 @@ For function to support data handling see the folder pyForceDAQ/analysis
 Oliver Lindemann
 """
 
-__version__ = "2.0.0-dev"
+__version__ = "2.0.0-beta"
 __author__ = "Oliver Lindemann"
 
 import sys as _sys

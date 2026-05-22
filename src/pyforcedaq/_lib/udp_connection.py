@@ -11,8 +11,7 @@ import socket
 from multiprocessing import Event, Process, Queue
 from subprocess import check_output
 
-from forceDAQ._lib import timer
-
+from . import timer
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
 from .timer import Timer, app_clock, get_time_ms

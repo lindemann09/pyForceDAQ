@@ -9,12 +9,12 @@ v0.9
 
 """
 
-from . import remote_control as rc
-
-from libopensesame.experiment import experiment
 from libopensesame.exceptions import osexception
+from libopensesame.experiment import experiment
 from openexp.canvas import canvas
 from openexp.keyboard import keyboard
+
+from . import remote_control as rc
 
 FORCE_SERVER_IP = "192.168.1.1"
 WEAK, FINE, STRONG = [0, 1, 2]
@@ -99,7 +99,7 @@ class OpensesameDAQControl():
     # make connection #
     def make_connection(self, ip=FORCE_SERVER_IP):
         """hand shake and filename,
-        returns forceDAQ version
+        returns pyforcedaq version
         """
         kbd = keyboard(self._exp)
         cnv = canvas(self._exp)

@@ -1,4 +1,4 @@
-![pyForceDAQ](https://github.com/lindemann09/pyForceDAQ/blob/master/forceDAQ/gui/forceDAQ_logo.png)
+![pyForceDAQ](https://github.com/lindemann09/pyForceDAQ/blob/master/src/pyforcedaq/gui/forceDAQ_logo.png)
 
 Python DAQ library and application for ATI force sensors and NI-DAQ
 
@@ -38,7 +38,7 @@ To install pyForceDAQ from release-zipfile
 **Note:** The software uses a mock sensor and simulates
 data, if no device is connected. It enforce mock sensor set (before importing further packages modules):
 
-``forceDAQ.USE_MOCK_SENSOR = True``
+``pyforcedaq.USE_MOCK_SENSOR = True``
 
 Development
 -----------

@@ -64,4 +64,6 @@ events/
 doc/_build
 expyriment/
 .venv/
+.vscode/
 *.xdf
+*.settings.toml

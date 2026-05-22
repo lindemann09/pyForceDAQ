@@ -10,7 +10,7 @@ from copy import copy
 
 import numpy as np
 
-from .._lib import lsl
+#from .._lib import lsl
 from .._lib.misc import find_calibration_file
 from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
@@ -181,8 +181,9 @@ if __name__ == "__main__":
     #test sensor history
     import random
 
-    from forceDAQ._lib.misc import SensorHistory
-    from forceDAQ._lib.types import Thresholds
+    from .._lib.misc import SensorHistory
+    from .._lib.types import Thresholds
+
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)
         thr = Thresholds([35, 20, 50, 80, 90])

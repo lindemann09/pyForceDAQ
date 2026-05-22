@@ -1,5 +1,7 @@
-from .timer import get_time_ms
 from os import listdir, path
+
+from .timer import get_time_ms
+
 
 def N2g(N):
     kg = N/9.81
@@ -48,11 +50,11 @@ def find_calibration_file(calibration_folder, sensor_name,
                 for l in fl:
                     if l.find(needle)>0:
                         return filename
+    raise RuntimeError("Can't find calibration file for sensor '{0}' : {1}.".format(
+        sensor_name, filename))
 
-    raise RuntimeError("Can't find calibration file for sensor '{0}'.".format(sensor_name))
 
-
-"""Sensor History with moving average filtering and distance, velocity"""
+#Sensor History with moving average filtering and distance, velocity
 class SensorHistory(object):
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).

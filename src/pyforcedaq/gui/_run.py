@@ -16,11 +16,11 @@ from .._lib import timer
 from .._lib.types import ForceSensorData
 from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ..force import DataRecorder, SensorProcess, SensorSettings
-from . import settings
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
 from ._plotter import PlotterThread
+from ._settings import settings
 
 
 def _initialize(exp, remote_control=None):
@@ -342,28 +342,31 @@ def _main_loop(exp, recorder, remote_control=False):
         plotter_thread.join()
     recorder.pause_recording(s.background)
 
+def run(settings_file: str | None = None):
 
-def run():
+    if settings_file is not None and len(settings_file) > 0:
+        # load different settings file if specified
+        settings.load(settings_file)
 
     return run_with_options(remote_control = settings.recording.remote_control,
-                            ask_filename = settings.recording.ask_filename,
-                            device_ids = settings.recording.device_ids,
-                            sensor_names = settings.recording.sensor_names,
-                            calibration_folder = settings.recording.calibration_folder,
-                            device_name_prefix = settings.recording.device_name_prefix,
-                            write_Fx = settings.recording.write_Fx,
-                            write_Fy = settings.recording.write_Fy,
-                            write_Fz = settings.recording.write_Fz,
-                            write_Tx = settings.recording.write_Tx,
-                            write_Ty = settings.recording.write_Ty,
-                            write_Tz = settings.recording.write_Tz,
-                            write_trigger1 = settings.recording.write_trigger1,
-                            write_trigger2 = settings.recording.write_trigger2,
-                            zip_data=settings.recording.zip_data,
-                            reverse_scaling = settings.recording.reverse_scaling,
-                            convert_to_forces=settings.recording.convert_to_forces,
-                            has_lsl_stream=settings.recording.has_lsl_stream,
-                            polling_priority=settings.recording.priority)
+                        ask_filename = settings.recording.ask_filename,
+                        device_ids = settings.recording.device_ids,
+                        sensor_names = settings.recording.sensor_names,
+                        calibration_folder = settings.recording.calibration_folder,
+                        device_name_prefix = settings.recording.device_name_prefix,
+                        write_Fx = settings.recording.write_Fx,
+                        write_Fy = settings.recording.write_Fy,
+                        write_Fz = settings.recording.write_Fz,
+                        write_Tx = settings.recording.write_Tx,
+                        write_Ty = settings.recording.write_Ty,
+                        write_Tz = settings.recording.write_Tz,
+                        write_trigger1 = settings.recording.write_trigger1,
+                        write_trigger2 = settings.recording.write_trigger2,
+                        zip_data=settings.recording.zip_data,
+                        reverse_scaling = settings.recording.reverse_scaling,
+                        convert_to_forces=settings.recording.convert_to_forces,
+                        has_lsl_stream=settings.recording.has_lsl_stream,
+                        polling_priority=settings.recording.priority)
 
 def run_with_options(remote_control,
                      ask_filename,

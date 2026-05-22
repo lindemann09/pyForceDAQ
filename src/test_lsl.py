@@ -2,7 +2,7 @@ import select
 import sys
 from time import sleep
 
-from forceDAQ._lib import lsl
+from pyforcedaq._lib import lsl
 
 stream = lsl.init(name="test_stream",
                   n_channels=2,
