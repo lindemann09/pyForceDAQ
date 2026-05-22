@@ -6,6 +6,7 @@ __author__ = "Oliver Lindemann"
 
 import logging
 from pickle import dumps
+from typing import List
 
 import numpy as np
 import pygame
@@ -351,7 +352,7 @@ def run(settings_file: str | None = None):
     return run_with_options(remote_control = settings.recording.remote_control,
                         ask_filename = settings.recording.ask_filename,
                         device_ids = settings.recording.device_ids,
-                        sensor_names = settings.recording.sensor_names,
+                        calibration_files = settings.recording.calibration_files,
                         calibration_folder = settings.recording.calibration_folder,
                         device_name_prefix = settings.recording.device_name_prefix,
                         write_Fx = settings.recording.write_Fx,
@@ -370,9 +371,9 @@ def run(settings_file: str | None = None):
 
 def run_with_options(remote_control,
                      ask_filename,
-                     device_ids,
-                     sensor_names,
-                     calibration_folder,
+                     device_ids : int | List[int],
+                     calibration_files : str | List[str],
+                     calibration_folder: str,
                      device_name_prefix="Dev",
                      write_Fx = True,
                      write_Fy = True,
@@ -402,17 +403,17 @@ def run_with_options(remote_control,
     #
 
     logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
-    logging.info("Sensors {}".format(sensor_names))
+    logging.info("Sensors {}".format(calibration_files))
     logging.info("Settings " + settings.recording_as_json())
 
 
     if not isinstance(device_ids, (list, tuple)):
         device_ids = [device_ids]
-    if not isinstance(sensor_names, (list, tuple)):
-        sensor_names = [sensor_names]
+    if not isinstance(calibration_files, (list, tuple)):
+        calibration_files = [calibration_files]
 
     sensors = []
-    for d_id, sn in zip(device_ids, sensor_names):
+    for d_id, sn in zip(device_ids, calibration_files):
         try:
             reverse_parameter_names = reverse_scaling[str(d_id)]
         except:
@@ -421,7 +422,7 @@ def run_with_options(remote_control,
         ss = SensorSettings(device_id = d_id,
                     device_name_prefix=device_name_prefix,
                     sensor_name = sn,
-                    calibration_folder=calibration_folder,
+                    calibration_files=calibration_folder,
                     reverse_parameter_names=reverse_parameter_names,
                     rate = settings.gui.sampling_rate,
                     convert_to_FT=convert_to_forces,

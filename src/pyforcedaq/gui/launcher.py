@@ -1,10 +1,10 @@
 import sys
 from os import path
+from typing import List
 
 import FreeSimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
-from .._lib.misc import find_calibration_file
 from .._lib.types import PollingPriority
 from .._lib.udp_connection import UDPConnection
 from ._run import run as _gui_run
@@ -37,23 +37,25 @@ def _s2l(csv_string, is_integer=False, is_float=False): # convert csv string to 
     return rtn
 
 
-def _check_sensor_calibration_settings(device_ids, sensor_names,
-                                       calibration_folder):
+def _check_sensor_calibration_settings(device_ids: List[int],
+                                       calibrations_files : List[str],
+                                       calibration_folder :str):
     rtn = []
     for x, d_id in enumerate(device_ids):
         error = False
         try:
-            sensor_name = sensor_names[x]
-        except:
-            sensor_name = "??"
+            cal_file = calibrations_files[x]
+        except KeyError:
+            cal_file = "??"
             error = True
-        try:
-            cal = find_calibration_file(calibration_folder=calibration_folder,
-                                    sensor_name=sensor_name)
-        except:
-            cal = "NO CALIBRATION"
-            error = True
-        rtn.append([d_id, sensor_name, cal, error])
+
+        if not error:
+            cal = path.join(calibration_folder, cal_file)
+            if not path.isfile(cal):
+                cal = "NOT FOUND"
+                error = True
+
+        rtn.append([d_id, cal_file, cal, error])
 
     return rtn
 
@@ -68,7 +70,7 @@ def _windows_run():
 
     for d_id, name, cal, error in _check_sensor_calibration_settings(
                                                 s.device_ids,
-                                                s.sensor_names,
+                                                s.calibration_files,
                                                 s.calibration_folder):
         if error:
             col = "red"
@@ -135,8 +137,8 @@ def _window_settings():
                  [[_sg.Text("Folder:", size=(5, 1)), _sg.InputText(
                      s.calibration_folder, size=(23, 1), key="cal_dir"),
                   _sg.FolderBrowse(size=(6, 1))],
-                 _input_text_list("Sensor Names:", s.sensor_names,
-                          key="sensor_names")
+                 _input_text_list("Cal-files:", s.calibration_files,
+                          key="calibration_files")
                  ])])
 
     layout.append([_sg.Frame('Record Forces & Torques',
@@ -190,7 +192,7 @@ def _window_settings():
         except:
             event = "Error"
 
-        key = "sensor_names"
+        key = "calibration_files"
         try:
             d[key] = _s2l(values[key])
         except:
@@ -220,9 +222,8 @@ def run():
     s = settings.recording
     settings_error = False
     n_sensor = len(s.device_ids)
-    if n_sensor != len(s.sensor_names):
-        _sg.PopupError("Number of devices IDs and sensor names are "
-                       "not equal.")
+    if n_sensor != len(s.calibration_files):
+        _sg.PopupError("Number of devices IDs and calibration files are not equal.")
         settings_error = True
 
     if not path.isdir(s.calibration_folder):

@@ -12,8 +12,6 @@ __author__ = "Oliver Lindemann"
 from ctypes import *
 from sys import platform
 
-from .._lib.misc import find_calibration_file
-
 # ### DATA TYPES ####
 VOLTAGE_SAMPLE_TYPE = c_float * 7
 FT_SAMPLE_TYPE = c_float * 6
@@ -292,7 +290,7 @@ if __name__ == "__main__":
     #   -0.065867  0.123803 111.156731  0.039974  0.040417  0.079049
 
     #filename = raw_input("Calibration file: ")
-    filename = find_calibration_file("calibration", "FT30436")
+    filename = "calibration/FT30436.cal"
     atidaq = ATI_CDLL()
     # get calibration
     index = c_short(1)

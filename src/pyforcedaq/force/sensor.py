@@ -7,11 +7,11 @@ __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 from copy import copy
+from pathlib import Path
 
 import numpy as np
 
 #from .._lib import lsl
-from .._lib.misc import find_calibration_file
 from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
@@ -22,7 +22,7 @@ class SensorSettings(DAQConfiguration):
     def __init__(self,
                  device_id:int,
                  sensor_name:str,
-                 calibration_folder:str,
+                 calibration_file:str | Path,
                  channels="ai0:7",
                  device_name_prefix = "Dev",
                  rate:int=1000,
@@ -62,13 +62,7 @@ class SensorSettings(DAQConfiguration):
         self.write_Tz = write_Tz
         self.write_trigger1 = write_trigger1
         self.write_trigger2 = write_trigger2
-
-        if self.convert_to_FT:
-            self.calibration_file = find_calibration_file(
-                                        calibration_folder=calibration_folder,
-                                        sensor_name=sensor_name)
-        else:
-            self.calibration_file = None
+        self.calibration_file = calibration_file
 
         self.reverse_parameters = []
         if not isinstance(reverse_parameter_names, (tuple, list)):

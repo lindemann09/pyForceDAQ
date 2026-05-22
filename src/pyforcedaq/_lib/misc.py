@@ -39,20 +39,31 @@ class MinMaxDetector(object):
         return (self._level_change_time is not None) and \
                (get_time_ms() - self._level_change_time) < self._duration
 
-def find_calibration_file(calibration_folder, sensor_name,
-                          calibration_suffix=".cal"):
+# def find_calibration_file(calibration_folder: str, sensor_name: str,
+#                           calibration_suffix=".cal") -> str:
 
-    needle = 'Serial="{0}"'.format(sensor_name)
-    for x in listdir(path.abspath(calibration_folder)):
-        filename = path.join(calibration_folder, x)
-        if path.isfile(filename) and filename.endswith(calibration_suffix):
-            with open(filename, "r") as fl:
-                for l in fl:
-                    if l.find(needle)>0:
-                        return filename
-    raise RuntimeError("Can't find calibration file for sensor '{0}' : {1}.".format(
-        sensor_name, filename))
+#     needle = 'Serial="{0}"'.format(sensor_name)
+#     calibration_files = []
+#     for x in listdir(path.abspath(calibration_folder)):
+#         filename = path.join(calibration_folder, x)
+#         if path.isfile(filename) and filename.endswith(calibration_suffix):
+#             with open(filename, "r") as fl:
+#                 for l in fl:
+#                     if l.find(needle)>0:
+#                         print("Found calibration file for sensor '{0}' : {1}.".format(
+#                             sensor_name, filename))
+#                         calibration_files.append(filename)
 
+#     if len(calibration_files) == 1:
+#         return calibration_files[0]
+#     elif len(calibration_files) > 1:
+#         print("Multiple calibration files found for sensor '{0}'".format(sensor_name))
+#         for f in calibration_files:
+#             print("  - {0}".format(f))
+#         print("Please ensure that only one calibration file exists for each sensor")
+#     else:
+#         print("No calibration file found for sensor '{0}'.".format(sensor_name))
+#     exit()
 
 #Sensor History with moving average filtering and distance, velocity
 class SensorHistory(object):

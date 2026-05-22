@@ -465,7 +465,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/15/44/b3a8f63576513e88a
 
 [[package]]
 name = "pyforcedaq"
-version = "2.0.2.dev0"
+version = "2.0.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "atiiaftt" },
