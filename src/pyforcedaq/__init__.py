@@ -28,7 +28,9 @@ For function to support data handling see the folder pyForceDAQ/analysis
 Oliver Lindemann
 """
 
-__version__ = "2.0.0-beta"
+from importlib.metadata import version
+
+__version__ = version("pyforcedaq")
 __author__ = "Oliver Lindemann"
 
 import sys as _sys

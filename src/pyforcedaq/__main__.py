@@ -8,7 +8,7 @@ def cli():
 
     parser = argparse.ArgumentParser(
         prog="forcedaq",
-        description="Command-line interface for pyforceDAQ",
+        description=f"Command-line interface for pyforceDAQ {__version__}",
         epilog=f"Author: {__author__}",
     )
     parser.add_argument(
