@@ -101,7 +101,7 @@ class DataRecorder(object):
         """Property indicates whether the recording processes are alive"""
         try:
             return self._force_sensor_processes[0].is_alive()
-        except:
+        except Exception:
             return False
 
     @property
