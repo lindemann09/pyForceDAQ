@@ -38,7 +38,7 @@ class DataRecorder(object):
     def __init__(self, force_sensor_settings:SensorSettings | list,
                  poll_udp_connection=False,
                  write_deviceid = False,
-                 polling_priority=None):
+                 polling_priority:str | None = None):
 
 
         """queue_data will be saved
@@ -82,12 +82,12 @@ class DataRecorder(object):
         self._proc_manager.add_subprocess(self.udp)
         self._proc_manager.add_subprocess(self._force_sensor_processes)
         if polling_priority is not None:
-            self._proc_manager.set_subprocess_priorities(
-                level=PollingPriority.get_priority(polling_priority),
-                disable_gc=False)
+           level = PollingPriority.NORMAL
+        else:
+            level = PollingPriority.get_priority(polling_priority)
+        self._proc_manager.set_subprocess_priorities(level=level, disable_gc=False)
 
-        logging.info("Main process priority: {}".format(
-            self._proc_manager.get_main_priority()))
+        logging.info("Main process priority: %s", self._proc_manager.get_main_priority())
         #logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
 
         self._is_recording = False

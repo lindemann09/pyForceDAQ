@@ -1,10 +1,11 @@
-import dataclasses
 import json
 import os
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List
 
 import tomlkit
+from icecream import ic
 
 
 @dataclass
@@ -27,6 +28,10 @@ class _GUISettings:
         default_factory=lambda: [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
     plot_data_plotter_for_two_sensors: list = field(
         default_factory=lambda: [(0, 2), (1, 2)])
+
+    def update_from_dict(self, d):
+        for key, value in d.items():
+            setattr(self, key, value)
 
 @dataclass
 class _RecordingSetting:
@@ -56,16 +61,20 @@ class _RecordingSetting:
         if isinstance(self.calibration_files, str):
             self.calibration_files = [self.calibration_files]
 
+    def update_from_dict(self, d):
+        for key, value in d.items():
+            ic(key, value)
+            setattr(self, key, value)
+
 
 class GUISettings(object):
 
     def __init__(self, filename):
-
         # defaults
-        self.gui = _GUISettings()  # default GUI settings
+        self.gui = _GUISettings()
         self.gui_section = "GUI"
 
-        self.recording = _RecordingSetting()  # default recording settings
+        self.recording = _RecordingSetting()
         self.recording_section = "Recording"
 
         self.filename = filename
@@ -75,13 +84,13 @@ class GUISettings(object):
             self.save() # defaults
 
     def _asdict(self):
-        return {self.recording_section: dataclasses.asdict(self.recording),
-             self.gui_section: dataclasses.asdict(self.gui)}
+        return {self.recording_section: self.recording.__dict__,
+             self.gui_section: self.gui.__dict__}
 
     def set_gui_settings(self, gui_setting_dict):
         self.gui = _GUISettings(**gui_setting_dict)
 
-    def set_recoding_setting(self, recording_setting_dict):
+    def set_recording_setting(self, recording_setting_dict):
         self.recording = _RecordingSetting(**recording_setting_dict)
 
     def load(self, filename=None):
@@ -90,15 +99,13 @@ class GUISettings(object):
         with open(self.filename, 'r', encoding='utf-8') as fl:
             d = tomlkit.load(fl)
         self.set_gui_settings(d[self.gui_section])
-        self.set_recoding_setting(d[self.recording_section])
-
+        self.set_recording_setting(d[self.recording_section])
 
     def save(self):
         with open(self.filename, 'w', encoding='utf-8') as fl:
             tomlkit.dump(self._asdict(), fl)
 
-
     def recording_as_json(self):
-        return json.dumps(dataclasses.asdict(self.recording))
+        return json.dumps(self.recording.__dict__)
 
 settings = GUISettings(filename="pyForceDAQ.defaults.settings.toml")

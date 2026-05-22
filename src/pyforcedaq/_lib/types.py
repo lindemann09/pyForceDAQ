@@ -13,7 +13,7 @@ TAG_UDPDATA = TAG_COMMENTS + "UDP"
 CTYPE_FORCES = ct.c_float * 600
 CTYPE_TRIGGER = ct.c_float * 2
 
-class PollingPriority(object):
+class PollingPriority(object): # TODO needed?
 
     NORMAL = 'normal'
     HIGH = 'high'

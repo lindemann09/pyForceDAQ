@@ -34,9 +34,9 @@ def cli():
         from .gui import launcher
         return launcher.run()
     else:
-        gui.run(args.SETTINGS_FILE)
+        gui.run_settings(args.SETTINGS_FILE)
 
 
 
 if __name__ == "__main__": # required because of threading
-    cli() # gui.run(), gui.run_with_options()
+    cli()

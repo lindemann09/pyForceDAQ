@@ -7,7 +7,7 @@ import FreeSimpleGUI as _sg
 from .. import USE_MOCK_SENSOR, __version__
 from .._lib.types import PollingPriority
 from .._lib.udp_connection import UDPConnection
-from ._run import run as _gui_run
+from ._run import run_settings as _gui_run
 from ._settings import settings
 
 
@@ -209,7 +209,7 @@ def _window_settings():
         main_path = path.split(sys.modules['__main__'].__file__)[0] + path.sep
         d["calibration_folder"] = values["cal_dir"].replace(main_path, "")
 
-        settings.set_recoding_setting(d)
+        settings.set_recording_setting(d)
         settings.save()
 
     window.close()

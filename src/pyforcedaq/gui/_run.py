@@ -5,6 +5,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import logging
+from os import path
 from pickle import dumps
 from typing import List
 
@@ -343,13 +344,13 @@ def _main_loop(exp, recorder, remote_control=False):
         plotter_thread.join()
     recorder.pause_recording(s.background)
 
-def run(settings_file: str | None = None):
+def run_settings(settings_file: str | None = None):
 
     if settings_file is not None and len(settings_file) > 0:
         # load different settings file if specified
         settings.load(settings_file)
 
-    return run_with_options(remote_control = settings.recording.remote_control,
+    return run(remote_control = settings.recording.remote_control,
                         ask_filename = settings.recording.ask_filename,
                         device_ids = settings.recording.device_ids,
                         calibration_files = settings.recording.calibration_files,
@@ -369,25 +370,25 @@ def run(settings_file: str | None = None):
                         has_lsl_stream=settings.recording.has_lsl_stream,
                         polling_priority=settings.recording.priority)
 
-def run_with_options(remote_control,
+def run(remote_control,
                      ask_filename,
                      device_ids : int | List[int],
                      calibration_files : str | List[str],
                      calibration_folder: str,
-                     device_name_prefix="Dev",
-                     write_Fx = True,
-                     write_Fy = True,
-                     write_Fz = True,
-                     write_Tx = False,
-                     write_Ty = False,
-                     write_Tz = False,
-                     write_trigger1 = True,
-                     write_trigger2 = False,
-                     zip_data=False,
-                     reverse_scaling = None,
-                     convert_to_forces = True,
-                     has_lsl_stream = False,
-                     polling_priority = None):
+                     device_name_prefix: str="Dev",
+                     write_Fx: bool = True,
+                     write_Fy: bool = True,
+                     write_Fz: bool = True,
+                     write_Tx: bool = False,
+                     write_Ty: bool = False,
+                     write_Tz: bool = False,
+                     write_trigger1 : bool = True,
+                     write_trigger2: bool = False,
+                     zip_data: bool = False,
+                     reverse_scaling: dict | None = None,
+                     convert_to_forces: bool = True,
+                     has_lsl_stream: bool = False,
+                     polling_priority: str | None = None):
 
     """start gui
     remote_control should be None (ask) or True or False
@@ -402,9 +403,9 @@ def run_with_options(remote_control,
     """
     #
 
-    logging.info("New Recording with forceDAQ {}".format(forceDAQVersion))
-    logging.info("Sensors {}".format(calibration_files))
-    logging.info("Settings " + settings.recording_as_json())
+    logging.info("New Recording with forceDAQ %s", forceDAQVersion)
+    logging.info("Sensors %s", calibration_files)
+    logging.info("Settings %s", settings.recording_as_json())
 
 
     if not isinstance(device_ids, (list, tuple)):
@@ -413,16 +414,19 @@ def run_with_options(remote_control,
         calibration_files = [calibration_files]
 
     sensors = []
-    for d_id, sn in zip(device_ids, calibration_files):
-        try:
-            reverse_parameter_names = reverse_scaling[str(d_id)]
-        except:
+    for d_id, cal_file in zip(device_ids, calibration_files):
+        if reverse_scaling is None:
             reverse_parameter_names = []
+        else:
+            try:
+                reverse_parameter_names = reverse_scaling[str(d_id)]
+            except KeyError:
+                reverse_parameter_names = []
 
         ss = SensorSettings(device_id = d_id,
                     device_name_prefix=device_name_prefix,
-                    sensor_name = sn,
-                    calibration_files=calibration_folder,
+                    sensor_name = cal_file.split(".")[0],
+                    calibration_file=path.join(calibration_folder, cal_file),
                     reverse_parameter_names=reverse_parameter_names,
                     rate = settings.gui.sampling_rate,
                     convert_to_FT=convert_to_forces,
@@ -437,11 +441,8 @@ def run_with_options(remote_control,
                     write_trigger2= write_trigger2)
         sensors.append(ss)
 
-
-
     # expyriment
-    control.defaults.initialize_delay = 0
-    control.defaults.pause_key = None
+    control.defaults.initialise_delay = 0
     control.defaults.window_mode = True
     control.defaults.window_size = (1000, 700)
     control.defaults.fast_quit = True

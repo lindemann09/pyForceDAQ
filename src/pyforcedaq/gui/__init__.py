@@ -1,6 +1,6 @@
 from ._run import (
-    run,
-    run_with_options,  # for running with options from Python script
+    run,  # for running with options from Python script
+    run_settings,
 )
 from ._settings import settings  ## read settings
 
