@@ -10,6 +10,7 @@ from copy import copy
 from pathlib import Path
 
 import numpy as np
+from icecream import ic
 
 #from .._lib import lsl
 from .._lib.timer import Timer, app_clock
@@ -99,7 +100,8 @@ class Sensor(DAQReadAnalog):
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
         self.timer = Timer(sync_timer=app_clock) # own timer, because this class is used in own process
-        if self.DAQ_TYPE == "mock":
+        ic(self.DAQ_TYPE)
+        if self.DAQ_TYPE == "mock_sensor":
             self._atidaq = None
             self.convert_to_FT = False
         else:

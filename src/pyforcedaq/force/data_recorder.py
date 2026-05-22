@@ -7,8 +7,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import logging
-import os
-import sys
+from pathlib import Path
 from time import asctime, localtime, strftime
 
 from pyforcedaq._lib import timer
@@ -93,7 +92,7 @@ class DataRecorder(object):
         self._is_recording = False
         self._file = None
         self._daq_event = []
-        self.filename = None
+        self.filename: str | None = None
         atexit.register(self.quit)
 
 
@@ -119,7 +118,7 @@ class DataRecorder(object):
         return list(map(lambda x:x.sensor_settings,
                         self._force_sensor_processes))
 
-    def quit(self):
+    def quit(self) -> list | None:
         """Stop all recording processes, close data file and quit recording
 
         Notes
@@ -145,7 +144,7 @@ class DataRecorder(object):
 
         return buffer
 
-    def process_and_write_udp_events(self):
+    def process_and_write_udp_events(self) -> list:
         """process udp events and return them"""
         buffer = []
         while True:
@@ -159,9 +158,9 @@ class DataRecorder(object):
             self._save_data(buffer)
         return buffer
 
-    def _save_data(self, data_buffer,
+    def _save_data(self, data_buffer: list,
                    recording_screen=None,
-                   float_decimal_places=4):
+                   float_decimal_places: int = 4) -> None:
         """ writes data to disk and set counters
 
         ignores UDP remote control commands
@@ -199,10 +198,10 @@ class DataRecorder(object):
                     "Writing {0} of {1} blocks".format(c//BLOCKSIZE,
                                                        buffer_len//BLOCKSIZE)).present()
 
-    def _file_write(self, str):
-        self._file.write(str.encode())
+    def _file_write(self, s: str) -> None:
+        self._file.write(s.encode())
 
-    def save_daq_event(self, code, time=None):
+    def save_daq_event(self, code, time: float | None = None) -> None:
         """Set marker code in file
 
         DAQEvent will be timestamps and occur in the data output
@@ -213,7 +212,7 @@ class DataRecorder(object):
         self._daq_event.append(DAQEvents(time = time, code = code))
 
 
-    def start_recording(self, determine_bias=False):
+    def start_recording(self, determine_bias: bool = False) -> None:
         """Start polling process and record
 
         See Also
@@ -233,7 +232,7 @@ class DataRecorder(object):
         list(map(lambda x:x.start_polling(), self._force_sensor_processes))
         self._is_recording = True
 
-    def pause_recording(self, recording_screen=None):
+    def pause_recording(self, recording_screen=None) -> list:
         """Pauses all polling processes and process data
 
         returns
@@ -268,7 +267,7 @@ class DataRecorder(object):
         self._daq_event = []
         return data
 
-    def determine_biases(self, n_samples):
+    def determine_biases(self, n_samples: int) -> None:
         """Record n data samples (n_samples) to determine bias.
         Afterwards recording is in pause mode
 
@@ -289,12 +288,12 @@ class DataRecorder(object):
         for x in self._force_sensor_processes:
             x.event_bias_is_available.wait()
 
-    def open_data_file(self, filename,
-                       subdirectory="data",
-                       time_stamp_filename=False,
-                       varnames = True,
-                       comment_line="",
-                       zipped=False):
+    def open_data_file(self, filename: str,
+                       subdirectory: str = "data",
+                       time_stamp_filename: bool = False,
+                       varnames: bool = True,
+                       comment_line: str = "",
+                       zipped: bool = False) -> Path:
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -322,11 +321,8 @@ class DataRecorder(object):
                 full path the actually used file (incl. timestamp)
 
         """
-
-        base_dir = os.path.split(sys.argv[0])[0]
-        data_dir = os.path.join(base_dir, subdirectory)
-        if not os.path.isdir(data_dir):
-            os.mkdir(data_dir)
+        data_dir = Path.cwd() / subdirectory
+        data_dir.mkdir(exist_ok=True)
         self.close_data_file()
 
         if filename is None or len(filename) == 0:
@@ -352,8 +348,8 @@ class DataRecorder(object):
             else:
                 self.filename = flname + suffix
 
-            full_path_file = os.path.join(data_dir, self.filename)
-            if os.path.isfile(full_path_file):
+            full_path_file = data_dir / self.filename
+            if full_path_file.is_file():
                 # print "data file already exists, adding counter"
                 cnt += 1
             else:
@@ -388,7 +384,7 @@ class DataRecorder(object):
 
         return full_path_file
 
-    def close_data_file(self):
+    def close_data_file(self) -> None:
         """Close the data file
 
         Afterwards data will not be saved anymore.
