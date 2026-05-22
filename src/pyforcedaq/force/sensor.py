@@ -8,11 +8,10 @@ __author__ = 'Oliver Lindemann'
 import ctypes as ct
 from copy import copy
 from pathlib import Path
+from typing import List, Tuple
 
 import numpy as np
-from icecream import ic
 
-#from .._lib import lsl
 from .._lib.timer import Timer, app_clock
 from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
@@ -27,11 +26,11 @@ class SensorSettings(DAQConfiguration):
                  channels="ai0:7",
                  device_name_prefix = "Dev",
                  rate:int=1000,
-                 minVal=-10,
-                 maxVal=10,
-                 reverse_parameter_names=(),
+                 minVal:float=-10,
+                 maxVal:float=10,
+                 reverse_parameter_names: str | Tuple[str] | List[str] | None = None,
                  convert_to_FT:bool=True,
-                 has_lsl_stream:bool=False,
+                 lsl_stream:bool=False,
                  write_Fx:bool=True,
                  write_Fy:bool=True,
                  write_Fz:bool=True,
@@ -54,7 +53,7 @@ class SensorSettings(DAQConfiguration):
         self.device_id = device_id
         self.sensor_name = sensor_name
         self.convert_to_FT = convert_to_FT
-        self.has_lsl_stream = has_lsl_stream
+        self.lsl_stream = lsl_stream
         self.write_Fx = write_Fx
         self.write_Fy = write_Fy
         self.write_Fz = write_Fz
@@ -66,13 +65,14 @@ class SensorSettings(DAQConfiguration):
         self.calibration_file = calibration_file
 
         self.reverse_parameters = []
-        if not isinstance(reverse_parameter_names, (tuple, list)):
-            reverse_parameter_names = [reverse_parameter_names]
-        for para in reverse_parameter_names:
-            try:
-                self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
-            except Exception:
-                pass
+        if reverse_parameter_names is not None:
+            if isinstance(reverse_parameter_names, str):
+                reverse_parameter_names = [reverse_parameter_names]
+            for para in reverse_parameter_names:
+                try:
+                    self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
+                except Exception:
+                    pass
 
     def array_write_forces(self):
         return [self.write_Fx, self.write_Fy, self.write_Fz, self.write_Tx, self.write_Ty, self.write_Tz]
@@ -100,7 +100,6 @@ class Sensor(DAQReadAnalog):
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
         self.timer = Timer(sync_timer=app_clock) # own timer, because this class is used in own process
-        ic(self.DAQ_TYPE)
         if self.DAQ_TYPE == "mock_sensor":
             self._atidaq = None
             self.convert_to_FT = False

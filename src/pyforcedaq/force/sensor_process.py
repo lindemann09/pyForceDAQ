@@ -157,19 +157,21 @@ class SensorProcess(Process):
         ## create init LSL
         lsl_data_steam = None
         lsl_hardware_trigger_stream = None
-        if self.sensor_settings.has_lsl_stream:
+        if self.sensor_settings.lsl_stream:
             lsl_data_steam = lsl.init(
-                    name=f"Force {self.sensor_settings.device_name}",
+                    name=f"Force_{self.sensor_settings.device_name}",
                     n_channels=sum(stream_forces),
                     stream_id=f"RF_{self.sensor_settings.device_name}",
                     freq=self.sensor_settings.rate,
+                    channel_format= lsl.cf_float32,
                     metadata={"sensor_name": self.sensor_settings.sensor_name})
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
                 lsl_hardware_trigger_stream = lsl.init(
-                    name=f"Trigger {self.sensor_settings.device_name}",
+                    name=f"Trigger_{self.sensor_settings.device_name}",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{self.sensor_settings.device_name}",
+                    channel_format=lsl.cf_float32,
                     freq=self.sensor_settings.rate)
 
 
@@ -189,9 +191,12 @@ class SensorProcess(Process):
                 d = sensor.poll_data()
                 ## LSL
                 if lsl_data_steam is not None:
-                    lsl_data_steam.push_sample(list(d.selected_forces(stream_forces))) # steam only select forces
+                    lsl_data_steam.push_sample(d.selected_forces(stream_forces)) # steam only select forces
+
                 if lsl_hardware_trigger_stream is not None:
-                    lsl_hardware_trigger_stream.push_sample(list(d.selected_trigger(stream_trigger))) # stream only triggers
+                    tr = d.selected_trigger(stream_trigger)
+                    if any(tr): # only stream if at least one trigger is active
+                        lsl_hardware_trigger_stream.push_sample(tr)
 
                 ptp.update(d.time) # needed? TODO
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \

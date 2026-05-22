@@ -75,6 +75,6 @@ class DAQReadAnalog(object):
             n_new_samples = self._simulation_timer.time - self._sample_cnt
 
         self._sample_cnt += 1
-        x = self._sample_cnt / 2000
+        x = self._sample_cnt / 1000
         y = 10 + np.array((np.sin(x/2), np.cos(x/5), np.sin(x)))*10
         return np.append(y, np.array((0, 0 , 0, 0, 0))), 1

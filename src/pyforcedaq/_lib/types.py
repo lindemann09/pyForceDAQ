@@ -1,7 +1,7 @@
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
-from typing import List
+from typing import Iterator, List, Tuple
 
 from .misc import MinMaxDetector as _MinMaxDetector
 
@@ -160,12 +160,13 @@ class ForceSensorData(object):
         self.force = struct.forces
         self.trigger = struct.trigger
 
-    def selected_forces(self, select: List[bool]):
-        """Return an iterator over selected force values."""
-        return (force for i, force in enumerate(self.forces) if select[i])
+    def selected_forces(self, select: List[bool]) -> List[float]:
+        """Return list of selected force values."""
+        return [force for i, force in enumerate(self.forces) if select[i]] # FIXME simplify not all force have to save in ForceClass
 
-    def selected_trigger(self, select: List[bool]):
-        return (trigger for i, trigger in enumerate(self.trigger) if select[i])
+    def selected_trigger(self, select: List[bool]) -> List[float]:
+        """Return list of selected trigger values."""
+        return [trigger for i, trigger in enumerate(self.trigger) if select[i]]
 
 
 class UDPData(object):

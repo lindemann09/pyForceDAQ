@@ -1,6 +1,5 @@
 import json
 import os
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import List
 
@@ -29,10 +28,6 @@ class _GUISettings:
     plot_data_plotter_for_two_sensors: list = field(
         default_factory=lambda: [(0, 2), (1, 2)])
 
-    def update_from_dict(self, d):
-        for key, value in d.items():
-            setattr(self, key, value)
-
 @dataclass
 class _RecordingSetting:
     device_name_prefix: str = "Dev"
@@ -48,9 +43,9 @@ class _RecordingSetting:
     write_Tx: bool = False
     write_Ty: bool = False
     write_Tz: bool = False
-    write_trigger1: bool = True
+    write_trigger1: bool = False
     write_trigger2: bool = False
-    has_lsl_stream: bool = False
+    lsl_stream: bool = False
     reverse_scaling: dict = field(default_factory=lambda: {"1": ["Fz"], "2": ["Fz"]})
     convert_to_forces: bool = True
     priority: str = "normal"
@@ -60,11 +55,6 @@ class _RecordingSetting:
             self.device_ids = [self.device_ids]
         if isinstance(self.calibration_files, str):
             self.calibration_files = [self.calibration_files]
-
-    def update_from_dict(self, d):
-        for key, value in d.items():
-            ic(key, value)
-            setattr(self, key, value)
 
 
 class GUISettings(object):

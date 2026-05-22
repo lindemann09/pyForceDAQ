@@ -367,7 +367,7 @@ def run_settings(settings_file: str | None = None):
                         zip_data=settings.recording.zip_data,
                         reverse_scaling = settings.recording.reverse_scaling,
                         convert_to_forces=settings.recording.convert_to_forces,
-                        has_lsl_stream=settings.recording.has_lsl_stream,
+                        lsl_stream=settings.recording.lsl_stream,
                         polling_priority=settings.recording.priority)
 
 def run(remote_control,
@@ -387,7 +387,7 @@ def run(remote_control,
                      zip_data: bool = False,
                      reverse_scaling: dict | None = None,
                      convert_to_forces: bool = True,
-                     has_lsl_stream: bool = False,
+                     lsl_stream: bool = False,
                      polling_priority: str | None = None):
 
     """start gui
@@ -430,7 +430,7 @@ def run(remote_control,
                     reverse_parameter_names=reverse_parameter_names,
                     rate = settings.gui.sampling_rate,
                     convert_to_FT=convert_to_forces,
-                    has_lsl_stream=has_lsl_stream,
+                    lsl_stream=lsl_stream,
                     write_Fx = write_Fx,
                     write_Fy = write_Fy,
                     write_Fz = write_Fz,
