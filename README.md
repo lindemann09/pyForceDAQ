@@ -2,22 +2,10 @@
 
 Python DAQ library and application for ATI force sensors and NI-DAQ
 
-**LSL Version**
-
 *Released under the MIT License*
 
  Oliver Lindemann <lindemann@cognitive-psychology.eu>
 
-Dependencies
-------------
-
-* Python 3.0
-* [NumPy](http://www.numpy.org/) 1.7 or higher
-* [PyDAQmx](https://pythonhosted.org/PyDAQmx/installation.html)
-* The GUI application (`forceDAQ.gui`) depends furthermore on [Expyriment](http://docs.expyriment.org/Installation.html) 0.8.0 or higher
-
-Stringly recommended for GUI interface:
-* [PySimpleGUI](https://pysimplegui.readthedocs.io/)
 
 Installation
 ------------
