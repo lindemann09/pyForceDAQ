@@ -11,9 +11,12 @@ from pathlib import Path
 from time import asctime, localtime, strftime
 
 from .. import __version__ as forceDAQVersion
-from .._lib.clock import wait_ms
-from .._lib.process_priority_manager import ProcessPriorityManager
-from .._lib.types import (
+from . import _log
+from .clock import wait_ms
+from .process_priority_manager import ProcessPriorityManager
+from .sensor import SensorSettings
+from .sensor_process import SensorProcess
+from .types import (
     TAG_COMMENTS,
     TAG_DAQEVENT,
     TAG_UDPDATA,
@@ -22,10 +25,10 @@ from .._lib.types import (
     PollingPriority,
     UDPData,
 )
-from .._lib.types import GUIRemoteControlCommands as RemoteCmd
-from .._lib.udp_connection import UDPConnectionProcess
-from .sensor import SensorSettings
-from .sensor_process import SensorProcess
+from .types import GUIRemoteControlCommands as RemoteCmd
+from .udp_connection import UDPConnectionProcess
+
+_log.set_logging(data_directory="data", log_file="recording.log")
 
 NEWLINE = "\n"
 

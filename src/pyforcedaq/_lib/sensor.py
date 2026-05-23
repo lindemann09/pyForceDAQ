@@ -12,9 +12,9 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .._lib.clock import local_clock
-from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
+from .clock import local_clock
+from .types import ForceSensorData
 
 
 class SensorSettings(DAQConfiguration):
@@ -175,8 +175,8 @@ if __name__ == "__main__":
     #test sensor history
     import random
 
-    from .._lib.misc import SensorHistory
-    from .._lib.types import Thresholds
+    from .misc import SensorHistory
+    from .types import Thresholds
 
     def run():
         sh = SensorHistory(history_size=5, number_of_parameter=3)

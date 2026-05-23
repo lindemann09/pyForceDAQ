@@ -5,12 +5,12 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from .._lib import lsl
-from .._lib.clock import local_clock, wait_ms
-from .._lib.polling_time_profile import PollingTimeProfile
-from .._lib.process_priority_manager import get_priority
-from .._lib.types import DAQEvents
+from . import lsl
+from .clock import local_clock, wait_ms
+from .polling_time_profile import PollingTimeProfile
+from .process_priority_manager import get_priority
 from .sensor import Sensor, SensorSettings
+from .types import DAQEvents
 
 
 class SensorProcess(Process):

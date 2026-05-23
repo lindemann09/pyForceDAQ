@@ -1,6 +1,7 @@
+import logging
 import os
 import sys
-import logging
+
 
 def set_logging(data_directory, log_file):
     base_dir = os.path.split(sys.argv[0])[0]
