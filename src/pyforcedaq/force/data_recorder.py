@@ -10,11 +10,9 @@ import logging
 from pathlib import Path
 from time import asctime, localtime, strftime
 
-from pyforcedaq._lib import timer
-
 from .. import __version__ as forceDAQVersion
+from .._lib.clock import wait_ms
 from .._lib.process_priority_manager import ProcessPriorityManager
-from .._lib.timer import app_clock
 from .._lib.types import (
     TAG_COMMENTS,
     TAG_DAQEVENT,
@@ -201,14 +199,12 @@ class DataRecorder(object):
     def _file_write(self, s: str) -> None:
         self._file.write(s.encode())
 
-    def save_daq_event(self, code, time: float | None = None) -> None:
+    def save_daq_event(self, code: str | int | float, time: float | None = None) -> None:
         """Set marker code in file
 
         DAQEvent will be timestamps and occur in the data output
 
         """
-        if time is None:
-            time = app_clock.time
         self._daq_event.append(DAQEvents(time = time, code = code))
 
 
@@ -250,7 +246,7 @@ class DataRecorder(object):
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
-        timer.wait(500)
+        wait_ms(500)
 
         # get data
         for fsp in self._force_sensor_processes:

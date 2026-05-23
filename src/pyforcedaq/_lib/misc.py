@@ -1,6 +1,4 @@
-from os import listdir, path
-
-from .timer import get_time_ms
+from .clock import local_clock_ms
 
 
 def N2g(N):
@@ -9,9 +7,9 @@ def N2g(N):
 
 class MinMaxDetector(object):
 
-    def __init__(self, start_value, duration):
+    def __init__(self, start_value, duration_ms):
         self._minmax = [start_value, start_value]
-        self._duration = duration
+        self._duration_ms = duration_ms
         self._level_change_time = None
 
     def process(self, value):
@@ -19,7 +17,7 @@ class MinMaxDetector(object):
         level change has occurred, otherwise None"""
 
         if self._level_change_time is not None:
-            if (get_time_ms() - self._level_change_time) >= self._duration:
+            if (local_clock_ms() - self._level_change_time) >= self._duration_ms:
                 return tuple(self._minmax)
 
             if value > self._minmax[1]:
@@ -28,7 +26,7 @@ class MinMaxDetector(object):
                 self._minmax[0] = value
 
         elif self._minmax[0] != value: # level change just occurred
-            self._level_change_time = get_time_ms()
+            self._level_change_time = local_clock_ms()
             return self.process(value)
 
         return None
@@ -37,7 +35,7 @@ class MinMaxDetector(object):
     def is_sampling_for_minmax(self):
         """true true if currently sampling for minmax"""
         return (self._level_change_time is not None) and \
-               (get_time_ms() - self._level_change_time) < self._duration
+               (local_clock_ms() - self._level_change_time) < self._duration_ms
 
 # def find_calibration_file(calibration_folder: str, sensor_name: str,
 #                           calibration_suffix=".cal") -> str:

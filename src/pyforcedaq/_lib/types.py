@@ -3,6 +3,7 @@ __author__ = 'Oliver Lindemann'
 import ctypes as ct
 from typing import Iterator, List, Tuple
 
+from .clock import local_clock
 from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
@@ -38,8 +39,18 @@ class CTypesForceSensorData(ct.Structure):
             ("forces", CTYPE_FORCES),
             ("trigger", CTYPE_TRIGGER)]
 
+class TimedData(object):
+    """The MetaClass TimedData class
+    Timestamped data container for force sensor data, UDP data and DAQ events
+    """
 
-class ForceSensorData(object):
+    def __init__(self, time: float | None):
+        if time is None:
+            self.time = local_clock()
+        else:
+            self.time = time
+
+class ForceSensorData(TimedData):
     """The Force data structure with the following properties
         * device_id
         * time (time stamp)
@@ -52,7 +63,7 @@ class ForceSensorData(object):
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
-    def __init__(self, time=0, acquisition_delay = -1,
+    def __init__(self, time: float | None, acquisition_delay: float,
                  forces= [0] * 6, trigger=(0, 0),
                  device_id=0, trigger_threshold=0.9, reverse=()):
         """Create a ForceSensorData object
@@ -60,9 +71,9 @@ class ForceSensorData(object):
         ----------
         device_id: int, optional
             the id of the sensor device
-        time: int, optional
+        time: float, optional
             the timestamp
-        acquisition_delay: int, optional
+        acquisition_delay: float, optional
             time
         forces: array of six floats
             array of the force data defined as [Fx, Fy, Fz, Tx, Ty, Tz]
@@ -75,7 +86,7 @@ class ForceSensorData(object):
 
         """
 
-        self.time = time
+        super().__init__(time)
         self.acquisition_delay = acquisition_delay
         self.device_id = device_id
         self.forces = forces
@@ -89,7 +100,7 @@ class ForceSensorData(object):
 
     def __str__(self):
         """converts data to string. """
-        txt = "%d,%d,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
+        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
                                                            self.time,
                                                            self.forces[0],
                                                            self.forces[1],
@@ -169,21 +180,21 @@ class ForceSensorData(object):
         return [trigger for i, trigger in enumerate(self.trigger) if select[i]]
 
 
-class UDPData(object):
+class UDPData(TimedData):
     """The UDP data class, used to store UDP DATA with timestamps
 
     """
 
-    def __init__(self, string, time):
+    def __init__(self, time: float | None, string: str | bytes):
         """Create a UDA_DATA object
 
         Parameters
         ----------
-        time : int
+        time : float
         code : numerical or string
 
         """
-        self.time = time
+        super().__init__(time)
         if isinstance(string, str):
             self.byte_string = string.encode()
         else:
@@ -205,7 +216,7 @@ def bytes_startswith(a, b):
     return a[:len(b)] == b
 
 
-class DAQEvents(object):
+class DAQEvents(TimedData):
     """The DAQEvents data class, used to store trigger
 
     See Also
@@ -214,16 +225,16 @@ class DAQEvents(object):
 
     """
 
-    def __init__(self, time, code):
+    def __init__(self, time: float|None, code:str|int|float):
         """Create a DAQEvents object
 
         Parameters
         ----------
-        time : int
+        time : float
         code : numerical or string
 
         """
-        self.time = time
+        super().__init__(time)
         self.code = code
 
 
@@ -374,7 +385,7 @@ class Thresholds(object):
 
         lv = self.get_level(value)
         self._minmax[channel] = _MinMaxDetector(start_value=lv,
-                                     duration=duration)
+                                     duration_ms=duration)
         self._prev_level[channel] = None
         return lv
 

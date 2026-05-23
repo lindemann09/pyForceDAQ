@@ -5,7 +5,8 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from .._lib import lsl, timer
+from .._lib import lsl
+from .._lib.clock import local_clock, wait_ms
 from .._lib.polling_time_profile import PollingTimeProfile
 from .._lib.process_priority_manager import get_priority
 from .._lib.types import DAQEvents
@@ -135,7 +136,7 @@ class SensorProcess(Process):
 
         if self._event_is_polling.is_set():
             self.pause_polling()
-            timer.wait(100)
+            wait_ms(100)
             self.get_buffer() # empty buffer, required to quit process run loop
 
         self._event_quit_request.set()
@@ -182,7 +183,7 @@ class SensorProcess(Process):
                     # start NI device and acquire one first sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    buffer.append(DAQEvents(time=sensor.timer.time,
+                    buffer.append(DAQEvents(time=local_clock(),
                                             code="started:"+repr(sensor.device_id)))
                     logging.info("Sensor start, name %s, pid %s, priority %s",
                         sensor.name,self.pid, get_priority(self.pid))
@@ -215,7 +216,7 @@ class SensorProcess(Process):
                 # pause: not polling
                 if is_polling:
                     sensor.stop_data_acquisition()
-                    buffer.append(DAQEvents(time=sensor.timer.time,
+                    buffer.append(DAQEvents(time=local_clock(),
                                             code="pause:"+repr(sensor.device_id)))
                     self._buffer_size.value = len(buffer)
                     logging.info(
@@ -239,7 +240,7 @@ class SensorProcess(Process):
                         self._buffer_size.value = len(buffer)
 
                     while self._event_sending_data.is_set():
-                        timer.wait(2)
+                        wait_ms(2)
 
                 if self._determine_bias_flag.is_set():
                     sensor.determine_bias(n_samples=self._bias_n_samples)

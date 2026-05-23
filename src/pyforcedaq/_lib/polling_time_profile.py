@@ -1,26 +1,28 @@
 import numpy as np
 
-from .timer import get_time_ms
+from .clock import local_clock
 
 
 class PollingTimeProfile(object):
 
-    def __init__(self, timing_range=10):
+    def __init__(self, timing_range_ms=10):
         self._last = None
-        self._timing_range = 10
+        self._timing_range_ms = 10
         self._zero_cnt = 0
 
         #self._zero_time_polling_frequency = {}
-        self.profile_frequency = np.array([0] * (timing_range + 1))
+        self.profile_frequency = np.array([0] * (timing_range_ms + 1))
 
     def stop(self):
         self._last = None
 
-    def update(self, time_ms):
+    def update(self, time: float):
+
+        time_ms = int(time * 1000)
         if self._last is not None:
             d = time_ms - self._last
-            if d > self._timing_range:
-                d = self._timing_range
+            if d > self._timing_range_ms:
+                d = self._timing_range_ms
             self.profile_frequency[d] += 1
 
             #if d == 0:
@@ -35,7 +37,7 @@ class PollingTimeProfile(object):
         self._last = time_ms
 
     def tick(self):
-        self.update(get_time_ms())
+        self.update(local_clock())
 
     @property
     def profile_percent(self):

@@ -14,7 +14,7 @@ import pygame
 from expyriment import control, design, io, misc, stimuli
 
 from .. import __version__ as forceDAQVersion
-from .._lib import timer
+from .._lib.clock import wait_ms
 from .._lib.types import ForceSensorData
 from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ..force import DataRecorder, SensorProcess, SensorSettings
@@ -70,7 +70,7 @@ def _main_loop(exp, recorder, remote_control=False):
 
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
-            timer.wait(100)
+            wait_ms(100)
 
         ################################ process keyboard
         s.process_key(exp.keyboard.check(check_for_control_keys=False))
@@ -462,7 +462,7 @@ def run(remote_control,
                  write_deviceid = len(device_ids)>1,
                  polling_priority=polling_priority)
 
-    timer.wait(200) # wait for lib init
+    wait_ms(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
 
@@ -475,7 +475,7 @@ def run(remote_control,
                 recorder.quit()
                 control.end()
                 return False
-            timer.wait(100)
+            wait_ms(100)
 
         logo_text_line("Wait for filename").present()
         while True:
@@ -488,7 +488,7 @@ def run(remote_control,
                 filename = x.byte_string[len(RcCmd.FILENAME):].decode('utf-8', 'replace')
                 break
             exp.keyboard.check()
-            timer.wait(100)
+            wait_ms(100)
     else:
         if ask_filename:
             bkg = logo_text_line("")

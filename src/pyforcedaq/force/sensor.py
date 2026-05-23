@@ -12,7 +12,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from .._lib.timer import Timer, app_clock
+from .._lib.clock import local_clock
 from .._lib.types import ForceSensorData
 from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
 
@@ -99,7 +99,6 @@ class Sensor(DAQReadAnalog):
         self.device_id = settings.device_id
         self.name = settings.sensor_name
         self.convert_to_FT = settings.convert_to_FT
-        self.timer = Timer(sync_timer=app_clock) # own timer, because this class is used in own process
         if self.DAQ_TYPE == "mock_sensor":
             self._atidaq = None
             self.convert_to_FT = False
@@ -154,22 +153,22 @@ class Sensor(DAQReadAnalog):
 
         """
 
-        start = self.timer.time
-        read_buffer, _read_samples = self.read_analog()
+        start = local_clock()
+        data, _read_samples = self.read_analog()
         if self.convert_to_FT:
-            forces = self._atidaq.convertToFT( voltages=read_buffer[Sensor.SENSOR_CHANNELS],
+            forces = self._atidaq.convertToFT( voltages=data[Sensor.SENSOR_CHANNELS],
                                                 reverse_parameters=self._reverse_parameters)
         else:
             # array
-            forces = list(read_buffer[Sensor.SENSOR_CHANNELS])
+            forces = list(data[Sensor.SENSOR_CHANNELS])
             for x in self._reverse_parameters:
                 forces[x] = -1 * forces[x]
-        t = self.timer.time
+        t = local_clock()
 
         return ForceSensorData(time = t, acquisition_delay = t-start,
                          device_id = self.device_id,
                          forces = forces,
-                         trigger = read_buffer[Sensor.TRIGGER_CHANNELS].tolist())
+                         trigger = data[Sensor.TRIGGER_CHANNELS].tolist())
 
 
 if __name__ == "__main__":

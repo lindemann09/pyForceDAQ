@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 
-from .._lib.timer import Timer
+from .._lib.clock import StopWatch
 
 
 class DAQReadAnalog(object):
@@ -19,7 +19,7 @@ class DAQReadAnalog(object):
         self._task_is_started = False
         self._last_time = 0
         self._sample_cnt = 0
-        self._simulation_timer = Timer()
+        self._simulation_timer = StopWatch()
         txt = "Using mock sensor: Maybe PyDAQmx or nidaqmx is not  installed"
         logging.warning(txt)
         print(txt)
@@ -37,7 +37,7 @@ class DAQReadAnalog(object):
 
         if not self._task_is_started:
             self._task_is_started = True
-            self._simulation_timer = Timer() #reset
+            self._simulation_timer = StopWatch() #reset
             self._sample_cnt = 0
 
     def stop_data_acquisition(self):
@@ -70,9 +70,9 @@ class DAQReadAnalog(object):
         if not self._task_is_started:
             return None, None
 
-        n_new_samples = self._simulation_timer.time - self._sample_cnt
-        while n_new_samples <= 0:
-            n_new_samples = self._simulation_timer.time - self._sample_cnt
+        n_new_samples = int(self._simulation_timer.time_ms) - self._sample_cnt
+        while n_new_samples <= 0: # wait until new sample is available
+            n_new_samples = int(self._simulation_timer.time_ms) - self._sample_cnt
 
         self._sample_cnt += 1
         x = self._sample_cnt / 1000
