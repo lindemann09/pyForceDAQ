@@ -5,8 +5,8 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
-from . import lsl
 from .clock import local_clock, wait_ms
+from .lsl import LSLSream, cf_float32
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
 from .sensor import Sensor, SensorSettings
@@ -156,23 +156,24 @@ class SensorProcess(Process):
         ptp = PollingTimeProfile() #TODO just for testing?
 
         ## create init LSL
-        lsl_data_steam = None
-        lsl_hardware_trigger_stream = None
+        lsl_data_steam = LSLSream()
+        lsl_hardware_trigger_stream = LSLSream()
         if self.sensor_settings.lsl_stream:
-            lsl_data_steam = lsl.init(
+            lsl_data_steam.init(
                     name=f"Force_{self.sensor_settings.device_name}",
                     n_channels=sum(stream_forces),
                     stream_id=f"RF_{self.sensor_settings.device_name}",
                     freq=self.sensor_settings.rate,
-                    channel_format= lsl.cf_float32,
+                    channel_format= cf_float32,
                     metadata={"sensor_name": self.sensor_settings.sensor_name})
+
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
-                lsl_hardware_trigger_stream = lsl.init(
+                lsl_hardware_trigger_stream.init(
                     name=f"Trigger_{self.sensor_settings.device_name}",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{self.sensor_settings.device_name}",
-                    channel_format=lsl.cf_float32,
+                    channel_format=cf_float32,
                     freq=self.sensor_settings.rate)
 
 
@@ -190,14 +191,15 @@ class SensorProcess(Process):
                     is_polling = True
 
                 d = sensor.poll_data()
-                ## LSL
-                if lsl_data_steam is not None:
-                    lsl_data_steam.push_sample(d.selected_forces(stream_forces)) # steam only select forces
 
-                if lsl_hardware_trigger_stream is not None:
+                ## LSL
+                if lsl_data_steam.is_init:
+                    # stream only select forces
+                    lsl_data_steam.outlet.push_sample(d.selected_forces(stream_forces)) # type: ignore
+                if lsl_hardware_trigger_stream.is_init:
                     tr = d.selected_trigger(stream_trigger)
                     if any(tr): # only stream if at least one trigger is active
-                        lsl_hardware_trigger_stream.push_sample(tr)
+                        lsl_hardware_trigger_stream.outlet.push_sample(tr) # type: ignore
 
                 ptp.update(d.time) # needed? TODO
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
