@@ -17,7 +17,7 @@ from .. import __version__ as forceDAQVersion
 from .._lib.clock import wait_ms
 from .._lib.types import ForceSensorData
 from .._lib.types import GUIRemoteControlCommands as RcCmd
-from ..force import DataRecorder, SensorProcess, SensorSettings
+from ..force import DataRecorder, SensorProcess, SensorSettings #FIXME import via .._lib
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
