@@ -2,7 +2,7 @@ import sys
 from os import path
 from typing import List
 
-import FreeSimpleGUI as _sg
+import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
 from .._lib.types import PollingPriority

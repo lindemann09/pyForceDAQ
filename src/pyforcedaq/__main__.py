@@ -24,9 +24,16 @@ def cli():
         help="Run with launcher GUI to edit settings and start recording",
     )
 
+    parser.add_argument(
+        "-o", "--omit-launcher",
+        action="store_true",
+        default=False,
+        help="Omit launcher GUI and start recording directly",
+    )
+
     args = parser.parse_args()
 
-    if args.launcher:
+    if not args.omit_launcher:
         if len(args.SETTINGS_FILE) > 0:
             print("Can't use launcher and settings file")
             exit()

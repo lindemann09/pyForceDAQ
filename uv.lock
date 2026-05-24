@@ -187,15 +187,6 @@ wheels = [
 ]
 
 [[package]]
-name = "freesimplegui"
-version = "5.2.0.post1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/97/41/8a56f3d4a3760fec6b1f63ff48fa57620f0552eb5f0986fb4aa35f4119f1/freesimplegui-5.2.0.post1.tar.gz", hash = "sha256:e58a0e6758e9a9e87152256911f94fcc3998356d1309973a9f4d9df2dc55f98a", size = 718668, upload-time = "2025-03-17T17:50:24.402Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/b4/ce89b4b40d1d2f726583b4d00b99589ba37580012890a8bc4b88d1d2a239/freesimplegui-5.2.0.post1-py3-none-any.whl", hash = "sha256:3d61eb519324503232f86b2f1bd7f5c6813ce225f6e189d0fd737ddb036af4d5", size = 733618, upload-time = "2025-03-17T17:50:22.559Z" },
-]
-
-[[package]]
 name = "hightime"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -470,13 +461,13 @@ source = { editable = "." }
 dependencies = [
     { name = "atiiaftt" },
     { name = "expyriment" },
-    { name = "freesimplegui" },
     { name = "icecream" },
     { name = "nidaqmx" },
     { name = "numpy" },
     { name = "psutil" },
     { name = "pydaqmx" },
     { name = "pylsl" },
+    { name = "pysimplegui" },
     { name = "pyxdf" },
     { name = "tomlkit" },
 ]
@@ -485,13 +476,13 @@ dependencies = [
 requires-dist = [
     { name = "atiiaftt", specifier = ">=0.1.1" },
     { name = "expyriment", specifier = ">=1.0.1" },
-    { name = "freesimplegui", specifier = ">=5.2.0.post1" },
     { name = "icecream", specifier = ">=2.2.0" },
     { name = "nidaqmx", specifier = ">=1.5.0" },
     { name = "numpy", specifier = ">=2.4.4" },
     { name = "psutil", specifier = ">=7.2.2" },
     { name = "pydaqmx", specifier = ">=1.4.7" },
     { name = "pylsl", specifier = ">=1.18.2" },
+    { name = "pysimplegui", specifier = ">=6.0" },
     { name = "pyxdf", specifier = ">=1.17.4" },
     { name = "tomlkit", specifier = ">=0.15.0" },
 ]
@@ -568,6 +559,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
+]
+
+[[package]]
+name = "pysimplegui"
+version = "6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/00/cf5e10d2842108f9295c7399960a4266e480eaa385729460cb52112340de/pysimplegui-6.0.tar.gz", hash = "sha256:508fa715a4fecdcde5d74b20bf473151bc5d57588b9851cc9d781519c3fbd87d", size = 477915, upload-time = "2026-04-14T16:16:24.764Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/7d/17747200055182aeeac2a7f508adf968cb3ef08595480a030c7e828e285c/pysimplegui-6.0-py3-none-any.whl", hash = "sha256:cc3f0dbdb0f21452a366794be7e0e26d842b3f3a7cb5580e403680d4183151f2", size = 479810, upload-time = "2026-04-14T16:16:23.589Z" },
 ]
 
 [[package]]
