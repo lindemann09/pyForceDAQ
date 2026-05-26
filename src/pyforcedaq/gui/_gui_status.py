@@ -1,16 +1,15 @@
 __author__ = "Oliver Lindemann"
 
-from pickle import dumps, loads
 
 from expyriment import io, misc
 
 from .. import __version__ as forceDAQVersion
+from .._lib import settings
 from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess
 from .._lib.types import ForceSensorData, Thresholds
 from ._layout import RecordingScreen, logo_text_line
 from ._scaling import Scaling
-from ._settings import settings
 
 
 def _text2number_array(txt):

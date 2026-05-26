@@ -5,10 +5,10 @@ from typing import List
 import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
+from .._lib.settings import settings
 from .._lib.types import PollingPriority
 from .._lib.udp_connection import UDPConnection
 from ._run import run_settings as _gui_run
-from ._settings import settings
 
 
 def _group(title, objects):

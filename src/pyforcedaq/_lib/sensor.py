@@ -7,80 +7,13 @@ __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
 from copy import copy
-from pathlib import Path
-from typing import List, Tuple
 
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQConfiguration, DAQReadAnalog
+from ..daq import ATI_CDLL, DAQReadAnalog
 from .clock import local_clock
+from .settings import SensorSettings
 from .types import ForceSensorData
-
-
-class SensorSettings(DAQConfiguration):
-
-    def __init__(self,
-                 device_id:int,
-                 sensor_name:str,
-                 calibration_file:str | Path,
-                 channels="ai0:7",
-                 device_name_prefix = "Dev",
-                 rate:int=1000,
-                 minVal:float=-10,
-                 maxVal:float=10,
-                 reverse_parameter_names: str | Tuple[str] | List[str] | None = None,
-                 convert_to_FT:bool=True,
-                 lsl_stream:bool=False,
-                 buffer_data:bool=True,
-                 write_Fx:bool=True,
-                 write_Fy:bool=True,
-                 write_Fz:bool=True,
-                 write_Tx:bool=False,
-                 write_Ty:bool=False,
-                 write_Tz:bool=False,
-                 write_trigger1:bool=False,
-                 write_trigger2:bool=False):
-
-        """
-        :parameter:
-            reverse_scaling: string or list of string
-                list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
-                Sensors take this into account and correct data online
-        """
-
-        super().__init__(device_name = "{0}{1}".format(device_name_prefix, device_id),
-                         channels=channels,
-                         rate=rate, minVal=minVal, maxVal=maxVal)
-        self.device_id = device_id
-        self.sensor_name = sensor_name
-        self.convert_to_FT = convert_to_FT
-        self.lsl_stream = lsl_stream
-        self.buffer_data = buffer_data
-        self.write_Fx = write_Fx
-        self.write_Fy = write_Fy
-        self.write_Fz = write_Fz
-        self.write_Tx = write_Tx
-        self.write_Ty = write_Ty
-        self.write_Tz = write_Tz
-        self.write_trigger1 = write_trigger1
-        self.write_trigger2 = write_trigger2
-        self.calibration_file = calibration_file
-
-        self.reverse_parameters = [] # FIXME does that work?
-        if reverse_parameter_names is not None:
-            if isinstance(reverse_parameter_names, str):
-                reverse_parameter_names = [reverse_parameter_names]
-            for para in reverse_parameter_names:
-                try:
-                    self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
-                except Exception:
-                    pass
-
-    def array_write_forces(self):
-        return [self.write_Fx, self.write_Fy, self.write_Fz, self.write_Tx, self.write_Ty, self.write_Tz]
-
-    def array_write_trigger(self):
-        return [self.write_trigger1, self.write_trigger2]
 
 
 class Sensor(DAQReadAnalog):
@@ -89,7 +22,7 @@ class Sensor(DAQReadAnalog):
     TRIGGER_CHANNELS = range(5, 6 + 1) # channel 7 for trigger
                                        # synchronization validation
 
-    def __init__(self, settings):
+    def __init__(self, settings:SensorSettings):
         """ DOC"""
 
         assert(isinstance(settings, SensorSettings))
@@ -172,25 +105,3 @@ class Sensor(DAQReadAnalog):
                          forces = forces,
                          trigger = data[Sensor.TRIGGER_CHANNELS].tolist())
 
-
-if __name__ == "__main__":
-    #test sensor history
-    import random
-
-    from .misc import SensorHistory
-    from .types import Thresholds
-
-    def run():
-        sh = SensorHistory(history_size=5, number_of_parameter=3)
-        thr = Thresholds([35, 20, 50, 80, 90])
-        for x in range(1998):
-            x = [random.randint(0, 10), random.randint(0, 100),
-                    random.randint(0, 100)]
-            sh.update(x)
-
-        print(sh.moving_average, sh.calc_history_average())
-        print(thr._thresholds)
-        print(thr.get_level(80))
-
-    import timeit
-    print(timeit.timeit(run, number=1))

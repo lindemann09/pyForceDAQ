@@ -16,14 +16,18 @@ from expyriment import control, design, io, misc, stimuli
 from .. import __version__ as forceDAQVersion
 from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
-from .._lib.sensor import SensorSettings
 from .._lib.sensor_process import SensorProcess
+from .._lib.settings import (
+    DAQConfiguration,
+    RecordingSettings,
+    SensorSettings,
+    settings,
+)
 from .._lib.types import ForceSensorData
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
 from ._plotter import PlotterThread
-from ._settings import settings
 
 #eedback
 COMMAND_STR = b"$"
@@ -330,53 +334,18 @@ def _main_loop(exp, recorder):
         plotter_thread.join()
     recorder.pause_recording(s.background)
 
-def run_settings(settings_file: str | None = None):
+def run_settings(settings_file: str | None = None,
+                 filename: str | None = None):
 
     if settings_file is not None and len(settings_file) > 0:
         # load different settings file if specified
         settings.load(settings_file)
 
-    return run(
-                        ask_filename = settings.recording.ask_filename,
-                        device_ids = settings.recording.device_ids,
-                        calibration_files = settings.recording.calibration_files,
-                        calibration_folder = settings.recording.calibration_folder,
-                        device_name_prefix = settings.recording.device_name_prefix,
-                        write_Fx = settings.recording.write_Fx,
-                        write_Fy = settings.recording.write_Fy,
-                        write_Fz = settings.recording.write_Fz,
-                        write_Tx = settings.recording.write_Tx,
-                        write_Ty = settings.recording.write_Ty,
-                        write_Tz = settings.recording.write_Tz,
-                        write_trigger1 = settings.recording.write_trigger1,
-                        write_trigger2 = settings.recording.write_trigger2,
-                        zip_data=settings.recording.zip_data,
-                        reverse_scaling = settings.recording.reverse_scaling,
-                        convert_to_forces=settings.recording.convert_to_forces,
-                        lsl_stream=settings.recording.lsl_stream,
-                        polling_priority=settings.recording.priority)
+    return run(settings.recording, filename=filename)
 
-def run(
-                     ask_filename,
-                     device_ids : int | List[int],
-                     calibration_files : str | List[str],
-                     calibration_folder: str,
-                     device_name_prefix: str="Dev",
-                     write_Fx: bool = True,
-                     write_Fy: bool = True,
-                     write_Fz: bool = True,
-                     write_Tx: bool = False,
-                     write_Ty: bool = False,
-                     write_Tz: bool = False,
-                     write_trigger1 : bool = True,
-                     write_trigger2: bool = False,
-                     zip_data: bool = False,
-                     reverse_scaling: dict | None = None,
-                     convert_to_forces: bool = True,
-                     lsl_stream: bool = False,
-                     polling_priority: str | None = None):
+def run(rs: RecordingSettings, filename: str | None = None):
 
-    """start gui
+    """start recodring with settings specified in recording settings and GUI settings
 
     reverse scaling: dictionary with rescaling (see SensorSetting)
                 key: device_id, value: list of parameter names (e.g., ["Fx"])
@@ -389,42 +358,16 @@ def run(
     #
 
     logging.info("New Recording with forceDAQ %s", forceDAQVersion)
-    logging.info("Sensors %s", calibration_files)
+    logging.info("Sensors %s", rs.calibration_files)
     logging.info("Settings %s", settings.recording_as_json())
 
 
-    if not isinstance(device_ids, (list, tuple)):
-        device_ids = [device_ids]
-    if not isinstance(calibration_files, (list, tuple)):
-        calibration_files = [calibration_files]
+    if not isinstance(rs.device_ids, (list, tuple)):
+        rs.device_ids = [rs.device_ids]
+    if not isinstance(rs.calibration_files, (list, tuple)):
+        rs.calibration_files = [rs.calibration_files]
 
-    sensors = []
-    for d_id, cal_file in zip(device_ids, calibration_files):
-        if reverse_scaling is None:
-            reverse_parameter_names = []
-        else:
-            try:
-                reverse_parameter_names = reverse_scaling[str(d_id)]
-            except KeyError:
-                reverse_parameter_names = []
-
-        ss = SensorSettings(device_id = d_id,
-                    device_name_prefix=device_name_prefix,
-                    sensor_name = cal_file.split(".")[0],
-                    calibration_file=path.join(calibration_folder, cal_file),
-                    reverse_parameter_names=reverse_parameter_names,
-                    rate = settings.gui.sampling_rate,
-                    convert_to_FT=convert_to_forces,
-                    lsl_stream=lsl_stream,
-                    write_Fx = write_Fx,
-                    write_Fy = write_Fy,
-                    write_Fz = write_Fz,
-                    write_Tx = write_Tx,
-                    write_Ty = write_Ty,
-                    write_Tz = write_Tz,
-                    write_trigger1= write_trigger1,
-                    write_trigger2= write_trigger2)
-        sensors.append(ss)
+    sensor_settings: List[SensorSettings] = rs.sensor_settings_list()
 
     # expyriment
     control.defaults.initialise_delay = 0
@@ -437,31 +380,30 @@ def run(
     exp = design.Experiment(text_font=settings.gui.window_font)
     exp.set_log_level(0)
 
-
     filename = "output.csv"
     control.initialize(exp)
     exp.mouse.show_cursor()
     logo_text_line("Initializing Force Recording").present()
 
-    recorder = DataRecorder(sensors,
-                 poll_udp_connection=False, # FIXME remove UDP polling from recorder and put it in main loop
-                 write_deviceid = len(device_ids)>1,
-                 polling_priority=polling_priority)
+
+    recorder = DataRecorder(recording_settings=rs,
+                force_sensor_settings=sensor_settings,
+                 poll_udp_connection=False # FIXME remove UDP polling from recorder and put it in main loop
+                 )
 
     wait_ms(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
-    if ask_filename:
-        bkg = logo_text_line("")
-        filename = io.TextInput("Filename", background_stimulus=bkg).get()
-        filename = filename.replace(" ", "_")
+    if rs.save_data:
+        if filename is None:
+            bkg = logo_text_line("")
+            filename = io.TextInput("Filename", background_stimulus=bkg).get()
+            filename = filename.replace(" ", "_")
 
-
-    recorder.open_data_file(filename,
-                            subdirectory="data",
-                            zipped=zip_data,
-                            time_stamp_filename=False,
-                            comment_line="")
+        recorder.open_data_file(filename,
+                                subdirectory="data",
+                                time_stamp_filename=False,
+                                comment_line="")
 
     _main_loop(exp, recorder=recorder)
 

@@ -2,8 +2,8 @@ __author__ = "Oliver Lindemann"
 __version__ = "0.5"
 
 from .. import USE_MOCK_SENSOR
+from .._lib.settings import DAQConfiguration
 from ._pyATIDAQ import ATI_CDLL
-from .config import DAQConfiguration
 
 if USE_MOCK_SENSOR:
     print("Using mock sensor instead.")

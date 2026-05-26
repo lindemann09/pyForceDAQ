@@ -9,13 +9,17 @@ from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
 from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
-from .sensor import Sensor, SensorSettings
+from .sensor import Sensor
+from .settings import RecordingSettings, SensorSettings
 from .types import DAQEvents
 
 
 class SensorProcess(Process):
 
-    def __init__(self, settings, pipe_buffered_data_after_pause=True,
+    def __init__(self,
+                 sensor_settings:SensorSettings,
+                 recording_settings:RecordingSettings,
+                 pipe_buffered_data_after_pause=True,
                   chunk_size=10000):
         """ForceSensorProcess
 
@@ -27,12 +31,17 @@ class SensorProcess(Process):
         # DOC explain usage
 
         # type checks
-        if not isinstance(settings, SensorSettings):
+        if not isinstance(sensor_settings, SensorSettings):
             raise RuntimeError(
-                "settings has to be force_sensor.Settings object")
+                "sensor_settings has to be force_sensor.Settings object")
+        if not isinstance(recording_settings, RecordingSettings):
+            raise RuntimeError(
+                "recording_settings has to be force_sensor.RecordingSettings object")
+
 
         super(SensorProcess, self).__init__()
-        self.sensor_settings = settings
+        self.sensor_settings = sensor_settings
+        self.recording_settings = recording_settings
         self._pipe_buffer_after_pause = pipe_buffered_data_after_pause
         self._chunk_size = chunk_size
 
@@ -147,8 +156,8 @@ class SensorProcess(Process):
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings)
-        stream_forces = self.sensor_settings.array_write_forces()
-        stream_trigger = self.sensor_settings.array_write_trigger()
+        stream_forces = self.recording_settings.array_write_forces()
+        stream_trigger = self.recording_settings.array_write_trigger()
 
         self._event_is_polling.clear()
         self._event_sending_data.clear()
@@ -158,7 +167,7 @@ class SensorProcess(Process):
         ## create init LSL
         lsl_data_steam = LSLSream()
         lsl_hardware_trigger_stream = LSLSream()
-        if self.sensor_settings.lsl_stream:
+        if self.recording_settings.lsl_stream:
             lsl_data_steam.init(
                     name=f"Force_{self.sensor_settings.device_name}",
                     n_channels=sum(stream_forces),
@@ -211,7 +220,7 @@ class SensorProcess(Process):
                     self.event_trigger.clear()
                     d.trigger[0] = 1
 
-                if sensor.buffer_data:
+                if self.recording_settings.save_data:
                     buffer.append(d)
                     self._buffer_size.value = len(buffer)
 
