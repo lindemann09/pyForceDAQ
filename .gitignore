@@ -67,3 +67,4 @@ expyriment/
 .vscode/
 *.xdf
 *.settings.toml
+uv.lock
