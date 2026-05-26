@@ -19,13 +19,18 @@ from .._lib.data_recorder import DataRecorder
 from .._lib.sensor import SensorSettings
 from .._lib.sensor_process import SensorProcess
 from .._lib.types import ForceSensorData
-from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
 from ._plotter import PlotterThread
 from ._settings import settings
 
+#eedback
+COMMAND_STR = b"$"
+RESPONSE_MINMAX = COMMAND_STR + b"xRM1"
+RESPONSE_MINMAX2 = COMMAND_STR + b"xRM2"
+CHANGED_LEVEL = COMMAND_STR + b"xCL1"
+CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
 
 def _main_loop(exp, recorder):
     """udp command:
@@ -76,9 +81,9 @@ def _main_loop(exp, recorder):
                                                 channel=x)
                 if level_change:
                     if x==1:
-                        recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL2+ dumps(tmp))
+                        recorder.udp.send_queue.put(CHANGED_LEVEL2+ dumps(tmp))
                     else:
-                        recorder.udp.send_queue.put(RcCmd.CHANGED_LEVEL+ dumps(tmp))
+                        recorder.udp.send_queue.put(CHANGED_LEVEL+ dumps(tmp))
 
                 # minmax detection
                 tmp = s.thresholds.get_response_minmax(
@@ -86,9 +91,9 @@ def _main_loop(exp, recorder):
                                                 channel=x)
                 if tmp is not None:
                     if x==1:
-                        recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX2 + dumps(tmp))
+                        recorder.udp.send_queue.put(RESPONSE_MINMAX2 + dumps(tmp))
                     else:
-                        recorder.udp.send_queue.put(RcCmd.RESPONSE_MINMAX + dumps(tmp))
+                        recorder.udp.send_queue.put(RESPONSE_MINMAX + dumps(tmp))
 
 
         ######################## show pause or recording screen

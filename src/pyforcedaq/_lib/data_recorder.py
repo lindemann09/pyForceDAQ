@@ -25,7 +25,6 @@ from .types import (
     PollingPriority,
     UDPData,
 )
-from .types import GUIRemoteControlCommands as RemoteCmd
 from .udp_connection import UDPConnectionProcess
 
 _log.set_logging(data_directory="data", log_file="recording.log")
@@ -72,8 +71,7 @@ class DataRecorder(object):
 
         # create udp connection process
         if poll_udp_connection:
-            self.udp = UDPConnectionProcess(event_trigger=event_trigger,
-                                            event_ignore_tag = RemoteCmd.COMMAND_STR)
+            self.udp = UDPConnectionProcess(event_trigger=event_trigger)
             self.udp.start()
         else:
             self.udp = None

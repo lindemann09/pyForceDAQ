@@ -235,61 +235,6 @@ class DAQEvents(TimedData):
         self.code = code
 
 
-class GUIRemoteControlCommands(object):
-    """
-    SET_THRESHOLDS needs to be followed by a threshold object
-    SET_RESPONSE_MINMAX_DETECTION needs to be followed an integer representing duration of sampling
-
-    feedback:
-        CHANGED_LEVEL+int from SET_LEVEL_CHANGE_DETECTION
-        RESPONSE_MINMAX+(int, int) from SET_RESPONSE_MINMAX_DETECTION
-        VALUE+float from GET_FX, GET_FY, GET_FZ, GET_TX, GET_TY, GET_TZ,
-
-    see also UDPConnection constants!
-    """
-
-    #DOC REMOTECONTROL
-
-    COMMAND_STR = b"$"
-    # BASIC
-    START = COMMAND_STR + b"SRT"
-    PAUSE = COMMAND_STR + b"PSE"
-    PING = COMMAND_STR + b"PNG"
-    QUIT  = COMMAND_STR + b"QUT"
-    #getter
-    GET_FX1 = COMMAND_STR + b"gFX1"
-    GET_FX2 = COMMAND_STR + b"gFX2"
-    GET_FY1 = COMMAND_STR + b"gFY1"
-    GET_FY2 = COMMAND_STR + b"gFY2"
-    GET_FZ1 = COMMAND_STR + b"gFZ1"
-    GET_FZ2 = COMMAND_STR + b"gFZ2"
-    GET_TX1 = COMMAND_STR + b"gTX1"
-    GET_TX2 = COMMAND_STR + b"gTX2"
-    GET_TY1 = COMMAND_STR + b"gTY1"
-    GET_TY2 = COMMAND_STR + b"gTY2"
-    GET_TZ1 = COMMAND_STR + b"gTZ1"
-    GET_TZ2 = COMMAND_STR + b"gTZ2"
-    GET_THRESHOLD_LEVEL =COMMAND_STR + b"gTL"
-    GET_THRESHOLD_LEVEL2 = COMMAND_STR + b"gTL2"
-    GET_VERSION = COMMAND_STR + b"gVR"
-    # setter
-    FILENAME = COMMAND_STR + b"sFN"
-    SET_THRESHOLDS = COMMAND_STR + b"sTH"
-    SET_LEVEL_CHANGE_DETECTION = COMMAND_STR + b"sCD1"
-    SET_LEVEL_CHANGE_DETECTION2 = COMMAND_STR + b"sCD2"
-    SET_RESPONSE_MINMAX_DETECTION = COMMAND_STR + b"sMD1"
-    SET_RESPONSE_MINMAX_DETECTION2 = COMMAND_STR + b"sMD2"
-    #feedback
-    FEEDBACK = COMMAND_STR + b"xFB"
-    VALUE = COMMAND_STR + b"xVL"
-    RESPONSE_MINMAX = COMMAND_STR + b"xRM1"
-    RESPONSE_MINMAX2 = COMMAND_STR + b"xRM2"
-    CHANGED_LEVEL = COMMAND_STR + b"xCL1"
-    CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
-
-    FEEDBACK_PAUSED = FEEDBACK + b"paused"
-    FEEDBACK_STARTED = FEEDBACK + b"started"
-
 class Thresholds(object):
 
     def __init__(self, thresholds, n_channels=1):

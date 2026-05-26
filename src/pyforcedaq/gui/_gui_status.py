@@ -8,7 +8,6 @@ from .. import __version__ as forceDAQVersion
 from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess
 from .._lib.types import ForceSensorData, Thresholds
-from .._lib.types import GUIRemoteControlCommands as RcCmd
 from ._layout import RecordingScreen, logo_text_line
 from ._scaling import Scaling
 from ._settings import settings
@@ -191,7 +190,6 @@ class GUIStatus(object):
     def process_udp_event(self, udp_event):
         """remote control
 
-        See commands in pyforceDAQ.types.GUIRemoteControlCommands
         """
         self.set_marker = True
         self.last_udp_data = udp_event.byte_string
