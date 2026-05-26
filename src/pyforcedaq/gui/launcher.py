@@ -65,7 +65,6 @@ def _windows_run():
     n_sensor = len(s.device_ids)
 
     info_settings = []
-    info_settings.append([_sg.Text("Remote Control: {}".format(s.remote_control))])
     info_settings.append([_sg.Text("Number of sensors: {}".format(n_sensor))])
 
     for d_id, name, cal, error in _check_sensor_calibration_settings(
@@ -108,9 +107,7 @@ def _window_settings():
 
     #layout.append([sg.Text('Recording Settings')])
     layout.append([_sg.Frame('General',
-                         [[_sg.Checkbox("Remote Control", s.remote_control,
-                                       key="remote_control"),
-                           _sg.Checkbox("Enter Filename Manually",
+                         [[                           _sg.Checkbox("Enter Filename Manually",
                                         s.ask_filename, key="ask_filename")],
                           [_sg.Checkbox("Zip Data", s.zip_data,
                                        key="zip_data")],
@@ -179,7 +176,7 @@ def _window_settings():
     d = s._asdict()
     if event=="Save":
 
-        for key in ("device_name_prefix", "remote_control", "ask_filename",
+        for key in ("device_name_prefix", "ask_filename",
                     "write_Fx", "write_Fy", "write_Fz",
                     "write_Tx", "write_Ty", "write_Tz",
                     "write_trigger1", "write_trigger2", "convert_to_forces",

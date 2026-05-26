@@ -27,23 +27,7 @@ from ._plotter import PlotterThread
 from ._settings import settings
 
 
-def _initialize(exp, remote_control=None):
-    control.initialize(exp)
-    exp.mouse.show_cursor()
-
-    if remote_control is None:
-        logo_text_line(text="Use remote control? (Y/n)").present()
-        key = exp.keyboard.wait([ord("z"), ord("y"), ord("n"),
-                                 misc.constants.K_SPACE,
-                                 misc.constants.K_RETURN])[0]
-        if key == ord("n"):
-            remote_control = False
-        else:
-            remote_control = True
-
-    return remote_control
-
-def _main_loop(exp, recorder, remote_control=False):
+def _main_loop(exp, recorder):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -57,7 +41,6 @@ def _main_loop(exp, recorder, remote_control=False):
     s = GUIStatus(screen_refresh_interval_indicator = settings.gui.screen_refresh_interval_indicator,
                   screen_refresh_interval_plotter = settings.gui.gui_screen_refresh_interval_plotter,
                   recorder = recorder,
-                  remote_control=remote_control,
                   level_detection_parameter = ForceSensorData.forces_names.index(
                                                         settings.gui.level_detection_parameter),  # only one dimension
                   screen_size = exp.screen.size,
@@ -117,14 +100,10 @@ def _main_loop(exp, recorder, remote_control=False):
             if s.pause_recording:
                 recorder.pause_recording(s.background)
                 s.background.stimulus("Paused ('b' for baseline)").present()
-                if remote_control:
-                    recorder.udp.send_queue.put(RcCmd.FEEDBACK_PAUSED)
             else:
                 recorder.start_recording()
                 s.set_start_recording_time()
                 s.background.stimulus().present()
-                if remote_control:
-                    recorder.udp.send_queue.put(RcCmd.FEEDBACK_STARTED)
 
         ###########################
         ########################### plotting
@@ -352,7 +331,7 @@ def run_settings(settings_file: str | None = None):
         # load different settings file if specified
         settings.load(settings_file)
 
-    return run(remote_control = settings.recording.remote_control,
+    return run(
                         ask_filename = settings.recording.ask_filename,
                         device_ids = settings.recording.device_ids,
                         calibration_files = settings.recording.calibration_files,
@@ -372,7 +351,7 @@ def run_settings(settings_file: str | None = None):
                         lsl_stream=settings.recording.lsl_stream,
                         polling_priority=settings.recording.priority)
 
-def run(remote_control,
+def run(
                      ask_filename,
                      device_ids : int | List[int],
                      calibration_files : str | List[str],
@@ -393,7 +372,6 @@ def run(remote_control,
                      polling_priority: str | None = None):
 
     """start gui
-    remote_control should be None (ask) or True or False
 
     reverse scaling: dictionary with rescaling (see SensorSetting)
                 key: device_id, value: list of parameter names (e.g., ["Fx"])
@@ -456,7 +434,8 @@ def run(remote_control,
 
 
     filename = "output.csv"
-    remote_control = _initialize(exp, remote_control=remote_control)
+    control.initialize(exp)
+    exp.mouse.show_cursor()
     logo_text_line("Initializing Force Recording").present()
 
     recorder = DataRecorder(sensors,
@@ -467,35 +446,10 @@ def run(remote_control,
     wait_ms(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
-
-    if remote_control:
-        logo_text_line("Waiting to connect (my IP: {0})".format(
-                    recorder.udp.my_ip)).present()
-        while not recorder.udp.event_is_connected.is_set():
-            key = exp.keyboard.check(check_for_control_keys=False)
-            if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
-                recorder.quit()
-                control.end()
-                return False
-            wait_ms(100)
-
-        logo_text_line("Wait for filename").present()
-        while True:
-            try:
-                x = recorder.udp.receive_queue.get_nowait()
-            except:
-                x = None
-
-            if x is not None and x.startswith(RcCmd.FILENAME):
-                filename = x.byte_string[len(RcCmd.FILENAME):].decode('utf-8', 'replace')
-                break
-            exp.keyboard.check()
-            wait_ms(100)
-    else:
-        if ask_filename:
-            bkg = logo_text_line("")
-            filename = io.TextInput("Filename", background_stimulus=bkg).get()
-            filename = filename.replace(" ", "_")
+    if ask_filename:
+        bkg = logo_text_line("")
+        filename = io.TextInput("Filename", background_stimulus=bkg).get()
+        filename = filename.replace(" ", "_")
 
 
     recorder.open_data_file(filename,
@@ -504,8 +458,7 @@ def run(remote_control,
                             time_stamp_filename=False,
                             comment_line="")
 
-    _main_loop(exp, recorder=recorder,
-               remote_control=remote_control)
+    _main_loop(exp, recorder=recorder)
 
     recorder.quit()
     control.end()

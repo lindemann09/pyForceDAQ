@@ -7,8 +7,7 @@ launch the GUI force from your Python program:
 ``
     from pyforcedaq import gui
 
-    gui.run(remote_control=False,
-              ask_filename=True,
+    gui.run(ask_filename=True,
                calibration_file="FT_sensor1.cal")
 ``
 
@@ -18,10 +17,6 @@ import relevant stuff to program your own force:
     from pyforcedaq import force
 ``
 
-import relevant stuff for remote control of the GUI force:
-``
-    from pyforcedaq import remote_control
-``
 
 For function to support data handling see the folder pyForceDAQ/analysis
 

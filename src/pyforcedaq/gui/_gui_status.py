@@ -30,7 +30,6 @@ class GUIStatus(object):
                  screen_refresh_interval_indicator,
                  screen_refresh_interval_plotter,
                  recorder,
-                 remote_control,
                  level_detection_parameter,
                  data_min_max,
                  plotter_pixel_min_max,
@@ -42,12 +41,10 @@ class GUIStatus(object):
         self.screen_refresh_interval_plotter = screen_refresh_interval_plotter
         self.plot_axis = plot_axis
         self.recorder = recorder
-        self.remote_control = remote_control
         self.level_detection_parameter = level_detection_parameter
 
         self.background = RecordingScreen(window_size = screen_size,
-                                          filename=recorder.filename,
-                                          remote_control=remote_control)
+                                          filename=recorder.filename)
         self.scaling_plotter = Scaling(min=data_min_max[0], max= data_min_max[1],
                       pixel_min=plotter_pixel_min_max[0],
                       pixel_max=plotter_pixel_min_max[1])
@@ -196,101 +193,8 @@ class GUIStatus(object):
 
         See commands in pyforceDAQ.types.GUIRemoteControlCommands
         """
-
-        if self.remote_control and udp_event.is_remote_control_command:
-            if udp_event.byte_string == RcCmd.START:
-                self.pause_recording = False
-            elif udp_event.byte_string == RcCmd.PAUSE:
-                self.pause_recording = True
-            elif udp_event.byte_string == RcCmd.QUIT:
-                self.quit_recording = True
-
-            elif udp_event.startswith(RcCmd.SET_THRESHOLDS): # thresholds
-                try:
-                    self.thresholds = loads(
-                        udp_event.byte_string[len(RcCmd.SET_THRESHOLDS):])
-                    if not isinstance(self.thresholds, Thresholds): # ensure not strange types
-                        self.thresholds = None
-                    else:
-                        self.thresholds.set_number_of_channels(self.n_sensors)
-                except:
-                    self.thresholds = None
-
-            elif udp_event.startswith(RcCmd.GET_THRESHOLD_LEVEL) or \
-                 udp_event.startswith(RcCmd.GET_THRESHOLD_LEVEL2):
-                if self.thresholds is not None:
-                    s = int(udp_event.startswith(RcCmd.GET_THRESHOLD_LEVEL2))
-                    tmp = self.thresholds.get_level(self.level_detection_parameter_average(s))
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(tmp))
-                else:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE + dumps(None))
-            elif udp_event.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION) or \
-                 udp_event.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION2):
-                if self.thresholds is not None:
-                    s = int(udp_event.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION2))
-                    self.thresholds.set_level_change_detection(self.level_detection_parameter_average(s),
-                                                               channel=s)
-
-            elif udp_event.startswith(RcCmd.SET_RESPONSE_MINMAX_DETECTION) or \
-                    udp_event.startswith(RcCmd.SET_RESPONSE_MINMAX_DETECTION2):
-                try:
-                    duration =  int(loads(
-                        udp_event.byte_string[len(RcCmd.SET_RESPONSE_MINMAX_DETECTION):]))
-                except:
-                    duration = None
-
-                s = int(udp_event.startswith(RcCmd.SET_LEVEL_CHANGE_DETECTION2))
-                if self.thresholds is not None and duration is not None:
-                    self.thresholds.set_response_minmax_detection(
-                        value = self.level_detection_parameter_average(s), duration = duration,
-                        channel=s)
-
-            elif udp_event.byte_string == RcCmd.GET_VERSION:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                            dumps(forceDAQVersion))
-            elif udp_event.byte_string == RcCmd.PING:
-                self.recorder.udp.send_queue.put(RcCmd.PING)
-            elif udp_event.byte_string == RcCmd.GET_FX1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fx))
-            elif udp_event.byte_string == RcCmd.GET_FY1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fy))
-            elif udp_event.byte_string == RcCmd.GET_FZ1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fz))
-            elif udp_event.byte_string == RcCmd.GET_TX1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fx))
-            elif udp_event.byte_string == RcCmd.GET_TY1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fy))
-            elif udp_event.byte_string == RcCmd.GET_TZ1:
-                self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                 dumps(self.sensor_processes[0].Fz))
-            elif self.n_sensors > 1:
-                if udp_event.byte_string == RcCmd.GET_FX2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fx))
-                elif udp_event.byte_string == RcCmd.GET_FY2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fy))
-                elif udp_event.byte_string == RcCmd.GET_FZ2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fz))
-                elif udp_event.byte_string == RcCmd.GET_TX2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fx))
-                elif udp_event.byte_string == RcCmd.GET_TY2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fy))
-                elif udp_event.byte_string == RcCmd.GET_TZ2:
-                    self.recorder.udp.send_queue.put(RcCmd.VALUE +
-                                                     dumps(self.sensor_processes[1].Fz))
-        else:
-            # not remote control command
-            self.set_marker = True
-            self.last_udp_data = udp_event.byte_string
+        self.set_marker = True
+        self.last_udp_data = udp_event.byte_string
 
 
     def update_history(self, sensor):

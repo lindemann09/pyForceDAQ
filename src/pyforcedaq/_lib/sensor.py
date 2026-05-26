@@ -31,6 +31,7 @@ class SensorSettings(DAQConfiguration):
                  reverse_parameter_names: str | Tuple[str] | List[str] | None = None,
                  convert_to_FT:bool=True,
                  lsl_stream:bool=False,
+                 buffer_data:bool=True,
                  write_Fx:bool=True,
                  write_Fy:bool=True,
                  write_Fz:bool=True,
@@ -54,6 +55,7 @@ class SensorSettings(DAQConfiguration):
         self.sensor_name = sensor_name
         self.convert_to_FT = convert_to_FT
         self.lsl_stream = lsl_stream
+        self.buffer_data = buffer_data
         self.write_Fx = write_Fx
         self.write_Fy = write_Fy
         self.write_Fz = write_Fz
@@ -64,7 +66,7 @@ class SensorSettings(DAQConfiguration):
         self.write_trigger2 = write_trigger2
         self.calibration_file = calibration_file
 
-        self.reverse_parameters = []
+        self.reverse_parameters = [] # FIXME does that work?
         if reverse_parameter_names is not None:
             if isinstance(reverse_parameter_names, str):
                 reverse_parameter_names = [reverse_parameter_names]

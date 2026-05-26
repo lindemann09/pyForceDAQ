@@ -33,7 +33,6 @@ class _RecordingSetting:
     device_name_prefix: str = "Dev"
     device_ids:  List[int] = field(default_factory=lambda: [1])
     ask_filename: bool = False
-    remote_control: bool = False
     calibration_folder: str = "calibration"
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
     zip_data: bool = True

@@ -204,9 +204,6 @@ class UDPData(TimedData):
     def unicode(self):
         return self.byte_string.decode('utf-8', 'replace')
 
-    @property
-    def is_remote_control_command(self):
-        return self.startswith(GUIRemoteControlCommands.COMMAND_STR)
 
     def startswith(self, byte_string):
         return self.byte_string[:len(byte_string)] == byte_string

@@ -211,8 +211,9 @@ class SensorProcess(Process):
                     self.event_trigger.clear()
                     d.trigger[0] = 1
 
-                buffer.append(d)
-                self._buffer_size.value = len(buffer)
+                if sensor.buffer_data:
+                    buffer.append(d)
+                    self._buffer_size.value = len(buffer)
 
             else:
                 # pause: not polling

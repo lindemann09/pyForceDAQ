@@ -35,7 +35,8 @@ NEWLINE = "\n"
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self, force_sensor_settings:SensorSettings | list,
+    def __init__(self,
+                 force_sensor_settings:SensorSettings | list,
                  poll_udp_connection=False,
                  write_deviceid = False,
                  polling_priority:str | None = None):
@@ -191,8 +192,7 @@ class DataRecorder(object):
                     self._file_write(f"{TAG_DAQEVENT},{d.time},{str(d.code)}" + NEWLINE)
 
                 elif isinstance(d, UDPData):
-                    if not d.is_remote_control_command:
-                        self._file_write(f"{TAG_UDPDATA},{d.time},{d.unicode}" + NEWLINE)
+                    self._file_write(f"{TAG_UDPDATA},{d.time},{d.unicode}" + NEWLINE)
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
