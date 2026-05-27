@@ -4,35 +4,9 @@ from typing import List
 import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
-from .._lib.settings import DEFAULT_SETTINGS_FILE, PyForceDAQSettings, RecordingSettings
+from .._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings, RecordingSettings
 from .._lib.udp_connection import UDPConnection
 from . import _run
-
-
-def _group(title, objects):
-    return [_sg.Frame(title, [objects])]
-
-
-def _input_text_list(lable, list, key, x_sizes=(19, 20)):
-    return [_sg.Text(lable, size=(x_sizes[0], 1)),
-            _sg.Input(default_text=_l2s(list), size=(x_sizes[1], 1), key=key)]
-
-
-def _l2s(the_list): #convert list to str
-    text_list = "{}".format(the_list)
-    return text_list.replace("[","").replace("]","").replace("'", "")
-
-
-def _s2l(csv_string, is_integer=False, is_float=False): # convert csv string to list
-    rtn = []
-    for x in csv_string.split(","):
-        x = x.strip()
-        if is_float:
-            x = float(x)
-        elif is_integer:
-            x = int(x)
-        rtn.append(x)
-    return rtn
 
 
 def _check_sensor_calibration_settings(device_ids: List[int],
@@ -100,7 +74,8 @@ def _windows_run(rs: RecordingSettings):
 
 def run_launcher():
     _sg.theme('DarkBlue14')  # please make your windows colorful
-    settings = PyForceDAQSettings(filename=DEFAULT_SETTINGS_FILE)
+    settings = AppSettings(filename=DEFAULT_SETTINGS_FILE)
+
     rs = settings.recording
     settings_error = False
     n_sensor = len(rs.device_ids)

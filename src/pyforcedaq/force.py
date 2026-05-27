@@ -8,4 +8,4 @@ __author__ = 'Oliver Lindemann'
 from ._lib.data_recorder import DataRecorder
 from ._lib.sensor import Sensor, SensorSettings
 from ._lib.sensor_process import SensorProcess
-from ._lib.settings import PyForceDAQSettings, RecordingSettings, SensorSettings
+from ._lib.settings import RecordingSettings, SensorSettings, Settings

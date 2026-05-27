@@ -199,7 +199,7 @@ class DataRecorder(object):
 
     def _file_write(self, s: str) -> None:
         if self._file is not None:
-            self._file.write(s.encode("UTF8")) #FIXME check encoding not zip file
+            self._file.write(s.encode("utf-8")) #FIXME check encoding not zip file
 
     def store_daq_event(self, code: str | int | float, time: float | None = None) -> None:
         """Set marker code in file

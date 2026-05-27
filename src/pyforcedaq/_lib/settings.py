@@ -1,9 +1,10 @@
 import json
 import os
-from dataclasses import dataclass, field
+from abc import ABC
+from dataclasses import dataclass, field, is_dataclass
 from os import path
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import tomlkit
 
@@ -42,7 +43,7 @@ class SensorSettings(DAQConfiguration):
     """
     device_id: int
     sensor_name: str # FIXME maybe not needed, can be derived from calibration file name
-    calibration_file: str | Path
+    calibration_file: str
     device_name_prefix: str
     # DAQ settings
     channels: str = "ai0:7"
@@ -66,8 +67,25 @@ class SensorSettings(DAQConfiguration):
                     pass
 
 
+
+class ABCSettings(ABC): # must be a dataclass
+
+    def set_properties(self, property_dict: Dict[str, Any]) -> bool:
+        """return true is a properties of the data class is
+        missing in the dict"""
+        assert(is_dataclass(self))
+
+        for key, values in property_dict.items():
+            if hasattr(self, key):
+                setattr(self, key, values)
+        # check all properties in dataclass have been set
+        for class_property in self.__dataclass_fields__.keys(): # type: ignore
+            if class_property not in property_dict:
+                return True
+        return False
+
 @dataclass
-class RecordingSettings:
+class RecordingSettings(ABCSettings):
     device_name_prefix: str = "Dev"
     device_ids:  List[int] = field(default_factory=lambda: [1])
     calibration_folder: str = "calibration"
@@ -115,7 +133,7 @@ class RecordingSettings:
             ss = SensorSettings(device_id = d_id,
                         device_name_prefix=self.device_name_prefix,
                         sensor_name = cal_file.split(".")[0],
-                        calibration_file=path.join(self.calibration_folder, cal_file),
+                        calibration_file=str(Path(self.calibration_folder) / cal_file),
                         reverse_parameter_names=self.reverse_parameters_for_device(d_id),
                         rate = self.sampling_rate,
                         convert_to_FT=self.convert_to_forces
@@ -125,7 +143,7 @@ class RecordingSettings:
 
 
 @dataclass
-class GUISettings:
+class GUISettings(ABCSettings):
     level_detection_parameter: str = "Fz"
     window_font: str = "freemono"
     moving_average_size: int = 5
@@ -145,7 +163,8 @@ class GUISettings:
         default_factory=lambda: [(0, 2), (1, 2)])
 
 
-class PyForceDAQSettings(object):
+
+class AppSettings(object):
 
     def __init__(self, filename: str | Path):
         # defaults
@@ -165,19 +184,17 @@ class PyForceDAQSettings(object):
         return {self.recording_section: self.recording.__dict__,
              self.gui_section: self.gui.__dict__}
 
-    def set_gui_settings(self, gui_setting_dict):
-        self.gui = GUISettings(**gui_setting_dict)
-
-    def set_recording_setting(self, recording_setting_dict):
-        self.recording = RecordingSettings(**recording_setting_dict)
-
     def load(self, filename=None):
         if filename is not None:
             self.filepath = Path(filename)
         with open(self.filepath, 'r', encoding='utf-8') as fl:
             d = tomlkit.load(fl)
-        self.set_gui_settings(d[self.gui_section])
-        self.set_recording_setting(d[self.recording_section])
+
+        a = self.gui.set_properties(d[self.gui_section])
+        b = self.recording.set_properties(d[self.recording_section])
+        if a or b:
+            # missing property in settings file ->
+            self.save()
 
     def save(self):
         with open(self.filepath, 'w', encoding='utf-8') as fl:
@@ -190,4 +207,3 @@ class PyForceDAQSettings(object):
     @property
     def data_folder(self) -> Path:
         return self.filepath.parent / DATA_FOLDER
-

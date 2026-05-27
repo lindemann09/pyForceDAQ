@@ -19,8 +19,8 @@ from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import (
     DEFAULT_SETTINGS_FILE,
+    AppSettings,
     GUISettings,
-    PyForceDAQSettings,
     SensorSettings,
 )
 from ._gui_status import GUIStatus
@@ -330,9 +330,9 @@ def run_settings_file(settings_file: str | Path = ""):
         # load default settings file if not specified
         settings_file = DEFAULT_SETTINGS_FILE
 
-    return run(PyForceDAQSettings(settings_file))
+    return run(AppSettings(settings_file))
 
-def run(settings: PyForceDAQSettings):
+def run(settings: AppSettings):
 
     """start recording with specified settings
 
