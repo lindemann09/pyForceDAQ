@@ -18,6 +18,7 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import (
+    DEFAULT_OUTPUT_FILENAME,
     DEFAULT_SETTINGS_FILE,
     AppSettings,
     GUISettings,
@@ -369,7 +370,6 @@ def run(settings: AppSettings):
     exp = design.Experiment(text_font=settings.gui.window_font)
     exp.set_log_level(0)
 
-    output_filename = "output.csv"
     control.initialize(exp)
     exp.mouse.show_cursor() # type: ignore #
     logo_text_line("Initializing Force Recording").present()
@@ -383,15 +383,18 @@ def run(settings: AppSettings):
     wait_ms(200) # wait for lib init
     recorder.determine_biases(n_samples=500)
 
+
     if rs.save_data:
-        if output_filename is None:
+        if DEFAULT_OUTPUT_FILENAME is None:
             bkg = logo_text_line("")
-            output_filename: str = io.TextInput("Filename", background_stimulus=bkg).get()
-            output_filename = output_filename.replace(" ", "_")
+            output_filename = io.TextInput("Filename", background_stimulus=bkg).get()
+            output_filename = Path(output_filename.replace(" ", "_"))
+
+        else:
+            output_filename = Path(DEFAULT_OUTPUT_FILENAME)
 
         recorder.open_data_file(output_filename,
                                 subdirectory="data",
-                                time_stamp_filename=False,
                                 comment_line="")
 
     _main_loop(exp, recorder=recorder, gs=settings.gui)

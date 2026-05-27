@@ -2,7 +2,6 @@ import json
 import os
 from abc import ABC
 from dataclasses import dataclass, field, is_dataclass
-from os import path
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -11,6 +10,7 @@ import tomlkit
 from .types import ForceSensorData
 
 DEFAULT_SETTINGS_FILE = "pyForceDAQ.defaults.settings.toml"
+DEFAULT_OUTPUT_FILENAME = None
 DATA_FOLDER = "data"
 
 class DAQConfiguration(object):

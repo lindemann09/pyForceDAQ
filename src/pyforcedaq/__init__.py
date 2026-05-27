@@ -8,7 +8,7 @@ launch the GUI force from your Python program:
     from pyforcedaq import gui
 
     gui.run(ask_filename=True,
-               calibration_file="FT_sensor1.cal")
+               calibration_file="FT_sensor1.cal") TODO
 ``
 
 

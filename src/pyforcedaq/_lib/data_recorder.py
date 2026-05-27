@@ -7,6 +7,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import logging
+from fileinput import filename
 from io import TextIOWrapper
 from pathlib import Path
 from time import asctime, localtime, strftime
@@ -93,7 +94,7 @@ class DataRecorder(object):
         self._is_recording = False
         self._file = None
         self._daq_event = []
-        self.filename: str | None = None
+        self.output_file_path = Path("")
         atexit.register(self.quit)
 
 
@@ -293,9 +294,9 @@ class DataRecorder(object):
         for x in self._force_sensor_processes:
             x.event_bias_is_available.wait()
 
-    def open_data_file(self, filename: str,
+    def open_data_file(self,
+                       filename: str | Path,
                        subdirectory: str = "data",
-                       time_stamp_filename: bool = False,
                        varnames: bool = True,
                        comment_line: str = "") -> Path:
         """Create a data file
@@ -322,46 +323,33 @@ class DataRecorder(object):
                 full path the actually used file (incl. timestamp)
 
         """
-        data_dir = Path.cwd() / subdirectory
-        data_dir.mkdir(exist_ok=True)
         self.close_data_file()
 
+        # create filename
+        data_dir = Path.cwd() / subdirectory
+        data_dir.mkdir(exist_ok=True)
         if self.recording_settings.zip_data:
-            suffix = ".gz"
+            filename = Path(filename).with_suffix(".csv.gz")
         else:
-            suffix = ""
-
-        cnt = 0
+            filename = Path(filename).with_suffix(".csv")
         while True:
-            flname = filename
-            if cnt>0:
-                x = flname.find(".")
-                if x<0:
-                    x = len(flname)
-                flname = flname[:x] + "_{0}".format(cnt) + flname[x:]
-
-            if time_stamp_filename:
-                self.filename = flname + "_" + \
-                        strftime("%Y%m%d%H%M", localtime()) + suffix
-            else:
-                self.filename = flname + suffix
-
-            full_path_file = data_dir / self.filename
-            if full_path_file.is_file():
+            self.output_file_path = data_dir / filename
+            if self.output_file_path.is_file():
                 # print "data file already exists, adding counter"
-                cnt += 1
+                filename = Path(filename.stem + "_" + strftime("%m%d%H%M", localtime()) + \
+                                filename.suffix)
             else:
                 break
 
         if self.recording_settings.zip_data:
-            self._file = gzip.open(full_path_file, 'w')
+            self._file = gzip.open(self.output_file_path, 'w')
         else:
-            self._file = open(full_path_file, 'w')
-        print("Data file: {}".format(full_path_file))
+            self._file = open(self.output_file_path, 'w')
+        print("Data file: {}".format(self.output_file_path))
 
         self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
-        logging.info("new file: {}".format(full_path_file))
+        logging.info("new file: {}".format(self.output_file_path))
 
         for s in self.sensor_settings_list:
             txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
@@ -385,7 +373,7 @@ class DataRecorder(object):
             if write_trigger[1]: line += "trigger2,"
             self._file_write(line[:-1] + NEWLINE)
 
-        return full_path_file
+        return self.output_file_path
 
     def close_data_file(self) -> None:
         """Close the data file
@@ -397,3 +385,4 @@ class DataRecorder(object):
         if self._file is not None:
             self._file.close()
             self._file = None
+            self.output_file_path = Path("")
