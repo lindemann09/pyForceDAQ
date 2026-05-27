@@ -4,9 +4,9 @@ __author__ = "Oliver Lindemann"
 from expyriment import io, misc
 
 from .. import __version__ as forceDAQVersion
-from .._lib import settings
 from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess
+from .._lib.settings import SETTINGS
 from .._lib.types import ForceSensorData, Thresholds
 from ._layout import RecordingScreen, logo_text_line
 from ._scaling import Scaling
@@ -55,7 +55,8 @@ class GUIStatus(object):
         self.n_sensors = len(self.sensor_processes)
         self.history = []
         for _ in range(self.n_sensors):
-            self.history.append( SensorHistory(history_size = settings.gui.moving_average_size,
+            self.history.append(
+                SensorHistory(history_size = SETTINGS.gui.moving_average_size,
                                                number_of_parameter= 3) )
 
         self._start_recording_time = 0
@@ -78,11 +79,11 @@ class GUIStatus(object):
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
-            self.plot_data_indicator = settings.gui.plot_data_indicator_for_single_sensor
-            self.plot_data_plotter = settings.gui.plot_data_plotter_for_single_sensor
+            self.plot_data_indicator = SETTINGS.gui.plot_data_indicator_for_single_sensor
+            self.plot_data_plotter = SETTINGS.gui.plot_data_plotter_for_single_sensor
         else:
-            self.plot_data_indicator = settings.gui.plot_data_indicator_for_two_sensors
-            self.plot_data_plotter = settings.gui.plot_data_plotter_for_two_sensors
+            self.plot_data_indicator = SETTINGS.gui.plot_data_indicator_for_two_sensors
+            self.plot_data_plotter = SETTINGS.gui.plot_data_plotter_for_two_sensors
         # plot data parameter names
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:

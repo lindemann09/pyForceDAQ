@@ -199,7 +199,7 @@ class DataRecorder(object):
 
     def _file_write(self, s: str) -> None:
         if self._file is not None:
-            self._file.write(s)
+            self._file.write(s.encode("UTF8"))
 
     def store_daq_event(self, code: str | int | float, time: float | None = None) -> None:
         """Set marker code in file

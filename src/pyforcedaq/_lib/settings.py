@@ -47,6 +47,7 @@ class SensorSettings(DAQConfiguration):
     rate: int = 1000
     minVal: float = -10
     maxVal: float = 10
+    convert_to_FT: bool = True
     reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
     def __post_init__(self):
@@ -115,6 +116,7 @@ class RecordingSettings:
                         calibration_file=path.join(self.calibration_folder, cal_file),
                         reverse_parameter_names=self.reverse_parameters_for_device(d_id),
                         rate = self.sampling_rate,
+                        convert_to_FT=self.convert_to_forces
                     )
             rtn.append(ss)
         return rtn
@@ -182,4 +184,4 @@ class PyForceDAQSettings(object):
     def recording_as_json(self):
         return json.dumps(self.recording.__dict__)
 
-settings = PyForceDAQSettings(filename="pyForceDAQ.defaults.settings.toml")
+SETTINGS = PyForceDAQSettings(filename="pyForceDAQ.defaults.settings.toml")

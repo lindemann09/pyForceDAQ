@@ -18,10 +18,10 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import (
+    SETTINGS,
     DAQConfiguration,
     RecordingSettings,
     SensorSettings,
-    settings,
 )
 from .._lib.types import ForceSensorData
 from ._gui_status import GUIStatus
@@ -47,16 +47,16 @@ def _main_loop(exp, recorder):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = GUIStatus(screen_refresh_interval_indicator = settings.gui.screen_refresh_interval_indicator,
-                  screen_refresh_interval_plotter = settings.gui.gui_screen_refresh_interval_plotter,
+    s = GUIStatus(screen_refresh_interval_indicator = SETTINGS.gui.screen_refresh_interval_indicator,
+                  screen_refresh_interval_plotter = SETTINGS.gui.gui_screen_refresh_interval_plotter,
                   recorder = recorder,
                   level_detection_parameter = ForceSensorData.forces_names.index(
-                                                        settings.gui.level_detection_parameter),  # only one dimension
+                                                        SETTINGS.gui.level_detection_parameter),  # only one dimension
                   screen_size = exp.screen.size,
-                  data_min_max=settings.gui.data_min_max,
-                  plotter_pixel_min_max=settings.gui.plotter_pixel_min_max,
-                  indicator_pixel_min_max=settings.gui.indicator_pixel_min_max,
-                  plot_axis = settings.gui.plot_axis)
+                  data_min_max=SETTINGS.gui.data_min_max,
+                  plotter_pixel_min_max=SETTINGS.gui.plotter_pixel_min_max,
+                  indicator_pixel_min_max=SETTINGS.gui.indicator_pixel_min_max,
+                  plot_axis = SETTINGS.gui.plot_axis)
 
     # plotter
     plotter_thread = None
@@ -339,9 +339,9 @@ def run_settings(settings_file: str | None = None,
 
     if settings_file is not None and len(settings_file) > 0:
         # load different settings file if specified
-        settings.load(settings_file)
+        SETTINGS.load(settings_file)
 
-    return run(settings.recording, filename=filename)
+    return run(SETTINGS.recording, filename=filename)
 
 def run(rs: RecordingSettings, filename: str | None = None):
 
@@ -359,7 +359,7 @@ def run(rs: RecordingSettings, filename: str | None = None):
 
     logging.info("New Recording with forceDAQ %s", forceDAQVersion)
     logging.info("Sensors %s", rs.calibration_files)
-    logging.info("Settings %s", settings.recording_as_json())
+    logging.info("Settings %s", SETTINGS.recording_as_json())
 
 
     if not isinstance(rs.device_ids, (list, tuple)):
@@ -377,7 +377,7 @@ def run(rs: RecordingSettings, filename: str | None = None):
     control.defaults.opengl = False
     control.defaults.event_logging = 0
     control.defaults.audiosystem_autostart = False
-    exp = design.Experiment(text_font=settings.gui.window_font)
+    exp = design.Experiment(text_font=SETTINGS.gui.window_font)
     exp.set_log_level(0)
 
     filename = "output.csv"

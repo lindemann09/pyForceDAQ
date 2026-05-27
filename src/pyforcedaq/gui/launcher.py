@@ -5,7 +5,7 @@ from typing import List
 import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
-from .._lib.settings import settings
+from .._lib.settings import SETTINGS
 from .._lib.types import PollingPriority
 from .._lib.udp_connection import UDPConnection
 from ._run import run_settings as _gui_run
@@ -61,7 +61,7 @@ def _check_sensor_calibration_settings(device_ids: List[int],
 
 
 def _windows_run():
-    s = settings.recording
+    s = SETTINGS.recording
     n_sensor = len(s.device_ids)
 
     info_settings = []
@@ -102,7 +102,7 @@ def _windows_run():
 
 
 def _window_settings():
-    s = settings.recording
+    s = SETTINGS.recording
     layout = []
 
     #layout.append([sg.Text('Recording Settings')])
@@ -206,8 +206,8 @@ def _window_settings():
         main_path = path.split(sys.modules['__main__'].__file__)[0] + path.sep
         d["calibration_folder"] = values["cal_dir"].replace(main_path, "")
 
-        settings.set_recording_setting(d)
-        settings.save()
+        SETTINGS.set_recording_setting(d)
+        SETTINGS.save()
 
     window.close()
     return event
@@ -216,7 +216,7 @@ def _window_settings():
 
 def run():
     _sg.theme('DarkBlue14')  # please make your windows colorful
-    s = settings.recording
+    s = SETTINGS.recording
     settings_error = False
     n_sensor = len(s.device_ids)
     if n_sensor != len(s.calibration_files):
