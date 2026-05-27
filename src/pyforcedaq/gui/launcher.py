@@ -27,7 +27,7 @@ def _check_sensor_calibration_settings(device_ids: List[int],
                 cal = "NOT FOUND"
                 error = True
 
-        rtn.append([d_id, cal_file, cal, error])
+        rtn.append([d_id, cal_file, error])
 
     return rtn
 
@@ -36,9 +36,9 @@ def _windows_run(rs: RecordingSettings):
     n_sensor = len(rs.device_ids)
 
     info_settings = []
-    info_settings.append([_sg.Text("Number of sensors: {}".format(n_sensor))])
+    info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
 
-    for d_id, name, cal, error in _check_sensor_calibration_settings(
+    for d_id, cal, error in _check_sensor_calibration_settings(
                                                 rs.device_ids,
                                                 rs.calibration_files,
                                                 rs.calibration_folder):
@@ -47,18 +47,16 @@ def _windows_run(rs: RecordingSettings):
         else:
             col = _sg.DEFAULT_ELEMENT_TEXT_COLOR
 
-        info_settings.append([_sg.Text("- {}{}: {}, {}".format(rs.device_name_prefix,
-                                                      d_id, name, cal),
+        info_settings.append([_sg.Text(f"- {rs.device_name_prefix}{d_id}: {cal}",
                               text_color=col)])
 
-    info = [[_sg.Text("forceDAQ version: {}".format(__version__))]]
-    info.append([_sg.Text("IP address: {}".format(UDPConnection.MY_IP))])
+    info = [[_sg.Text(f"forceDAQ version: {__version__}")]]
+    info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
     if USE_MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!",
                               text_color="red")])
 
-    layout = [
-              [_sg.Button("Start Recording", size=(29, 4),
+    layout = [[_sg.Button("Start Recording", size=(29, 4),
                           button_color=('black', 'lightgreen'),
                           key="Start")],
               [_sg.Frame('Settings', info_settings)],

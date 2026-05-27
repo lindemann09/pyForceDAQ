@@ -42,7 +42,7 @@ class SensorSettings(DAQConfiguration):
             Sensors take this into account and correct data online
     """
     device_id: int
-    sensor_name: str # FIXME maybe not needed, can be derived from calibration file name
+    sensor_name: str
     calibration_file: str
     device_name_prefix: str
     # DAQ settings
@@ -88,9 +88,13 @@ class ABCSettings(ABC): # must be a dataclass
 class RecordingSettings(ABCSettings):
     device_name_prefix: str = "Dev"
     device_ids:  List[int] = field(default_factory=lambda: [1])
-    calibration_folder: str = "calibration"
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
-    zip_data: bool = True
+    calibration_folder: str = "calibration"
+
+    lsl_stream: bool = False
+    save_data: bool = True
+    sampling_rate: int = 1000
+
     write_Fx: bool = True
     write_Fy: bool = True
     write_Fz: bool = True
@@ -99,11 +103,11 @@ class RecordingSettings(ABCSettings):
     write_Tz: bool = False
     write_trigger1: bool = False
     write_trigger2: bool = False
-    lsl_stream: bool = False
-    save_data: bool = True
+
     reverse_scaling: dict | None = field(default_factory=lambda: {"1": ["Fz"], "2": ["Fz"]})
     convert_to_forces: bool = True
-    sampling_rate: int = 1000
+    zip_data: bool = True
+
     priority: str | None = "normal"
 
     def __post_init__(self):
@@ -132,7 +136,7 @@ class RecordingSettings(ABCSettings):
         for d_id, cal_file in zip(self.device_ids, self.calibration_files):
             ss = SensorSettings(device_id = d_id,
                         device_name_prefix=self.device_name_prefix,
-                        sensor_name = cal_file.split(".")[0],
+                        sensor_name = "no name",
                         calibration_file=str(Path(self.calibration_folder) / cal_file),
                         reverse_parameter_names=self.reverse_parameters_for_device(d_id),
                         rate = self.sampling_rate,
