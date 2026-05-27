@@ -7,9 +7,12 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import logging
+from io import TextIOWrapper
 from pathlib import Path
 from time import asctime, localtime, strftime
 from typing import List
+
+from icecream import ic
 
 from .. import __version__ as forceDAQVersion
 from . import _log
@@ -198,8 +201,12 @@ class DataRecorder(object):
                                                        buffer_len//BLOCKSIZE)).present()
 
     def _file_write(self, s: str) -> None:
-        if self._file is not None:
-            self._file.write(s.encode("utf-8")) #FIXME check encoding not zip file
+
+        if isinstance(self._file, gzip.GzipFile):
+            self._file.write(s.encode("utf-8"))
+        elif isinstance(self._file, TextIOWrapper):
+            self._file.write(s)
+
 
     def store_daq_event(self, code: str | int | float, time: float | None = None) -> None:
         """Set marker code in file
@@ -354,7 +361,7 @@ class DataRecorder(object):
 
         self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
-        logging.info("new file: {}".format(filename))
+        logging.info("new file: {}".format(full_path_file))
 
         for s in self.sensor_settings_list:
             txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
