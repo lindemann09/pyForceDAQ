@@ -34,9 +34,10 @@ class GUIStatus(object):
 
         self.gs = gui_settings
         self.recorder = recorder
-
+        recording_mode = "TODO" #FIXME
         self.background = RecordingScreen(window_size = screen_size,
-                                          filename=recorder.path_open_file.stem)
+                                          filename=recorder.path_open_file.stem,
+                                          recording_mode=recording_mode)
         self.scaling_plotter = Scaling(min=gui_settings.data_min_max[0],
                                        max= gui_settings.data_min_max[1],
                       pixel_min=gui_settings.plotter_pixel_min_max[0],
