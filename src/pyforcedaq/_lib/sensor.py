@@ -59,7 +59,7 @@ class Sensor(DAQReadAnalog):
         task_was_running = self._task_is_started
         self.start_data_acquisition()
         data = None
-        for x in range(n_samples):
+        for _ in range(n_samples):
             read_buffer, _read_samples = self.read_analog()
             sample = read_buffer[Sensor.SENSOR_CHANNELS]
             if data is None:
@@ -70,7 +70,7 @@ class Sensor(DAQReadAnalog):
         if not task_was_running:
             self.stop_data_acquisition()
 
-        if self._atidaq is not None:
+        if self._atidaq is not None and isinstance(data, np.ndarray):
             self._atidaq.bias(np.mean(data, axis=0))
             # not sure if bias required
             # for recoding of voltages, that is, not convert to forces

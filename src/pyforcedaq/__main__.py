@@ -39,9 +39,9 @@ def cli():
             exit()
 
         from .gui import launcher
-        return launcher.run()
+        return launcher.run_launcher()
     else:
-        gui.run_settings(args.SETTINGS_FILE)
+        gui.run_settings_file(args.SETTINGS_FILE)
 
 
 

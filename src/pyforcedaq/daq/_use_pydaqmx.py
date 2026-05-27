@@ -10,6 +10,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
+from typing import Tuple
 
 import numpy as np
 import PyDAQmx
@@ -78,7 +79,7 @@ class DAQReadAnalog(PyDAQmx.Task):
             self.StopTask()
             self._task_is_started = False
 
-    def read_analog(self):
+    def read_analog(self) -> Tuple[np.ndarray, int]:
         """Polling data
 
         Reading data from NI device

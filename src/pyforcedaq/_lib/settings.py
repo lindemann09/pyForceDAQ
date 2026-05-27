@@ -9,6 +9,8 @@ import tomlkit
 
 from .types import ForceSensorData
 
+DEFAULT_SETTINGS_FILE = "pyForceDAQ.defaults.settings.toml"
+DATA_FOLDER = "data"
 
 class DAQConfiguration(object):
     """Settings required for NI-DAQ"""
@@ -128,7 +130,7 @@ class GUISettings:
     window_font: str = "freemono"
     moving_average_size: int = 5
     screen_refresh_interval_indicator: int = 300
-    gui_screen_refresh_interval_plotter: int = 50
+    screen_refresh_interval_plotter: int = 50
     data_min_max: list = field(default_factory=lambda: [-5, 30])
     plotter_pixel_min_max: list = field(default_factory=lambda: [-250, 250])
     indicator_pixel_min_max: list = field(default_factory=lambda: [-150, 150])
@@ -145,7 +147,7 @@ class GUISettings:
 
 class PyForceDAQSettings(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename: str | Path):
         # defaults
         self.gui = GUISettings()
         self.gui_section = "GUI"
@@ -153,8 +155,8 @@ class PyForceDAQSettings(object):
         self.recording = RecordingSettings()
         self.recording_section = "Recording"
 
-        self.filename = filename
-        if os.path.isfile(self.filename):
+        self.filepath = Path(filename)
+        if os.path.isfile(self.filepath):
             self.load()
         else:
             self.save() # defaults
@@ -171,17 +173,21 @@ class PyForceDAQSettings(object):
 
     def load(self, filename=None):
         if filename is not None:
-            self.filename = filename
-        with open(self.filename, 'r', encoding='utf-8') as fl:
+            self.filepath = Path(filename)
+        with open(self.filepath, 'r', encoding='utf-8') as fl:
             d = tomlkit.load(fl)
         self.set_gui_settings(d[self.gui_section])
         self.set_recording_setting(d[self.recording_section])
 
     def save(self):
-        with open(self.filename, 'w', encoding='utf-8') as fl:
+        with open(self.filepath, 'w', encoding='utf-8') as fl:
             tomlkit.dump(self._asdict(), fl)
 
+    @property
     def recording_as_json(self):
         return json.dumps(self.recording.__dict__)
 
-SETTINGS = PyForceDAQSettings(filename="pyForceDAQ.defaults.settings.toml")
+    @property
+    def data_folder(self) -> Path:
+        return self.filepath.parent / DATA_FOLDER
+

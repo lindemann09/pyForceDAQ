@@ -1,14 +1,12 @@
-import sys
 from os import path
 from typing import List
 
 import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
-from .._lib.settings import SETTINGS
-from .._lib.types import PollingPriority
+from .._lib.settings import DEFAULT_SETTINGS_FILE, PyForceDAQSettings, RecordingSettings
 from .._lib.udp_connection import UDPConnection
-from ._run import run_settings as _gui_run
+from . import _run
 
 
 def _group(title, objects):
@@ -60,23 +58,22 @@ def _check_sensor_calibration_settings(device_ids: List[int],
     return rtn
 
 
-def _windows_run():
-    s = SETTINGS.recording
-    n_sensor = len(s.device_ids)
+def _windows_run(rs: RecordingSettings):
+    n_sensor = len(rs.device_ids)
 
     info_settings = []
     info_settings.append([_sg.Text("Number of sensors: {}".format(n_sensor))])
 
     for d_id, name, cal, error in _check_sensor_calibration_settings(
-                                                s.device_ids,
-                                                s.calibration_files,
-                                                s.calibration_folder):
+                                                rs.device_ids,
+                                                rs.calibration_files,
+                                                rs.calibration_folder):
         if error:
             col = "red"
         else:
             col = _sg.DEFAULT_ELEMENT_TEXT_COLOR
 
-        info_settings.append([_sg.Text("- {}{}: {}, {}".format(s.device_name_prefix,
+        info_settings.append([_sg.Text("- {}{}: {}, {}".format(rs.device_name_prefix,
                                                       d_id, name, cal),
                               text_color=col)])
 
@@ -101,147 +98,31 @@ def _windows_run():
     return event, values
 
 
-def _window_settings():
-    s = SETTINGS.recording
-    layout = []
-
-    #layout.append([sg.Text('Recording Settings')])
-    layout.append([_sg.Frame('General',
-                         [[                           _sg.Checkbox("Enter Filename Manually",
-                                        s.ask_filename, key="ask_filename")],
-                          [_sg.Checkbox("Zip Data", s.zip_data,
-                                       key="zip_data")],
-                          [_sg.Text('Process Priority'),
-                            _sg.Combo((PollingPriority.NORMAL,
-                                       PollingPriority.HIGH,
-                                       PollingPriority.REALTIME),
-                                      size=(10, 10),
-                                      default_value=s.priority,
-                                      key='priority')]
-                          ])])
-
-
-    layout.append([_sg.Frame('Sensor',
-                             [_input_text_list("Device Name Prefix:",
-                                               s.device_name_prefix,
-                                      key="device_name_prefix"),
-                              _input_text_list("Device IDs:",
-                                               s.device_ids,
-                                      key="device_ids")]
-                             )])
-
-    layout.append([_sg.Frame('Calibration',
-                 [[_sg.Text("Folder:", size=(5, 1)), _sg.InputText(
-                     s.calibration_folder, size=(23, 1), key="cal_dir"),
-                  _sg.FolderBrowse(size=(6, 1))],
-                 _input_text_list("Cal-files:", s.calibration_files,
-                          key="calibration_files")
-                 ])])
-
-    layout.append([_sg.Frame('Record Forces & Torques',
-                         [[_sg.Checkbox("Fx", s.write_Fx, key="write_Fx"),
-                          _sg.Checkbox("Fy", s.write_Fy, key="write_Fy"),
-                          _sg.Checkbox("Fz", s.write_Fz, key="write_Fz"),
-                          _sg.Checkbox("Tx", s.write_Tx, key="write_Tx"),
-                          _sg.Checkbox("Ty", s.write_Ty, key="write_Ty"),
-                          _sg.Checkbox("Tz", s.write_Tz, key="write_Tz")],
-                         [_sg.Checkbox("Convert Voltage to Force Online",
-                                       s.convert_to_forces,
-                                      key="convert_to_forces")]
-                          ])])
-
-    tmp = []
-    for x in s.device_ids:
-        try:
-            l = s.reverse_scaling[str(x)]
-        except:
-            l = []
-        tmp.extend(_input_text_list("{}:".format(x), l, x_sizes=(1, 10),
-                                    key="revscal{}".format(x)))
-    layout.append(_group('Reverse scaling', tmp))
-
-
-    layout.append([_sg.Frame('',
-                   [[_sg.Checkbox("Trigger1", s.write_trigger1,
-                                 key="write_trigger1"),
-                    _sg.Checkbox("Trigger2", s.write_trigger2,
-                                 key="write_trigger2")]
-                   ])])
-
-    layout.append([_sg.Save(), _sg.Cancel()])
-
-    window =  _sg.Window('ForceGUI {}: Settings'.format(__version__), layout)
-    event, values = window.read()
-
-    d = s._asdict()
-    if event=="Save":
-
-        for key in ("device_name_prefix", "ask_filename",
-                    "write_Fx", "write_Fy", "write_Fz",
-                    "write_Tx", "write_Ty", "write_Tz",
-                    "write_trigger1", "write_trigger2", "convert_to_forces",
-                    "zip_data", "priority"):
-            d[key] = values[key]
-
-        key = "device_ids"
-        try:
-            d[key] = _s2l(values[key], is_integer=True)
-        except:
-            event = "Error"
-
-        key = "calibration_files"
-        try:
-            d[key] = _s2l(values[key])
-        except:
-            event = "Error"
-
-        # reverse scaling dicts
-        for x in s.device_ids:
-            try:
-                d["reverse_scaling"][str(x)] = _s2l(values["revscal{}".format(x)])
-            except:
-                event = "Error"
-
-        # calibration file
-        main_path = path.split(sys.modules['__main__'].__file__)[0] + path.sep
-        d["calibration_folder"] = values["cal_dir"].replace(main_path, "")
-
-        SETTINGS.set_recording_setting(d)
-        SETTINGS.save()
-
-    window.close()
-    return event
-
-
-
-def run():
+def run_launcher():
     _sg.theme('DarkBlue14')  # please make your windows colorful
-    s = SETTINGS.recording
+    settings = PyForceDAQSettings(filename=DEFAULT_SETTINGS_FILE)
+    rs = settings.recording
     settings_error = False
-    n_sensor = len(s.device_ids)
-    if n_sensor != len(s.calibration_files):
+    n_sensor = len(rs.device_ids)
+    if n_sensor != len(rs.calibration_files):
         _sg.PopupError("Number of devices IDs and calibration files are not equal.")
         settings_error = True
 
-    if not path.isdir(s.calibration_folder):
+    if not path.isdir(rs.calibration_folder):
         _sg.PopupError("Can't find calibration folder: {}".format(
-            s.calibration_folder))
+            rs.calibration_folder))
         settings_error = True
-
     if settings_error:
-        _window_settings()
+        return
 
     while True:
-        event, _ = _windows_run()
-        if event == "Settings":
-            if _window_settings() == "Error":
-                _sg.PopupError("Something is wrong with the settings.")
-        elif event == "Converter":
-            _window_converter()
+        event, _ = _windows_run(rs)
+        if event == "Converter":
+            pass
         else:
             break
 
     if event == "Start":
-        _gui_run()
+        _run.run(settings)
     else:
         pass

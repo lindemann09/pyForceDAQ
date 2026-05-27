@@ -106,7 +106,7 @@ class SensorProcess(Process):
         return (self._last_Tx.value, self._last_Ty.value, self._last_Tz.value)
 
     def get_sample_cnt(self):
-        return int(self._sample_cnt.value)
+        return int(self._sample_cnt.value) # type: ignore
 
     def get_buffer_size(self):
         return int(self._buffer_size.value)
@@ -214,7 +214,7 @@ class SensorProcess(Process):
                 self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
 				                     self._last_Tx.value, self._last_Ty.value, \
                                      self._last_Tz.value = d.forces
-                self._sample_cnt.value += 1
+                self._sample_cnt.value += 1 # type: ignore
 
                 if self.event_trigger.is_set():
                     self.event_trigger.clear()

@@ -1,12 +1,15 @@
 __author__ = "Oliver Lindemann"
 
 
+from typing import Tuple
+
 from expyriment import io, misc
 
 from .. import __version__ as forceDAQVersion
+from .._lib.data_recorder import DataRecorder
 from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess
-from .._lib.settings import SETTINGS
+from .._lib.settings import GUISettings
 from .._lib.types import ForceSensorData, Thresholds
 from ._layout import RecordingScreen, logo_text_line
 from ._scaling import Scaling
@@ -25,30 +28,23 @@ def _text2number_array(txt):
 class GUIStatus(object):
 
     def __init__(self,
-                 screen_refresh_interval_indicator,
-                 screen_refresh_interval_plotter,
-                 recorder,
-                 level_detection_parameter,
-                 data_min_max,
-                 plotter_pixel_min_max,
-                 indicator_pixel_min_max,
-                 screen_size,
-                 plot_axis):
+                 gui_settings: GUISettings,
+                 recorder:DataRecorder,
+                 screen_size:Tuple[int, int]):
 
-        self.screen_refresh_interval_indicator = screen_refresh_interval_indicator
-        self.screen_refresh_interval_plotter = screen_refresh_interval_plotter
-        self.plot_axis = plot_axis
+        self.gs = gui_settings
         self.recorder = recorder
-        self.level_detection_parameter = level_detection_parameter
 
         self.background = RecordingScreen(window_size = screen_size,
                                           filename=recorder.filename)
-        self.scaling_plotter = Scaling(min=data_min_max[0], max= data_min_max[1],
-                      pixel_min=plotter_pixel_min_max[0],
-                      pixel_max=plotter_pixel_min_max[1])
-        self.scaling_indicator = Scaling(min=data_min_max[0], max= data_min_max[1],
-                                pixel_min = indicator_pixel_min_max[0],
-                                pixel_max = indicator_pixel_min_max[1])
+        self.scaling_plotter = Scaling(min=gui_settings.data_min_max[0],
+                                       max= gui_settings.data_min_max[1],
+                      pixel_min=gui_settings.plotter_pixel_min_max[0],
+                      pixel_max=gui_settings.plotter_pixel_min_max[1])
+        self.scaling_indicator = Scaling(min=gui_settings.data_min_max[0],
+                                         max= gui_settings.data_min_max[1],
+                                pixel_min = gui_settings.indicator_pixel_min_max[0],
+                                pixel_max = gui_settings.indicator_pixel_min_max[1])
 
 
         self.sensor_processes = recorder.force_sensor_processes
@@ -56,7 +52,7 @@ class GUIStatus(object):
         self.history = []
         for _ in range(self.n_sensors):
             self.history.append(
-                SensorHistory(history_size = SETTINGS.gui.moving_average_size,
+                SensorHistory(history_size = gui_settings.moving_average_size,
                                                number_of_parameter= 3) )
 
         self._start_recording_time = 0
@@ -79,11 +75,11 @@ class GUIStatus(object):
         self.plot_indicator = True
         self.plot_filtered = False
         if self.n_sensors == 1:
-            self.plot_data_indicator = SETTINGS.gui.plot_data_indicator_for_single_sensor
-            self.plot_data_plotter = SETTINGS.gui.plot_data_plotter_for_single_sensor
+            self.plot_data_indicator = gui_settings.plot_data_indicator_for_single_sensor
+            self.plot_data_plotter = gui_settings.plot_data_plotter_for_single_sensor
         else:
-            self.plot_data_indicator = SETTINGS.gui.plot_data_indicator_for_two_sensors
-            self.plot_data_plotter = SETTINGS.gui.plot_data_plotter_for_two_sensors
+            self.plot_data_indicator = gui_settings.plot_data_indicator_for_two_sensors
+            self.plot_data_plotter = gui_settings.plot_data_plotter_for_two_sensors
         # plot data parameter names
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
@@ -106,9 +102,9 @@ class GUIStatus(object):
     def check_refresh_required(self):
         """also resets clock"""
         if self.plot_indicator:
-            intervall = self.screen_refresh_interval_indicator
+            intervall = self.gs.screen_refresh_interval_indicator
         else:
-            intervall = self.screen_refresh_interval_plotter
+            intervall = self.gs.screen_refresh_interval_plotter
 
         if not self.pause_recording and self._clock.stopwatch_time >= intervall:
             self._clock.reset_stopwatch()
@@ -201,7 +197,7 @@ class GUIStatus(object):
     def level_detection_parameter_average(self, sensor):
         """just a short cut"""
         if sensor < self.n_sensors:
-            return self.history[sensor].moving_average[self.level_detection_parameter]
+            return self.history[sensor].moving_average[self.gs.level_detection_parameter]
         else:
             return None
 

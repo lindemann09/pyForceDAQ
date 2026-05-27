@@ -5,7 +5,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import logging
-from os import path
+from pathlib import Path
 from pickle import dumps
 from typing import List
 
@@ -18,12 +18,11 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import (
-    SETTINGS,
-    DAQConfiguration,
-    RecordingSettings,
+    DEFAULT_SETTINGS_FILE,
+    GUISettings,
+    PyForceDAQSettings,
     SensorSettings,
 )
-from .._lib.types import ForceSensorData
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
@@ -36,7 +35,7 @@ RESPONSE_MINMAX2 = COMMAND_STR + b"xRM2"
 CHANGED_LEVEL = COMMAND_STR + b"xCL1"
 CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
 
-def _main_loop(exp, recorder):
+def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
     """udp command:
             "start", "pause", "stop"
             "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -47,16 +46,7 @@ def _main_loop(exp, recorder):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = GUIStatus(screen_refresh_interval_indicator = SETTINGS.gui.screen_refresh_interval_indicator,
-                  screen_refresh_interval_plotter = SETTINGS.gui.gui_screen_refresh_interval_plotter,
-                  recorder = recorder,
-                  level_detection_parameter = ForceSensorData.forces_names.index(
-                                                        SETTINGS.gui.level_detection_parameter),  # only one dimension
-                  screen_size = exp.screen.size,
-                  data_min_max=SETTINGS.gui.data_min_max,
-                  plotter_pixel_min_max=SETTINGS.gui.plotter_pixel_min_max,
-                  indicator_pixel_min_max=SETTINGS.gui.indicator_pixel_min_max,
-                  plot_axis = SETTINGS.gui.plot_axis)
+    s = GUIStatus(gui_settings = gs, recorder = recorder, screen_size = exp.screen.size)
 
     # plotter
     plotter_thread = None
@@ -81,23 +71,23 @@ def _main_loop(exp, recorder):
             if s.thresholds is not None:
                 # level change detection
                 level_change, tmp = s.thresholds.get_level_change(
-                                                s.history[x].moving_average[s.level_detection_parameter],
+                                                s.history[x].moving_average[gs.level_detection_parameter],
                                                 channel=x)
                 if level_change:
                     if x==1:
-                        recorder.udp.send_queue.put(CHANGED_LEVEL2+ dumps(tmp))
+                        recorder.udp.send_queue.put(CHANGED_LEVEL2+ dumps(tmp))  # type: ignore
                     else:
-                        recorder.udp.send_queue.put(CHANGED_LEVEL+ dumps(tmp))
+                        recorder.udp.send_queue.put(CHANGED_LEVEL+ dumps(tmp))  # type: ignore
 
                 # minmax detection
                 tmp = s.thresholds.get_response_minmax(
-                                                s.history[x].moving_average[s.level_detection_parameter],
+                                                s.history[x].moving_average[gs.level_detection_parameter],
                                                 channel=x)
                 if tmp is not None:
                     if x==1:
-                        recorder.udp.send_queue.put(RESPONSE_MINMAX2 + dumps(tmp))
+                        recorder.udp.send_queue.put(RESPONSE_MINMAX2 + dumps(tmp))  # type: ignore
                     else:
-                        recorder.udp.send_queue.put(RESPONSE_MINMAX + dumps(tmp))
+                        recorder.udp.send_queue.put(RESPONSE_MINMAX + dumps(tmp))  # type: ignore
 
 
         ######################## show pause or recording screen
@@ -137,7 +127,7 @@ def _main_loop(exp, recorder):
                 for cnt in range(6):
                     x_pos = (-3 * indicator_grid) + (cnt * indicator_grid) + 0.5*indicator_grid
 
-                    if cnt == s.level_detection_parameter:
+                    if cnt == gs.level_detection_parameter:
                         thr = s.thresholds
                     else:
                         thr = None
@@ -202,7 +192,7 @@ def _main_loop(exp, recorder):
                         axis_colour=misc.constants.C_YELLOW)
                     plotter_thread.start()
 
-                    if s.plot_axis:
+                    if gs.plot_axis:
                         plotter_thread.set_horizontal_lines(
                             y_values = [s.scaling_plotter.data2pixel(0)])
 
@@ -334,18 +324,17 @@ def _main_loop(exp, recorder):
         plotter_thread.join()
     recorder.pause_recording(s.background)
 
-def run_settings(settings_file: str | None = None,
-                 filename: str | None = None):
+def run_settings_file(settings_file: str | Path = ""):
 
-    if settings_file is not None and len(settings_file) > 0:
-        # load different settings file if specified
-        SETTINGS.load(settings_file)
+    if isinstance(settings_file, str) and len(settings_file) < 2:
+        # load default settings file if not specified
+        settings_file = DEFAULT_SETTINGS_FILE
 
-    return run(SETTINGS.recording, filename=filename)
+    return run(PyForceDAQSettings(settings_file))
 
-def run(rs: RecordingSettings, filename: str | None = None):
+def run(settings: PyForceDAQSettings):
 
-    """start recodring with settings specified in recording settings and GUI settings
+    """start recording with specified settings
 
     reverse scaling: dictionary with rescaling (see SensorSetting)
                 key: device_id, value: list of parameter names (e.g., ["Fx"])
@@ -356,10 +345,10 @@ def run(rs: RecordingSettings, filename: str | None = None):
     returns False only if quited by key while waiting for remote control
     """
     #
-
+    rs = settings.recording
     logging.info("New Recording with forceDAQ %s", forceDAQVersion)
     logging.info("Sensors %s", rs.calibration_files)
-    logging.info("Settings %s", SETTINGS.recording_as_json())
+    logging.info("Settings %s", settings.recording_as_json)
 
 
     if not isinstance(rs.device_ids, (list, tuple)):
@@ -377,12 +366,12 @@ def run(rs: RecordingSettings, filename: str | None = None):
     control.defaults.opengl = False
     control.defaults.event_logging = 0
     control.defaults.audiosystem_autostart = False
-    exp = design.Experiment(text_font=SETTINGS.gui.window_font)
+    exp = design.Experiment(text_font=settings.gui.window_font)
     exp.set_log_level(0)
 
-    filename = "output.csv"
+    output_filename = "output.csv"
     control.initialize(exp)
-    exp.mouse.show_cursor()
+    exp.mouse.show_cursor() # type: ignore #
     logo_text_line("Initializing Force Recording").present()
 
 
@@ -395,17 +384,17 @@ def run(rs: RecordingSettings, filename: str | None = None):
     recorder.determine_biases(n_samples=500)
 
     if rs.save_data:
-        if filename is None:
+        if output_filename is None:
             bkg = logo_text_line("")
-            filename = io.TextInput("Filename", background_stimulus=bkg).get()
-            filename = filename.replace(" ", "_")
+            output_filename: str = io.TextInput("Filename", background_stimulus=bkg).get()
+            output_filename = output_filename.replace(" ", "_")
 
-        recorder.open_data_file(filename,
+        recorder.open_data_file(output_filename,
                                 subdirectory="data",
                                 time_stamp_filename=False,
                                 comment_line="")
 
-    _main_loop(exp, recorder=recorder)
+    _main_loop(exp, recorder=recorder, gs=settings.gui)
 
     recorder.quit()
     control.end()
