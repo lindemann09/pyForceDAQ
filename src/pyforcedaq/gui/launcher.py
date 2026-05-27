@@ -32,7 +32,8 @@ def _check_sensor_calibration_settings(device_ids: List[int],
     return rtn
 
 
-def _windows_run(rs: RecordingSettings):
+def _windows_run(settings: AppSettings):
+    rs = settings.recording
     n_sensor = len(rs.device_ids)
 
     info_settings = []
@@ -60,14 +61,26 @@ def _windows_run(rs: RecordingSettings):
                           button_color=('black', 'lightgreen'),
                           key="Start")],
               [_sg.Frame('Settings', info_settings)],
-              [_sg.Frame('Info', info)],
-              [_sg.Button("Edit Settings", key="Settings", size=(12, 2)),
-               _sg.Cancel(size=(12, 2))]]
+              [_sg.Frame('Info', info)]]
+    layout.append([_sg.Frame('Data Output',[
+            [_sg.Text("Filename:", size=(8, 1)), _sg.Input(default_text='', size=(20,1),key='datafilename')],
+            [ _sg.Checkbox("Save Data", rs.save_data, key="save_data"),
+             _sg.Checkbox("LSL stream", rs.lsl_stream, key="lsl")]
+            ])])
+
+    layout.append([_sg.Button("Save settings", size=(12, 2), key="Save"), _sg.Cancel(size=(12, 2))])
 
     window = _sg.Window('ForceGUI'.format(), layout)
     event, values = window.read()
+
+    settings.recording.lsl_stream = values["lsl"]
+    settings.recording.save_data = values["save_data"]
+    if len(values["datafilename"])>3:
+            settings.output_filename = values["datafilename"]
+            settings.recording.save_data = True
+
     window.close()
-    return event, values
+    return event, settings
 
 
 def run_launcher():
@@ -89,9 +102,9 @@ def run_launcher():
         return
 
     while True:
-        event, _ = _windows_run(rs)
-        if event == "Converter":
-            pass
+        event, settings = _windows_run(settings)
+        if event == "Save":
+            settings.save()
         else:
             break
 

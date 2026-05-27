@@ -377,7 +377,7 @@ def run(settings: AppSettings):
 
     recorder = DataRecorder(recording_settings=rs,
                 force_sensor_settings=sensor_settings,
-                 poll_udp_connection=False # FIXME remove UDP polling from recorder and put it in main loop
+                poll_udp_connection=False # FIXME remove UDP polling from recorder and put it in main loop
                  )
 
     wait_ms(200) # wait for lib init
@@ -385,13 +385,16 @@ def run(settings: AppSettings):
 
 
     if rs.save_data:
-        if DEFAULT_OUTPUT_FILENAME is None:
+        if len(settings.output_filename)>3:
+            output_filename = settings.output_filename
+
+        elif DEFAULT_OUTPUT_FILENAME is None:
             bkg = logo_text_line("")
             output_filename = io.TextInput("Filename", background_stimulus=bkg).get()
-            output_filename = Path(output_filename.replace(" ", "_"))
+            output_filename = output_filename.replace(" ", "_")
 
         else:
-            output_filename = Path(DEFAULT_OUTPUT_FILENAME)
+            output_filename = DEFAULT_OUTPUT_FILENAME
 
         recorder.open_data_file(output_filename,
                                 subdirectory="data",

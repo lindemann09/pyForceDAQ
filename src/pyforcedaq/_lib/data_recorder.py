@@ -94,7 +94,7 @@ class DataRecorder(object):
         self._is_recording = False
         self._file = None
         self._daq_event = []
-        self.output_file_path = Path("")
+        self.path_open_file = Path("")
         atexit.register(self.quit)
 
 
@@ -332,9 +332,10 @@ class DataRecorder(object):
             filename = Path(filename).with_suffix(".csv.gz")
         else:
             filename = Path(filename).with_suffix(".csv")
+
         while True:
-            self.output_file_path = data_dir / filename
-            if self.output_file_path.is_file():
+            self.path_open_file = data_dir / filename
+            if self.path_open_file.is_file():
                 # print "data file already exists, adding counter"
                 filename = Path(filename.stem + "_" + strftime("%m%d%H%M", localtime()) + \
                                 filename.suffix)
@@ -342,14 +343,14 @@ class DataRecorder(object):
                 break
 
         if self.recording_settings.zip_data:
-            self._file = gzip.open(self.output_file_path, 'w')
+            self._file = gzip.open(self.path_open_file, 'w')
         else:
-            self._file = open(self.output_file_path, 'w')
-        print("Data file: {}".format(self.output_file_path))
+            self._file = open(self.path_open_file, 'w')
+        print("Data file: {}".format(self.path_open_file))
 
         self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
             asctime(localtime()), forceDAQVersion))
-        logging.info("new file: {}".format(self.output_file_path))
+        logging.info("new file: {}".format(self.path_open_file))
 
         for s in self.sensor_settings_list:
             txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
@@ -373,7 +374,7 @@ class DataRecorder(object):
             if write_trigger[1]: line += "trigger2,"
             self._file_write(line[:-1] + NEWLINE)
 
-        return self.output_file_path
+        return self.path_open_file
 
     def close_data_file(self) -> None:
         """Close the data file
@@ -385,4 +386,4 @@ class DataRecorder(object):
         if self._file is not None:
             self._file.close()
             self._file = None
-            self.output_file_path = Path("")
+            self.path_open_file = Path("")

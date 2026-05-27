@@ -36,7 +36,7 @@ class GUIStatus(object):
         self.recorder = recorder
 
         self.background = RecordingScreen(window_size = screen_size,
-                                          filename=str(recorder.output_file_path))
+                                          filename=recorder.path_open_file.stem)
         self.scaling_plotter = Scaling(min=gui_settings.data_min_max[0],
                                        max= gui_settings.data_min_max[1],
                       pixel_min=gui_settings.plotter_pixel_min_max[0],

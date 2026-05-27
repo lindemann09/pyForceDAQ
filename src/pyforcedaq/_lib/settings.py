@@ -184,6 +184,8 @@ class AppSettings(object):
         else:
             self.save() # defaults
 
+        self.output_filename = ""
+
     def _asdict(self):
         return {self.recording_section: self.recording.__dict__,
              self.gui_section: self.gui.__dict__}
