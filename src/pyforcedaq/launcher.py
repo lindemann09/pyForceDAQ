@@ -1,10 +1,13 @@
 from os import path
+from pathlib import Path
 from typing import List
 
 import PySimpleGUI as _sg
 
 from . import USE_MOCK_SENSOR, __version__
-from ._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings
+from ._lib.constants import DEFAULT_SETTINGS_FILE
+from ._lib.misc import list_settings_files
+from ._lib.settings import AppSettings
 from ._lib.udp_connection import UDPConnection
 
 
@@ -37,7 +40,7 @@ def _windows_run(settings: AppSettings):
 
     info_settings = []
     info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
-
+    print(list_settings_files())
     for labels, cal, error in _check_sensor_calibration_settings(
                                                 rs.device_labels,
                                                 rs.calibration_files,
@@ -49,7 +52,7 @@ def _windows_run(settings: AppSettings):
 
         info_settings.append([_sg.Text(f"- {labels}: {cal}", text_color=col)])
 
-    info = [[_sg.Text(f"forceDAQ version: {__version__}")]]
+    info = [[_sg.Text(f"version: {__version__}")]]
     info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
     if USE_MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!",
@@ -58,8 +61,9 @@ def _windows_run(settings: AppSettings):
     layout = [[_sg.Button("Start Recording", size=(29, 4),
                           button_color=('black', 'lightgreen'),
                           key="Start")],
-              [_sg.Frame('Settings', info_settings)],
-              [_sg.Frame('Info', info)]]
+              [_sg.Frame('Info', info)],
+              [_sg.Frame('Settings', info_settings)]
+              ]
     layout.append([_sg.Frame('Data Output',[
             [_sg.Text("Filename:", size=(8, 1)), _sg.Input(default_text='', size=(20,1),key='datafilename')],
             [ _sg.Checkbox("Save Data", rs.save_data, key="save_data"),
@@ -79,7 +83,6 @@ def _windows_run(settings: AppSettings):
 
     window.close()
     return event, settings
-
 
 def run_launcher():
     _sg.theme('DarkBlue14')  # please make your windows colorful

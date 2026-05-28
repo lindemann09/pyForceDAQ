@@ -7,12 +7,9 @@ from typing import Any, Dict, List, Tuple
 
 import tomlkit
 
+from .constants import CALIBRATION_FOLDER, DATA_FOLDER
 from .types import ForceSensorData
 
-DEFAULT_SETTINGS_FILE = "pyForceDAQ.defaults.settings.toml"
-DEFAULT_OUTPUT_FILENAME = None
-CALIBRATION_FOLDER = "calibration"
-DATA_FOLDER = "data"
 
 class DAQConfiguration(object):
     """Settings required for NI-DAQ"""

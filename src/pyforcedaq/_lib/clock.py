@@ -1,7 +1,5 @@
 """A high-resolution monotonic timer based on LSL's local_clock() function.
 """
-
-
 from time import sleep
 
 from pylsl import local_clock

@@ -1,4 +1,12 @@
+from pathlib import Path
+
 from .clock import local_clock_ms
+from .constants import SETTINGS_FILE_EXTENSION
+
+
+def list_settings_files():
+    """Returns a list of all settings files in the current directory."""
+    return [f.name for f in Path(".").glob(f"*{SETTINGS_FILE_EXTENSION}")]
 
 
 def N2g(N):

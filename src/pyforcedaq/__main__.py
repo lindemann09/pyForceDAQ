@@ -29,6 +29,9 @@ def cli():
         default=False,
         help="Omit launcher GUI and start recording directly",
     )
+    print("+" + "-" * 23 + "+")
+    print(f"| pyforceDAQ {__version__}".ljust(24) + "|")
+    print("+" + "-" * 23 + "+")
 
     args = parser.parse_args()
 

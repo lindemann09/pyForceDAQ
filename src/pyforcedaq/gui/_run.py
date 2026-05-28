@@ -15,15 +15,10 @@ from expyriment import control, design, io, misc, stimuli
 
 from .. import __version__ as forceDAQVersion
 from .._lib.clock import wait_ms
+from .._lib.constants import DEFAULT_OUTPUT_FILENAME, DEFAULT_SETTINGS_FILE
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
-from .._lib.settings import (
-    DEFAULT_OUTPUT_FILENAME,
-    DEFAULT_SETTINGS_FILE,
-    AppSettings,
-    GUISettings,
-    SensorSettings,
-)
+from .._lib.settings import AppSettings, GUISettings, SensorSettings
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line
 from ._level_indicator import level_indicator
@@ -320,10 +315,11 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
 
         ##### end main  loop
 
+    recorder.pause_recording(s.background)
     s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.join()
-    recorder.pause_recording(s.background)
+
 
 def run_settings_file(settings_file: str | Path = ""):
 

@@ -7,13 +7,10 @@ __author__ = "Oliver Lindemann"
 import atexit
 import gzip
 import logging
-from fileinput import filename
 from io import TextIOWrapper
 from pathlib import Path
 from time import asctime, localtime, strftime
 from typing import List
-
-from icecream import ic
 
 from .. import __version__ as forceDAQVersion
 from . import _log
@@ -202,7 +199,7 @@ class DataRecorder(object):
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
-                    "Writing {0} of {1} blocks".format(c//BLOCKSIZE,
+                    "Saving {0} of {1} blocks".format(c//BLOCKSIZE,
                                                        buffer_len//BLOCKSIZE)).present()
 
     def _file_write(self, s: str) -> None:
@@ -254,13 +251,19 @@ class DataRecorder(object):
 
         data = []
         if recording_screen is not None:
-            recording_screen.stimulus("writing data ...").present()
+            recording_screen.stimulus("").present()
 
         #pause polling
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
         wait_ms(500)
+
+        if recording_screen is not None:
+            if self.is_saving_data:
+                recording_screen.stimulus("saving data ...").present()
+            else:
+                recording_screen.stimulus("pause recording").present()
 
         # get data
         for fsp in self._force_sensor_processes:
