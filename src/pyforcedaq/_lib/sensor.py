@@ -31,8 +31,8 @@ class Sensor(DAQReadAnalog):
                                read_array_size_in_samples= \
                     len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
 
-        self.device_id = settings.device_id
-        self.name = settings.sensor_name
+        self.sensor_id = settings.sensor_id
+        self.device_label = settings.device_label
         self.convert_to_FT = settings.convert_to_FT
         if self.DAQ_TYPE == "mock_sensor":
             self._atidaq = None
@@ -101,7 +101,7 @@ class Sensor(DAQReadAnalog):
         t = local_clock()
 
         return ForceSensorData(time = t, acquisition_delay = t-start,
-                         device_id = self.device_id,
+                         sensor_id = self.sensor_id,
                          forces = forces,
                          trigger = data[Sensor.TRIGGER_CHANNELS].tolist())
 

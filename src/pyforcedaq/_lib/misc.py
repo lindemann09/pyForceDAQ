@@ -37,10 +37,10 @@ class MinMaxDetector(object):
         return (self._level_change_time is not None) and \
                (local_clock_ms() - self._level_change_time) < self._duration_ms
 
-# def find_calibration_file(calibration_folder: str, sensor_name: str,
+# def find_calibration_file(calibration_folder: str, device_label: str,
 #                           calibration_suffix=".cal") -> str:
 
-#     needle = 'Serial="{0}"'.format(sensor_name)
+#     needle = 'Serial="{0}"'.format(device_label)
 #     calibration_files = []
 #     for x in listdir(path.abspath(calibration_folder)):
 #         filename = path.join(calibration_folder, x)
@@ -49,18 +49,18 @@ class MinMaxDetector(object):
 #                 for l in fl:
 #                     if l.find(needle)>0:
 #                         print("Found calibration file for sensor '{0}' : {1}.".format(
-#                             sensor_name, filename))
+#                             device_label, filename))
 #                         calibration_files.append(filename)
 
 #     if len(calibration_files) == 1:
 #         return calibration_files[0]
 #     elif len(calibration_files) > 1:
-#         print("Multiple calibration files found for sensor '{0}'".format(sensor_name))
+#         print("Multiple calibration files found for sensor '{0}'".format(device_label))
 #         for f in calibration_files:
 #             print("  - {0}".format(f))
 #         print("Please ensure that only one calibration file exists for each sensor")
 #     else:
-#         print("No calibration file found for sensor '{0}'.".format(sensor_name))
+#         print("No calibration file found for sensor '{0}'.".format(device_label))
 #     exit()
 
 #Sensor History with moving average filtering and distance, velocity

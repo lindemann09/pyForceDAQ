@@ -155,8 +155,8 @@ class DataRecorder(object):
         buffer = []
         while True:
             try:
-                data = self.udp.receive_queue.get_nowait()
-            except:
+                data = self.udp.receive_queue.get_nowait() # type: ignore
+            except AttributeError:
                 # until queue empty or no udp connection
                 break
             buffer.append(data)
@@ -176,7 +176,7 @@ class DataRecorder(object):
         BLOCKSIZE = 10000 # for recording screen feedback only
         write_forces = self.recording_settings.array_write_forces()
         write_trigger = self.recording_settings.array_write_trigger()
-        write_deviceid = len(self.recording_settings.device_ids)>1
+        write_deviceid = len(self.recording_settings.device_labels)>1
         float_format = "{0:." + str(float_decimal_places) + "f},"
         buffer_len = len(data_buffer)
         for c, d in enumerate(data_buffer):
@@ -184,7 +184,7 @@ class DataRecorder(object):
                 if isinstance(d, ForceSensorData):
                     line = f"{d.time}, {d.acquisition_delay},"
                     if write_deviceid:
-                        line += f"{d.device_id},"
+                        line += f"{d.sensor_id},"
                     for x in d.selected_forces(select=write_forces):
                         line += float_format.format(x)
                     for x in d.selected_trigger(select=write_trigger):
@@ -357,8 +357,7 @@ class DataRecorder(object):
         logging.info("new file: {}".format(self.path_open_file))
 
         for s in self.sensor_settings_list:
-            txt = " Sensor: id={0}, name={1}, cal-file={2}\n".format(s.device_id,
-                                s.sensor_name, s.calibration_file)
+            txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file}\n"
             self._file_write(TAG_COMMENTS + txt)
 
         if len(comment_line)>0:
@@ -367,7 +366,7 @@ class DataRecorder(object):
         if varnames:
             write_forces = self.recording_settings.array_write_forces()
             write_trigger = self.recording_settings.array_write_trigger()
-            write_deviceid = len(self.recording_settings.device_ids)>1
+            write_deviceid = len(self.recording_settings.device_labels)>1
             line = "time,delay,"
             if write_deviceid:
                 line += "device_tag,"

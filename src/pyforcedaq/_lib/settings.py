@@ -41,10 +41,9 @@ class SensorSettings(DAQConfiguration):
             list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
             Sensors take this into account and correct data online
     """
-    device_id: int
-    sensor_name: str
+    sensor_id: int
+    device_label: str
     calibration_file: str
-    device_name_prefix: str
     # DAQ settings
     channels: str = "ai0:7"
     rate: int = 1000
@@ -54,7 +53,7 @@ class SensorSettings(DAQConfiguration):
     reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
     def __post_init__(self):
-        super().__init__(device_name=f"{self.device_name_prefix}{self.device_id}",
+        super().__init__(device_name=f"{self.device_label}", #FIXME name is redundant
                          channels=self.channels,
                          rate=self.rate, minVal=self.minVal, maxVal=self.maxVal)
         self.reverse_parameters: List[int] = []
@@ -86,8 +85,7 @@ class ABCSettings(ABC): # must be a dataclass
 
 @dataclass
 class RecordingSettings(ABCSettings):
-    device_name_prefix: str = "Dev"
-    device_ids:  List[int] = field(default_factory=lambda: [1])
+    device_labels:  List[str] = field(default_factory=lambda: ["Dev1"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
     calibration_folder: str = "calibration"
 
@@ -106,13 +104,13 @@ class RecordingSettings(ABCSettings):
 
     reverse_scaling: dict | None = field(default_factory=lambda: {"1": ["Fz"], "2": ["Fz"]})
     convert_to_forces: bool = True
-    zip_data: bool = True
+    zip_data: bool = False
 
     priority: str | None = "normal"
 
     def __post_init__(self):
-        if isinstance(self.device_ids, int):
-            self.device_ids = [self.device_ids]
+        if isinstance(self.device_labels, str):
+            self.device_labels = [self.device_labels]
         if isinstance(self.calibration_files, str):
             self.calibration_files = [self.calibration_files]
 
@@ -122,29 +120,27 @@ class RecordingSettings(ABCSettings):
     def array_write_trigger(self):
         return [self.write_trigger1, self.write_trigger2]
 
-    def reverse_parameters_for_device(self, device_id: int):
+    def reverse_parameters_for_device(self, label: str):
         if self.reverse_scaling is None:
             return []
         else:
             try:
-                return self.reverse_scaling[str(device_id)]
+                return self.reverse_scaling[label]
             except KeyError:
                 return []
 
     def sensor_settings_list(self)->List[SensorSettings]:
         rtn: List[SensorSettings] = []
-        for d_id, cal_file in zip(self.device_ids, self.calibration_files):
-            ss = SensorSettings(device_id = d_id,
-                        device_name_prefix=self.device_name_prefix,
-                        sensor_name = "no name",
+        for label, cal_file in zip(self.device_labels, self.calibration_files):
+            ss = SensorSettings(sensor_id = self.device_labels.index(label) + 1,
+                                device_label = label,
                         calibration_file=str(Path(self.calibration_folder) / cal_file),
-                        reverse_parameter_names=self.reverse_parameters_for_device(d_id),
+                        reverse_parameter_names=self.reverse_parameters_for_device(label),
                         rate = self.sampling_rate,
                         convert_to_FT=self.convert_to_forces
                     )
             rtn.append(ss)
         return rtn
-
 
 @dataclass
 class GUISettings(ABCSettings):

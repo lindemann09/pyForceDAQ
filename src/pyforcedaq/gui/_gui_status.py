@@ -89,7 +89,7 @@ class GUIStatus(object):
         self.sensor_info_str = ""
         for tmp in self.recorder.sensor_settings_list:
             self.sensor_info_str = self.sensor_info_str + \
-                                   "{0}: {1}\n".format(tmp.device_name, tmp.sensor_name)
+                                   "{0}: {1}\n".format(tmp.device_name, tmp.device_label)
         self.sensor_info_str = self.sensor_info_str.strip()
         self.plot_indicator = True
         self.plot_filtered = False

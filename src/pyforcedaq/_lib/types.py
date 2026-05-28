@@ -34,7 +34,7 @@ class PollingPriority(object): # TODO needed?
 
 
 class CTypesForceSensorData(ct.Structure):
-    _fields_ = [("device_id", ct.c_int),
+    _fields_ = [("sensor_id", ct.c_int),
             ("time", ct.c_int),
             ("forces", CTYPE_FORCES),
             ("trigger", CTYPE_TRIGGER)]
@@ -52,7 +52,7 @@ class TimedData(object):
 
 class ForceSensorData(TimedData):
     """The Force data structure with the following properties
-        * device_id
+        * sensor_id (int)
         * time (time stamp)
         * aquisition delay (time it took to receive the new data)
         * Fx,  Fy, & Fz
@@ -65,11 +65,11 @@ class ForceSensorData(TimedData):
 
     def __init__(self, time: float | None, acquisition_delay: float,
                  forces= [0] * 6, trigger=(0, 0),
-                 device_id=0, trigger_threshold=0.9, reverse=()):
+                 sensor_id=0, trigger_threshold=0.9, reverse=()):
         """Create a ForceSensorData object
         Parameters
         ----------
-        device_id: int, optional
+        sensor_id: int, optional
             the id of the sensor device
         time: float, optional
             the timestamp
@@ -88,7 +88,7 @@ class ForceSensorData(TimedData):
 
         super().__init__(time)
         self.acquisition_delay = acquisition_delay
-        self.device_id = device_id
+        self.sensor_id = sensor_id
         self.forces = forces
         self.trigger = list(trigger)
         if abs(self.trigger[0]) < trigger_threshold:
@@ -100,7 +100,7 @@ class ForceSensorData(TimedData):
 
     def __str__(self):
         """converts data to string. """
-        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.device_id,
+        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.sensor_id,
                                                            self.time,
                                                            self.forces[0],
                                                            self.forces[1],
@@ -161,12 +161,12 @@ class ForceSensorData(TimedData):
 
     @property
     def ctypes_struct(self):
-        return CTypesForceSensorData(self.device_id, self.time,
+        return CTypesForceSensorData(self.sensor_id, self.time,
               CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
-        self.device_id = struct.device_id
+        self.sensor_id = struct.sensor_id
         self.time = struct.time
         self.force = struct.forces
         self.trigger = struct.trigger

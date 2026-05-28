@@ -4,16 +4,16 @@ from typing import List
 import PySimpleGUI as _sg
 
 from .. import USE_MOCK_SENSOR, __version__
-from .._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings, RecordingSettings
+from .._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings
 from .._lib.udp_connection import UDPConnection
 from . import _run
 
 
-def _check_sensor_calibration_settings(device_ids: List[int],
+def _check_sensor_calibration_settings(device_labels: List[str],
                                        calibrations_files : List[str],
                                        calibration_folder :str):
     rtn = []
-    for x, d_id in enumerate(device_ids):
+    for x, labels in enumerate(device_labels):
         error = False
         try:
             cal_file = calibrations_files[x]
@@ -27,20 +27,20 @@ def _check_sensor_calibration_settings(device_ids: List[int],
                 cal = "NOT FOUND"
                 error = True
 
-        rtn.append([d_id, cal_file, error])
+        rtn.append([labels, cal_file, error])
 
     return rtn
 
 
 def _windows_run(settings: AppSettings):
     rs = settings.recording
-    n_sensor = len(rs.device_ids)
+    n_sensor = len(rs.device_labels)
 
     info_settings = []
     info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
 
-    for d_id, cal, error in _check_sensor_calibration_settings(
-                                                rs.device_ids,
+    for labels, cal, error in _check_sensor_calibration_settings(
+                                                rs.device_labels,
                                                 rs.calibration_files,
                                                 rs.calibration_folder):
         if error:
@@ -48,8 +48,7 @@ def _windows_run(settings: AppSettings):
         else:
             col = _sg.DEFAULT_ELEMENT_TEXT_COLOR
 
-        info_settings.append([_sg.Text(f"- {rs.device_name_prefix}{d_id}: {cal}",
-                              text_color=col)])
+        info_settings.append([_sg.Text(f"- {labels}: {cal}", text_color=col)])
 
     info = [[_sg.Text(f"forceDAQ version: {__version__}")]]
     info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
@@ -89,9 +88,9 @@ def run_launcher():
 
     rs = settings.recording
     settings_error = False
-    n_sensor = len(rs.device_ids)
+    n_sensor = len(rs.device_labels)
     if n_sensor != len(rs.calibration_files):
-        _sg.PopupError("Number of devices IDs and calibration files are not equal.")
+        _sg.PopupError("Number of devices and calibration files are not equal.")
         settings_error = True
 
     if not path.isdir(rs.calibration_folder):

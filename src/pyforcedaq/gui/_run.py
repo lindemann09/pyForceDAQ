@@ -338,7 +338,7 @@ def run(settings: AppSettings):
     """start recording with specified settings
 
     reverse scaling: dictionary with rescaling (see SensorSetting)
-                key: device_id, value: list of parameter names (e.g., ["Fx"])
+                key: device_label, value: list of parameter names (e.g., ["Fx"])
 
    polling_priority has to be types.PRIORITY_{HIGH}, {REALTIME} or
                         {NORMAL} or None
@@ -352,8 +352,8 @@ def run(settings: AppSettings):
     logging.info("Settings %s", settings.recording_as_json)
 
 
-    if not isinstance(rs.device_ids, (list, tuple)):
-        rs.device_ids = [rs.device_ids]
+    if not isinstance(rs.device_labels, (list, tuple)):
+        rs.device_labels = [rs.device_labels]
     if not isinstance(rs.calibration_files, (list, tuple)):
         rs.calibration_files = [rs.calibration_files]
 
@@ -391,7 +391,7 @@ def run(settings: AppSettings):
         elif DEFAULT_OUTPUT_FILENAME is None:
             bkg = logo_text_line("")
             output_filename = io.TextInput("Filename", background_stimulus=bkg).get()
-            output_filename = output_filename.replace(" ", "_")
+            output_filename = output_filename.replace(" ", "_") # type: ignore
 
         else:
             output_filename = DEFAULT_OUTPUT_FILENAME

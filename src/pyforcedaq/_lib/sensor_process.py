@@ -169,19 +169,19 @@ class SensorProcess(Process):
         lsl_hardware_trigger_stream = LSLSream()
         if self.recording_settings.lsl_stream:
             lsl_data_steam.init(
-                    name=f"Force_{self.sensor_settings.device_name}",
+                    name=f"Force_{sensor.device_label}",
                     n_channels=sum(stream_forces),
-                    stream_id=f"RF_{self.sensor_settings.device_name}",
+                    stream_id=f"RF_{sensor.device_label}",
                     freq=self.sensor_settings.rate,
                     channel_format= cf_float32,
-                    metadata={"sensor_name": self.sensor_settings.sensor_name})
+                    metadata={"sensor_label": self.sensor_settings.device_label})
 
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
                 lsl_hardware_trigger_stream.init(
-                    name=f"Trigger_{self.sensor_settings.device_name}",
+                    name=f"Trigger_{sensor.device_label}",
                     n_channels=n_hardware_trigger,
-                    stream_id=f"Tr_{self.sensor_settings.device_name}",
+                    stream_id=f"Tr_{sensor.device_label}",
                     channel_format=cf_float32,
                     freq=self.sensor_settings.rate)
 
@@ -194,9 +194,9 @@ class SensorProcess(Process):
                     # ensure good timing
                     sensor.start_data_acquisition()
                     buffer.append(DAQEvents(time=local_clock(),
-                                            code="started:"+repr(sensor.device_id)))
-                    logging.info("Sensor start, name %s, pid %s, priority %s",
-                        sensor.name,self.pid, get_priority(self.pid))
+                                            code="started:"+sensor.device_label))
+                    logging.info("Sensor start, %s, pid %s, priority %s",
+                        sensor.device_label,self.pid, get_priority(self.pid))
                     is_polling = True
 
                 d = sensor.poll_data()
@@ -229,11 +229,11 @@ class SensorProcess(Process):
                 if is_polling:
                     sensor.stop_data_acquisition()
                     buffer.append(DAQEvents(time=local_clock(),
-                                            code="pause:"+repr(sensor.device_id)))
+                                            code="pause:"+sensor.device_label))
                     self._buffer_size.value = len(buffer)
                     logging.info(
-                        "Sensor stop, name %s, pid %s, priority %s",
-                        sensor.name,
+                        "Sensor stop,  %s, pid %s, priority %s",
+                        sensor.device_label,
                         self.pid,
                         get_priority(self.pid),
                     )
@@ -266,4 +266,6 @@ class SensorProcess(Process):
         sensor.stop_data_acquisition()
         self._buffer_size.value = 0
 
-        logging.info("Sensor quit, %s, %s", sensor.name, ptp.get_profile_str())
+        logging.info("Sensor quit, %s, %s", sensor.device_label, ptp.get_profile_str())
+
+#FIXME check trigger processing and UDP connections
