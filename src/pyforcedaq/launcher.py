@@ -39,8 +39,15 @@ def _windows_run(settings: AppSettings):
     n_sensor = len(rs.device_labels)
 
     info_settings = []
+    lst_settings = list_settings_files()
+    info_settings.append([_sg.Combo(
+        values=lst_settings,
+        default_value=settings.filepath.name,
+        key="Settings_file",
+        size = (34, 1),
+        enable_events = True,
+        readonly=True)])
     info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
-    print(list_settings_files())
     for labels, cal, error in _check_sensor_calibration_settings(
                                                 rs.device_labels,
                                                 rs.calibration_files,
@@ -54,18 +61,19 @@ def _windows_run(settings: AppSettings):
 
     info = [[_sg.Text(f"version: {__version__}")]]
     info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
+
     if USE_MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!",
                               text_color="red")])
 
-    layout = [[_sg.Button("Start Recording", size=(29, 4),
+    layout = [[_sg.Button("Start Recording", size=(32, 4),
                           button_color=('black', 'lightgreen'),
                           key="Start")],
-              [_sg.Frame('Info', info)],
-              [_sg.Frame('Settings', info_settings)]
+              [_sg.Frame('Info', size=(280, 80), layout= info)],
+              [_sg.Frame('Settings', size=(280, 140), expand_y=True, layout=info_settings)]
               ]
-    layout.append([_sg.Frame('Data Output',[
-            [_sg.Text("Filename:", size=(8, 1)), _sg.Input(default_text='', size=(20,1),key='datafilename')],
+    layout.append([_sg.Frame('Data Output' , size=(280, 80), layout=[
+            [_sg.Text("Filename:", size=(8, 1)), _sg.Input(default_text='', size=(24,1),key='datafilename')],
             [ _sg.Checkbox("Save Data", rs.save_data, key="save_data"),
              _sg.Checkbox("LSL stream", rs.lsl_stream, key="lsl")]
             ])])
@@ -82,11 +90,11 @@ def _windows_run(settings: AppSettings):
             settings.recording.save_data = True
 
     window.close()
-    return event, settings
+    return event, values, settings
 
-def run_launcher():
-    _sg.theme('DarkBlue14')  # please make your windows colorful
-    settings = AppSettings(filename=DEFAULT_SETTINGS_FILE)
+
+def load_settings_file(settings_file: str | Path) -> AppSettings:
+    settings = AppSettings(filename=settings_file)
 
     rs = settings.recording
     settings_error = False
@@ -99,12 +107,20 @@ def run_launcher():
         _sg.PopupError(f"Can't find calibration folder: {rs.calibration_folder}")
         settings_error = True
     if settings_error:
-        return
+        exit()
+    return settings
+
+def run_launcher():
+    _sg.theme('DarkBlue14')  # please make your windows colorful
+    settings = load_settings_file(DEFAULT_SETTINGS_FILE)
 
     while True:
-        event, settings = _windows_run(settings)
+        event, values, settings = _windows_run(settings)
+
         if event == "Save":
             settings.save()
+        elif event == "Settings_file":
+            settings = load_settings_file(values["Settings_file"])
         else:
             break
 
