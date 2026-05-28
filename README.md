@@ -35,7 +35,7 @@ To install pyForceDAQ from release-zipfile
 **Note:** The software uses a mock sensor and simulates
 data, if no device is connected. It enforce mock sensor set (before importing further packages modules):
 
-``pyforcedaq.USE_MOCK_SENSOR = True``
+``pyforcedaq.constants.USE_MOCK_SENSOR = True``
 
 Development
 -----------

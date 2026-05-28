@@ -5,7 +5,6 @@ from typing import Tuple
 
 from expyriment import io, misc
 
-from .. import __version__ as forceDAQVersion
 from .._lib.data_recorder import DataRecorder
 from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess

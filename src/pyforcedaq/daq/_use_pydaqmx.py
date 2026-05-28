@@ -15,7 +15,7 @@ from typing import Tuple
 import numpy as np
 import PyDAQmx
 
-from . import DAQConfiguration
+from .._lib.settings import DAQConfiguration
 
 
 class DAQReadAnalog(PyDAQmx.Task):
@@ -111,5 +111,5 @@ class DAQReadAnalog(PyDAQmx.Task):
                                    ct.c_uint32(self.read_array_size_in_samples),
                                    ct.byref(read_samples),
                                    None)
-
+        print(read_buffer)
         return read_buffer, read_samples.value

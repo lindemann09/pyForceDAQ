@@ -2,7 +2,6 @@ __author__ = 'Oliver Lindemann'
 
 # helper functions
 import os
-from time import strftime
 
 import pygame
 from expyriment import stimuli

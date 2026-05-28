@@ -5,12 +5,11 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = 'Oliver Lindemann'
 
-import ctypes as ct
 from copy import copy
 
 import numpy as np
 
-from ..daq import ATI_CDLL, DAQReadAnalog
+from ..daq import CalibrationConverter, DAQReadAnalog
 from .clock import local_clock
 from .settings import SensorSettings
 from .types import ForceSensorData
@@ -35,18 +34,9 @@ class Sensor(DAQReadAnalog):
         self.device_label = settings.device_label
         self.convert_to_FT = settings.convert_to_FT
         if self.DAQ_TYPE == "mock_sensor":
-            self._atidaq = None
-            self.convert_to_FT = False
+            self._calib_converter = None
         else:
-            # ATI voltage to force converter (DLL also required for biases)
-            # TODO ATI_CDLL for biases mabye not needed for voltage recordings, check c-code
-            self._atidaq = ATI_CDLL()
-
-            # get calibration
-            index = ct.c_short(1)
-            self._atidaq.createCalibration(settings.calibration_file, index)
-            self._atidaq.setForceUnits("N")
-            self._atidaq.setTorqueUnits("N-m")
+            self._calib_converter = CalibrationConverter(settings.calibration_file)
 
         self._reverse_parameters = copy(settings.reverse_parameters)
 
@@ -70,8 +60,8 @@ class Sensor(DAQReadAnalog):
         if not task_was_running:
             self.stop_data_acquisition()
 
-        if self._atidaq is not None and isinstance(data, np.ndarray):
-            self._atidaq.bias(np.mean(data, axis=0))
+        if self._calib_converter is not None and isinstance(data, np.ndarray):
+            self._calib_converter.bias(np.mean(data, axis=0))
             # not sure if bias required
             # for recoding of voltages, that is, not convert to forces
 
@@ -79,7 +69,7 @@ class Sensor(DAQReadAnalog):
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
-        the ATIDAO libraray.
+        the calibration converter.
 
         Returns
         -------
@@ -90,8 +80,8 @@ class Sensor(DAQReadAnalog):
 
         start = local_clock()
         data, _read_samples = self.read_analog()
-        if self.convert_to_FT:
-            forces = np.array(self._atidaq.convertToFT( voltages=data[Sensor.SENSOR_CHANNELS],
+        if self.convert_to_FT and self._calib_converter is not None:
+            forces = np.asarray(self._calib_converter.convertToFT(voltages=data[Sensor.SENSOR_CHANNELS],
                                                 reverse_parameters=self._reverse_parameters))
         else:
             # array

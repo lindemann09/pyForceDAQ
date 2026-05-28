@@ -4,13 +4,13 @@ import nidaqmx
 import numpy as np
 from nidaqmx import constants as nidaq_consts
 
-from . import DAQConfiguration
+from .._lib.settings import DAQConfiguration
 
 
 class DAQReadAnalog(nidaqmx.Task):
 
-    NUM_SAMPS_PER_CHAN = nidaq_consts.READ_ALL_AVAILABLE # or 1 FIXME?
-    TIMEOUT = 1.0
+    NUM_SAMPS_PER_CHAN = 1
+    TIMEOUT = 1
     DAQ_TYPE = "nidaqmx"
 
     def __init__(self, configuration: DAQConfiguration, read_array_size_in_samples: int):
@@ -82,5 +82,5 @@ class DAQReadAnalog(nidaqmx.Task):
 
         #fill in data
         data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT)
-        np_data = np.reshape(np.array(data),(-1,))
+        np_data = np.reshape(np.array(data),(-1,)) # reshape to vector
         return np_data, len(np_data)
