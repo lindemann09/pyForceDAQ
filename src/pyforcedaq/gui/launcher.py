@@ -95,8 +95,7 @@ def run_launcher():
         settings_error = True
 
     if not path.isdir(rs.calibration_folder):
-        _sg.PopupError("Can't find calibration folder: {}".format(
-            rs.calibration_folder))
+        _sg.PopupError(f"Can't find calibration folder: {rs.calibration_folder}")
         settings_error = True
     if settings_error:
         return
@@ -109,6 +108,11 @@ def run_launcher():
             break
 
     if event == "Start":
+        if not(settings.recording.save_data or settings.recording.lsl_stream):
+            ch = _sg.popup_yes_no("You have not selected any data output. "+ "Are you sure you want to continue?",
+                                  title="No data output selected!")
+            if ch == "No":
+                return # quit
         _run.run(settings)
     else:
         pass

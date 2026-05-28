@@ -97,6 +97,10 @@ class DataRecorder(object):
         self.path_open_file = Path("")
         atexit.register(self.quit)
 
+    @property
+    def is_saving_data(self):
+        """Property indicates whether a data file is open"""
+        return self._file is not None
 
     @property
     def is_alive(self):

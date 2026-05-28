@@ -34,10 +34,28 @@ class GUIStatus(object):
 
         self.gs = gui_settings
         self.recorder = recorder
-        recording_mode = "TODO" #FIXME
+
+        if recorder.recording_settings.lsl_stream:
+            info_recording = "LSL STREAM"
+            if recorder.recording_settings.save_data:
+                info_recording += " | "
+        else:
+            info_recording = ""
+        if recorder.recording_settings.save_data:
+            info_recording += "SAVING"
+        if len(info_recording) == 0:
+            info_recording =  "DATA ARE NOT SAVED OR STREAMED!"
+        if recorder.is_saving_data:
+            info_file = f"file: {recorder.path_open_file.stem}"
+        else:
+            if recorder.recording_settings.lsl_stream:
+                info_file = "no local file"
+            else:
+                info_file = info_recording
+
         self.background = RecordingScreen(window_size = screen_size,
-                                          filename=recorder.path_open_file.stem,
-                                          recording_mode=recording_mode)
+                                          txt_top_center=info_file,
+                                          txt_top_left=info_recording)
         self.scaling_plotter = Scaling(min=gui_settings.data_min_max[0],
                                        max= gui_settings.data_min_max[1],
                       pixel_min=gui_settings.plotter_pixel_min_max[0],
