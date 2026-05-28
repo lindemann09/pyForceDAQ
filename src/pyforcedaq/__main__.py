@@ -1,7 +1,6 @@
-
 import argparse
 
-from . import __author__, __version__, gui
+from . import __author__, __version__
 
 
 def cli():
@@ -38,10 +37,11 @@ def cli():
             print("Can't use launcher and settings file")
             exit()
 
-        from .gui import launcher
-        return launcher.run_launcher()
+        from .launcher import run_launcher
+        return run_launcher()
     else:
-        gui.run_settings_file(args.SETTINGS_FILE)
+        from .gui import run_settings_file
+        run_settings_file(args.SETTINGS_FILE)
 
 
 

@@ -3,10 +3,9 @@ from typing import List
 
 import PySimpleGUI as _sg
 
-from .. import USE_MOCK_SENSOR, __version__
-from .._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings
-from .._lib.udp_connection import UDPConnection
-from . import _run
+from . import USE_MOCK_SENSOR, __version__
+from ._lib.settings import DEFAULT_SETTINGS_FILE, AppSettings
+from ._lib.udp_connection import UDPConnection
 
 
 def _check_sensor_calibration_settings(device_labels: List[str],
@@ -112,6 +111,7 @@ def run_launcher():
                                   title="No data output selected!")
             if ch == "No":
                 return # quit
-        _run.run(settings)
+        from . import gui
+        gui.run(settings)
     else:
         pass
