@@ -3,6 +3,9 @@ __author__ = 'Oliver Lindemann'
 import ctypes as ct
 from typing import Iterator, List, Tuple
 
+import numpy as np
+from numpy.typing import NDArray
+
 from .clock import local_clock
 from .misc import MinMaxDetector as _MinMaxDetector
 
@@ -62,10 +65,15 @@ class ForceSensorData(TimedData):
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
+    # FIXME update docu, types have change to numpy
 
-    def __init__(self, time: float | None, acquisition_delay: float,
-                 forces= [0] * 6, trigger=(0, 0),
-                 sensor_id=0, trigger_threshold=0.9, reverse=()):
+    def __init__(self,
+                 time: float | None,
+                 acquisition_delay: float,
+                 forces: NDArray[np.float64] = np.zeros(6),
+                 trigger: NDArray[np.float64] = np.zeros(2),
+                 sensor_id=0,
+                 trigger_threshold=0.9, reverse=()):
         """Create a ForceSensorData object
         Parameters
         ----------
@@ -90,7 +98,7 @@ class ForceSensorData(TimedData):
         self.acquisition_delay = acquisition_delay
         self.sensor_id = sensor_id
         self.forces = forces
-        self.trigger = list(trigger)
+        self.trigger = trigger
         if abs(self.trigger[0]) < trigger_threshold:
             self.trigger[0] = 0
         if abs(self.trigger[1]) < trigger_threshold:
@@ -162,7 +170,8 @@ class ForceSensorData(TimedData):
     @property
     def ctypes_struct(self):
         return CTypesForceSensorData(self.sensor_id, self.time,
-              CTYPE_FORCES(*self.forces), CTYPE_TRIGGER(*self.trigger))
+              CTYPE_FORCES(*self.forces.tolist()),
+              CTYPE_TRIGGER(*self.trigger.tolist()))
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
@@ -171,14 +180,15 @@ class ForceSensorData(TimedData):
         self.force = struct.forces
         self.trigger = struct.trigger
 
-    def selected_forces(self, select: List[bool]) -> List[float]:
+    def selected_forces(self, select: List[bool] | NDArray[np.bool]) -> NDArray[np.float64]:
         """Return list of selected force values."""
-        return [force for i, force in enumerate(self.forces) if select[i]] # FIXME simplify not all force have to save in ForceClass
+        #return np.array([force for i, force in enumerate(self.forces) if select[i]]) # FIXME simplify not all force have to save in ForceClass
+        return self.forces[select]
 
-    def selected_trigger(self, select: List[bool]) -> List[float]:
+    def selected_trigger(self, select: List[bool] | NDArray[np.bool]) -> NDArray[np.float64]:
         """Return list of selected trigger values."""
-        return [trigger for i, trigger in enumerate(self.trigger) if select[i]]
-
+        #return [trigger for i, trigger in enumerate(self.trigger) if select[i]]
+        return self.trigger[select]
 
 class UDPData(TimedData):
     """The UDP data class, used to store UDP DATA with timestamps
@@ -352,3 +362,4 @@ class Thresholds(object):
             # minmax just detected
             self._minmax[channel] = None # switch off
         return rtn
+

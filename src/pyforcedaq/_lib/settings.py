@@ -11,6 +11,7 @@ from .types import ForceSensorData
 
 DEFAULT_SETTINGS_FILE = "pyForceDAQ.defaults.settings.toml"
 DEFAULT_OUTPUT_FILENAME = None
+CALIBRATION_FOLDER = "calibration"
 DATA_FOLDER = "data"
 
 class DAQConfiguration(object):
@@ -87,7 +88,7 @@ class ABCSettings(ABC): # must be a dataclass
 class RecordingSettings(ABCSettings):
     device_labels:  List[str] = field(default_factory=lambda: ["Dev1"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
-    calibration_folder: str = "calibration"
+    calibration_folder: str = CALIBRATION_FOLDER
 
     lsl_stream: bool = False
     save_data: bool = True
@@ -102,7 +103,7 @@ class RecordingSettings(ABCSettings):
     write_trigger1: bool = False
     write_trigger2: bool = False
 
-    reverse_scaling: dict | None = field(default_factory=lambda: {"1": ["Fz"], "2": ["Fz"]})
+    reverse_scaling: dict | None = field(default_factory=lambda: {"Dev1": ["Fz"], "Dev2": []})
     convert_to_forces: bool = True
     zip_data: bool = False
 

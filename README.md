@@ -10,6 +10,15 @@ Python DAQ library and application for ATI force sensors and NI-DAQ
 Installation
 ------------
 
+PyforeceDAQ depends on Python 3.12 or 3.13 (and is currently not compatible with later versions).
+
+It is suggested to use a virtual environment with Python 3.13. The easiest way to do this to use UV. To install UV see https://docs.astral.sh/uv/getting-started/installation/
+
+Install pyForceDAQ via UV:
+``
+uv tool install pyforcedaq --python 3.13 -U
+``
+
 * Create the shared library `atidaq.dll` (or `atidaq.so` for Linux) using
  `Makefile` in the folder `atidaq_cdll`. A complied version of `atidaq.dll
  ` can be also found in the `dll` subfolder

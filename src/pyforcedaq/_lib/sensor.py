@@ -91,11 +91,11 @@ class Sensor(DAQReadAnalog):
         start = local_clock()
         data, _read_samples = self.read_analog()
         if self.convert_to_FT:
-            forces = self._atidaq.convertToFT( voltages=data[Sensor.SENSOR_CHANNELS],
-                                                reverse_parameters=self._reverse_parameters)
+            forces = np.array(self._atidaq.convertToFT( voltages=data[Sensor.SENSOR_CHANNELS],
+                                                reverse_parameters=self._reverse_parameters))
         else:
             # array
-            forces = list(data[Sensor.SENSOR_CHANNELS])
+            forces = data[Sensor.SENSOR_CHANNELS]
             for x in self._reverse_parameters:
                 forces[x] = -1 * forces[x]
         t = local_clock()
@@ -103,5 +103,5 @@ class Sensor(DAQReadAnalog):
         return ForceSensorData(time = t, acquisition_delay = t-start,
                          sensor_id = self.sensor_id,
                          forces = forces,
-                         trigger = data[Sensor.TRIGGER_CHANNELS].tolist())
+                         trigger = data[Sensor.TRIGGER_CHANNELS])
 

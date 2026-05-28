@@ -5,6 +5,8 @@ import ctypes as ct
 import logging
 from multiprocessing import Event, Pipe, Process, sharedctypes
 
+from icecream import ic
+
 from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
 from .polling_time_profile import PollingTimeProfile
@@ -268,4 +270,4 @@ class SensorProcess(Process):
 
         logging.info("Sensor quit, %s, %s", sensor.device_label, ptp.get_profile_str())
 
-#FIXME check trigger processing and UDP connections
+#FIXME check trigger processing and UDP connections#FIXME check trigger processing and UDP connections
