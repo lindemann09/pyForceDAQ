@@ -32,7 +32,6 @@ class DAQReadAnalog(PyDAQmx.Task):
 
         """
 
-        # print('init')
         PyDAQmx.Task.__init__(self)
         # CreateAIVoltageChan
         self.CreateAIVoltageChan(
@@ -114,5 +113,5 @@ class DAQReadAnalog(PyDAQmx.Task):
             ct.byref(read_samples),
             None,
         )
-        print(read_buffer)
+
         return read_buffer, read_samples.value

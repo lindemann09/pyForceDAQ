@@ -5,8 +5,6 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 
 __author__ = "Oliver Lindemann"
 
-from copy import copy
-
 import numpy as np
 
 from ..daq import CalibrationConverter, DAQReadAnalog
@@ -21,26 +19,38 @@ class Sensor(DAQReadAnalog):
     # channel 7 for trigger   synchronization validation
     TRIGGER_CHANNELS = range(5, 6 + 1)
 
-    def __init__(self, settings: SensorSettings):
+    def __init__(self, s_settings: SensorSettings):
         """DOC"""
 
-        assert isinstance(settings, SensorSettings)
+        assert isinstance(s_settings, SensorSettings)
+        assert len(self.SENSOR_CHANNELS) == len(ForceSensorData.forces_names)
 
         super(Sensor, self).__init__(
-            configuration=settings,
+            configuration=s_settings,
             read_array_size_in_samples=len(Sensor.SENSOR_CHANNELS)
             + len(Sensor.TRIGGER_CHANNELS),
         )
 
-        self.sensor_id = settings.sensor_id
-        self.device_label = settings.device_label
-        self.convert_to_FT = settings.convert_to_FT
+        self.sensor_id = s_settings.sensor_id
+        self.device_label = s_settings.device_label
+        self.convert_to_FT = s_settings.convert_to_FT
         if self.DAQ_TYPE == "mock_sensor":
             self._calib_converter = None
         else:
-            self._calib_converter = CalibrationConverter(settings.calibration_file)
+            self._calib_converter = CalibrationConverter(s_settings.calibration_file)
 
-        self._reverse_parameters = copy(settings.reverse_parameters)
+        self._reverse_vector = np.ones(len(ForceSensorData.forces_names))
+        if s_settings.reverse_parameter_names is not None:
+            if isinstance(s_settings.reverse_parameter_names, str):
+                names = [s_settings.reverse_parameter_names]
+            else:
+                names = s_settings.reverse_parameter_names
+            for para in names:
+                try:
+                    idx = ForceSensorData.forces_names.index(para)
+                except ValueError:
+                    continue
+                self._reverse_vector[idx] = -1
 
     def determine_bias(self, n_samples=100):
         """determines the bias"""
@@ -81,16 +91,14 @@ class Sensor(DAQReadAnalog):
         data, _read_samples = self.read_analog()
         if self.convert_to_FT and self._calib_converter is not None:
             forces = np.asarray(
-                self._calib_converter.convertToFT(
-                    voltages=data[Sensor.SENSOR_CHANNELS],
-                    reverse_parameters=self._reverse_parameters,
-                )
+                self._calib_converter.convertToFT(voltages=data[Sensor.SENSOR_CHANNELS])
             )
         else:
             # array
             forces = data[Sensor.SENSOR_CHANNELS]
-            for x in self._reverse_parameters:
-                forces[x] = -1 * forces[x]
+
+        # reverse scaling if needed
+        forces = forces * self._reverse_vector
         t = local_clock()
 
         return ForceSensorData(

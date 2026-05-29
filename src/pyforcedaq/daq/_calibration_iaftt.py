@@ -9,7 +9,7 @@ class CalibrationConverter(object):  # type: ignore
     def __init__(self, calibration_file:str):
         self._ftsensor = atiiaftt.FTSensor(calibration_file, index=1)
 
-    def convertToFT(self, voltages:NDArray, reverse_parameters:List[int]):
+    def convertToFT(self, voltages:NDArray):
         return self._ftsensor.convertToFt(voltages.tolist()) # FIXME reverse parameter
         #TODO: to list needed?
 

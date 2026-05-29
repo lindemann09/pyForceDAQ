@@ -13,8 +13,8 @@ class CalibrationConverter(object):
         self._atidaq.setForceUnits("N")
         self._atidaq.setTorqueUnits("N-m")
 
-    def convertToFT(self, voltages: NDArray, reverse_parameters: List[int]):
-        return self._atidaq.convertToFT(voltages, reverse_parameters)
+    def convertToFT(self, voltages: NDArray):
+        return self._atidaq.convertToFT(voltages)
 
     def bias(self, bias_values: NDArray):
         self._atidaq.bias(bias_values)

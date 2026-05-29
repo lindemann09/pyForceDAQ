@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Tuple
 import tomlkit
 
 from ..constants import CALIBRATION_FOLDER, DATA_FOLDER
-from .types import ForceSensorData
 
 
 class DAQConfiguration(object):
@@ -54,27 +53,15 @@ class SensorSettings(DAQConfiguration):
     reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
     def __post_init__(self):
+
         super().__init__(
-            device_name=f"{self.device_label}",  # FIXME name is redundant
+            device_name=f"{self.device_label}",
             channels=self.channels,
             rate=self.rate,
             minVal=self.minVal,
             maxVal=self.maxVal,
         )
-        self.reverse_parameters: List[int] = []
-        if self.reverse_parameter_names is not None:
-            names = (
-                [self.reverse_parameter_names]
-                if isinstance(self.reverse_parameter_names, str)
-                else self.reverse_parameter_names
-            )
-            for para in names:
-                try:
-                    self.reverse_parameters.append(
-                        ForceSensorData.forces_names.index(para)
-                    )
-                except Exception:
-                    pass
+
 
 
 class ABCSettings(ABC):  # must be a dataclass
@@ -113,7 +100,7 @@ class RecordingSettings(ABCSettings):
     write_trigger2: bool = False
 
     reverse_scaling: dict | None = field(
-        default_factory=lambda: {"Dev1": ["Fz"], "Dev2": []}
+        default_factory=lambda: {"Dev1": [], "Dev2": ["Fz"]}
     )
     convert_to_forces: bool = True
     zip_data: bool = False

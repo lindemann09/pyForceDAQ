@@ -242,26 +242,19 @@ class ATI_CDLL(object):
 
         return self.cdll.Bias(self._calibration, VOLTAGE_SAMPLE_TYPE(*voltages))
 
-    def convertToFT(self, voltages, reverse_parameters=[]):
+    def convertToFT(self, voltages):
         """Converts an array of voltages into forces and torques and
          returns them in result
          Parameters:
            voltages: array of float
                 array of voltages acquired by DAQ system
-            reverse_parameters: array of integer
-                list of ids of parameter that should be reversed due to problems calibration with
-                    the calibration
          Returns:
             array of force-torque values (typ. 6 elements)
         """
         ft_array = FT_SAMPLE_TYPE()
         self.cdll.ConvertToFT(self._calibration, VOLTAGE_SAMPLE_TYPE(*voltages),
                               byref(ft_array))
-        rtn = list(map(lambda x: x, ft_array))  # convert ctype array to python
-        # array
-        for x in reverse_parameters:
-            rtn[x] = -1*rtn[x]
-        return rtn
+        return list(map(lambda x: x, ft_array))  # convert ctype array to python
 
     def printCalInfo(self):
         """print Calibration info on the console
