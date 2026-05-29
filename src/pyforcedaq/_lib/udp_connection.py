@@ -1,5 +1,4 @@
-""" A lan connect class using udp
-"""
+"""A lan connect class using udp"""
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 __version__ = "0.5"
@@ -36,6 +35,7 @@ def get_lan_ip():
                 # Fallback to socket method if both commands fail
                 return socket.gethostbyname(socket.gethostname())
 
+
 class UDPConnection(object):
     # DOC document the usage "connecting" "unconnecting"
     COMMAND_CHAR = b"$"
@@ -49,8 +49,10 @@ class UDPConnection(object):
     def __init__(self, udp_port=5005):
         self.udp_port = udp_port
 
-        self._socket = socket.socket(socket.AF_INET,  # Internet
-                                     socket.SOCK_DGRAM)  # UDP
+        self._socket = socket.socket(
+            socket.AF_INET,  # Internet
+            socket.SOCK_DGRAM,
+        )  # UDP
         self._socket.bind((UDPConnection.MY_IP, self.udp_port))
         self._socket.setblocking(False)
         self.peer_ip = None
@@ -60,8 +62,9 @@ class UDPConnection(object):
         return UDPConnection.MY_IP
 
     def __str__(self):
-        return "ip: {0} (port: {1}); peer: {2}".format(UDPConnection.MY_IP,
-                                                       self.udp_port, self.peer_ip)
+        return "ip: {0} (port: {1}); peer: {2}".format(
+            UDPConnection.MY_IP, self.udp_port, self.peer_ip
+        )
 
     def receive(self, timeout):
         """checks for received data and returns it
@@ -77,7 +80,7 @@ class UDPConnection(object):
         while True:
             rtn = self.poll()
             if rtn is not None:
-                #print("UDP receive: {0}".format(rtn))
+                # print("UDP receive: {0}".format(rtn))
                 return rtn
             if (local_clock() - t) > timeout:
                 return None
@@ -96,7 +99,7 @@ class UDPConnection(object):
 
         # process data
         if data == UDPConnection.CONNECT:
-            #connection request
+            # connection request
             self.peer_ip = sender[0]
             if not self.send(UDPConnection.COMMAND_REPLY):
                 self.peer_ip = None
@@ -119,12 +122,12 @@ class UDPConnection(object):
             return False
         start = local_clock()
         if isinstance(data, str):
-            data = data.encode() # force to byte
+            data = data.encode()  # force to byte
 
         while local_clock() - start < timeout:
             try:
                 self._socket.sendto(data, (self.peer_ip, self.udp_port))
-                #print("UDP send: {0}".format(data))
+                # print("UDP send: {0}".format(data))
                 return True
             except:
                 pass
@@ -134,8 +137,9 @@ class UDPConnection(object):
 
         self.unconnect_peer()
         self.peer_ip = peer_ip
-        if self.send(UDPConnection.CONNECT, timeout=timeout) and \
-                self.wait_input(UDPConnection.COMMAND_REPLY, duration=timeout):
+        if self.send(UDPConnection.CONNECT, timeout=timeout) and self.wait_input(
+            UDPConnection.COMMAND_REPLY, duration=timeout
+        ):
             return True
         self.peer_ip = None
         return False
@@ -163,8 +167,9 @@ class UDPConnection(object):
         if self.peer_ip == None:
             return False, None
         start = local_clock()
-        if self.send(UDPConnection.PING, timeout=timeout) and \
-                self.wait_input(UDPConnection.COMMAND_REPLY, duration=timeout):
+        if self.send(UDPConnection.PING, timeout=timeout) and self.wait_input(
+            UDPConnection.COMMAND_REPLY, duration=timeout
+        ):
             return True, local_clock() - start
         return False, None
 
@@ -208,10 +213,9 @@ class UDPConnectionProcess(Process):
     Example::
 
         # connecting to a server
-    """        # DOC
+    """  # DOC
 
-    def __init__(self, event_trigger = (),
-                 event_ignore_tag = None):
+    def __init__(self, event_trigger=(), event_ignore_tag=None):
         """Initialize UDPConnectionProcess
 
         Parameters
@@ -232,7 +236,7 @@ class UDPConnectionProcess(Process):
         event_ignore_tag:
             udp data that start with this tag will be ignored for event triggering
 
-        """ # DOC
+        """  # DOC
 
         super(UDPConnectionProcess, self).__init__()
 
@@ -243,8 +247,8 @@ class UDPConnectionProcess(Process):
         self._event_is_polling = Event()
         self._event_ignore_tag = event_ignore_tag
 
-        if isinstance(event_trigger, type(Event)  ):
-            event_trigger = (event_trigger)
+        if isinstance(event_trigger, type(Event)):
+            event_trigger = event_trigger
         try:
             self._event_trigger = tuple(event_trigger)
         except:
@@ -275,13 +279,15 @@ class UDPConnectionProcess(Process):
         prev_event_polling = None
 
         while not self._event_quit_request.is_set():
-
             if prev_event_polling != self._event_is_polling.is_set():
                 # event pooling changed
                 prev_event_polling = self._event_is_polling.is_set()
                 if prev_event_polling:
-                    logging.warning("UDP start, pid {}, priority {}".format(
-                            self.pid, get_priority(self.pid)))
+                    logging.warning(
+                        "UDP start, pid {}, priority {}".format(
+                            self.pid, get_priority(self.pid)
+                        )
+                    )
                 else:
                     logging.warning("UDP stop")
                     ptp.stop()
@@ -295,11 +301,12 @@ class UDPConnectionProcess(Process):
                 if data is not None:
                     d = UDPData(string=data, time=t)
                     self.receive_queue.put(d)
-                    if self._event_ignore_tag is not None and \
-                            not d.startswith(self._event_ignore_tag):
+                    if self._event_ignore_tag is not None and not d.startswith(
+                        self._event_ignore_tag
+                    ):
                         for ev in self._event_trigger:
                             # set all connected software trigger
-                            ev.set() ## FIXME LSL trigger
+                            ev.set()  ## FIXME LSL trigger
                 try:
                     udp_connection.send(self.send_queue.get_nowait())
                 except:

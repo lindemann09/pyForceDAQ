@@ -30,9 +30,11 @@ __author__ = "Oliver Lindemann"
 
 import sys as _sys
 
-if _sys.version_info[0] != 3 or _sys.version_info[1]<12:
-    raise RuntimeError("pyForceDAQ {0} ".format(__version__) +
-                      "is not compatible with Python {0}.{1}. ".format(
-                                                    _sys.version_info[0],
-                                                    _sys.version_info[1]) +
-                       "Please use Python 3.12+.")
+if _sys.version_info[0] != 3 or _sys.version_info[1] < 12:
+    raise RuntimeError(
+        "pyForceDAQ {0} ".format(__version__)
+        + "is not compatible with Python {0}.{1}. ".format(
+            _sys.version_info[0], _sys.version_info[1]
+        )
+        + "Please use Python 3.12+."
+    )

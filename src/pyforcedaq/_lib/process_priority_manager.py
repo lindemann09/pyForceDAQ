@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 
 import gc
-import sys
-import psutil
 import logging
+import sys
+
+import psutil
 
 from .types import PollingPriority
 
 _REALTIME_PRIORITY_CLASS = -18
 _HIGH_PRIORITY_CLASS = -10
 
-class ProcessPriorityManager(object):
 
+class ProcessPriorityManager(object):
     platform = sys.platform
-    pybits = 32 + int(sys.maxsize > 2 ** 32) * 32
+    pybits = 32 + int(sys.maxsize > 2**32) * 32
     main_process_id = psutil.Process().pid
-    _normal_nice_value = psutil.Process().nice() # usied on Linux
+    _normal_nice_value = psutil.Process().nice()  # usied on Linux
 
     def __init__(self):
         self._subprocs = []
@@ -51,19 +52,19 @@ class ProcessPriorityManager(object):
         rtn = []
         for p in self._subprocs:
             if p.pid is not None:
-                rtn.append(set_priority(level=level, process_id=p.pid,
-                                        disable_gc=disable_gc))
+                rtn.append(
+                    set_priority(level=level, process_id=p.pid, disable_gc=disable_gc)
+                )
             else:
                 rtn.append(False)
 
         return rtn
 
-
     @staticmethod
     def get_main_priority():
         """
-            returning main process priority, if subprocess_id=None
-            Priority: 'normal', 'high', or 'realtime'
+        returning main process priority, if subprocess_id=None
+        Priority: 'normal', 'high', or 'realtime'
         """
 
         return get_priority(ProcessPriorityManager.main_process_id)
@@ -71,17 +72,20 @@ class ProcessPriorityManager(object):
     @staticmethod
     def set_main_priority(level, disable_gc=False):
         """
-            changing main process, if subprocess_id=None
+        changing main process, if subprocess_id=None
         """
 
-        return set_priority(level=level,
-                            process_id=ProcessPriorityManager.main_process_id,
-                            disable_gc=disable_gc)
+        return set_priority(
+            level=level,
+            process_id=ProcessPriorityManager.main_process_id,
+            disable_gc=disable_gc,
+        )
+
 
 def get_priority(process_id):
     """
-        returning main process priority, if subprocess_id=None
-        Priority: 'normal', 'high', or 'realtime'
+    returning main process priority, if subprocess_id=None
+    Priority: 'normal', 'high', or 'realtime'
     """
 
     try:
@@ -90,7 +94,7 @@ def get_priority(process_id):
         return None
 
     proc_priority = process.nice()
-    if ProcessPriorityManager.platform == 'win32':
+    if ProcessPriorityManager.platform == "win32":
         if proc_priority == psutil.HIGH_PRIORITY_CLASS:
             return PollingPriority.HIGH
         elif proc_priority == psutil.REALTIME_PRIORITY_CLASS:
@@ -103,6 +107,7 @@ def get_priority(process_id):
             return PollingPriority.HIGH
 
     return PollingPriority.NORMAL
+
 
 def set_priority(level, process_id, disable_gc):
 
@@ -117,11 +122,11 @@ def set_priority(level, process_id, disable_gc):
         disable_gc = False
     elif level == PollingPriority.HIGH:
         nice_val = _HIGH_PRIORITY_CLASS
-        if ProcessPriorityManager.platform == 'win32':
+        if ProcessPriorityManager.platform == "win32":
             nice_val = psutil.HIGH_PRIORITY_CLASS
     elif level == PollingPriority.REALTIME:
         nice_val = _REALTIME_PRIORITY_CLASS
-        if ProcessPriorityManager.platform == 'win32':
+        if ProcessPriorityManager.platform == "win32":
             nice_val = psutil.REALTIME_PRIORITY_CLASS
 
     try:
@@ -131,8 +136,11 @@ def set_priority(level, process_id, disable_gc):
         else:
             gc.enable()
     except psutil.AccessDenied:
-        logging.warning('Could not set process {} priority '
-                  'to {} ({})'.format(process.pid, nice_val, level))
+        logging.warning(
+            "Could not set process {} priority to {} ({})".format(
+                process.pid, nice_val, level
+            )
+        )
 
     return True
 
@@ -145,4 +153,3 @@ def set_priority(level, process_id, disable_gc):
 #    @staticmethod
 #    def setProcessAffinities(experimentProcessorList, ioHubProcessorList):
 #        SubProcessPriorityManager.current_process.cpu_affinity(experimentProcessorList)
-

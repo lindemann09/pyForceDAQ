@@ -1,4 +1,4 @@
-__author__ = 'Oliver Lindemann'
+__author__ = "Oliver Lindemann"
 
 import ctypes as ct
 
@@ -16,18 +16,17 @@ TAG_UDPDATA = TAG_COMMENTS + "UDP"
 CTYPE_FORCES = ct.c_double * 600
 CTYPE_TRIGGER = ct.c_double * 2
 
-class PollingPriority(object): # TODO needed?
 
-    NORMAL = 'normal'
-    HIGH = 'high'
-    REALTIME = 'real_time'
+class PollingPriority(object):  # TODO needed?
+    NORMAL = "normal"
+    HIGH = "high"
+    REALTIME = "real_time"
 
     @staticmethod
     def get_priority(priority_str):
-        """returns normal or the higher priority if detected """
+        """returns normal or the higher priority if detected"""
         if isinstance(priority_str, str):
-            if priority_str.find("real") >= 0 and \
-                    priority_str.find("time") >= 0:
+            if priority_str.find("real") >= 0 and priority_str.find("time") >= 0:
                 return PollingPriority.REALTIME
             elif priority_str.startswith("high"):
                 return PollingPriority.HIGH
@@ -36,10 +35,13 @@ class PollingPriority(object): # TODO needed?
 
 
 class CTypesForceSensorData(ct.Structure):
-    _fields_ = [("sensor_id", ct.c_int),
-            ("time", ct.c_int),
-            ("forces", CTYPE_FORCES),
-            ("trigger", CTYPE_TRIGGER)]
+    _fields_ = [
+        ("sensor_id", ct.c_int),
+        ("time", ct.c_int),
+        ("forces", CTYPE_FORCES),
+        ("trigger", CTYPE_TRIGGER),
+    ]
+
 
 class TimedData(object):
     """The MetaClass TimedData class
@@ -52,27 +54,31 @@ class TimedData(object):
         else:
             self.time = time
 
+
 class ForceSensorData(TimedData):
     """The Force data structure with the following properties
-        * sensor_id (int)
-        * time (time stamp)
-        * aquisition delay (time it took to receive the new data)
-        * Fx,  Fy, & Fz
-        * Tx, Ty, & Tz
-        * trigger1 & trigger2
+    * sensor_id (int)
+    * time (time stamp)
+    * aquisition delay (time it took to receive the new data)
+    * Fx,  Fy, & Fz
+    * Tx, Ty, & Tz
+    * trigger1 & trigger2
 
     """
 
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
     # FIXME update docu, types have change to numpy
 
-    def __init__(self,
-                 time: float | None,
-                 acquisition_delay: float,
-                 forces: NDArray[np.float64] = np.zeros(6),
-                 trigger: NDArray[np.float64] = np.zeros(2),
-                 sensor_id=0,
-                 trigger_threshold=0.9, reverse=()):
+    def __init__(
+        self,
+        time: float | None,
+        acquisition_delay: float,
+        forces: NDArray[np.float64] = np.zeros(6),
+        trigger: NDArray[np.float64] = np.zeros(2),
+        sensor_id=0,
+        trigger_threshold=0.9,
+        reverse=(),
+    ):
         """Create a ForceSensorData object
         Parameters
         ----------
@@ -103,18 +109,20 @@ class ForceSensorData(TimedData):
         if abs(self.trigger[1]) < trigger_threshold:
             self.trigger[1] = 0
         for r in reverse:
-            forces[r] = -1*forces[r]
+            forces[r] = -1 * forces[r]
 
     def __str__(self):
-        """converts data to string. """
-        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (self.sensor_id,
-                                                           self.time,
-                                                           self.forces[0],
-                                                           self.forces[1],
-                                                           self.forces[2],
-                                                           self.forces[3],
-                                                           self.forces[4],
-                                                           self.forces[5])
+        """converts data to string."""
+        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (
+            self.sensor_id,
+            self.time,
+            self.forces[0],
+            self.forces[1],
+            self.forces[2],
+            self.forces[3],
+            self.forces[4],
+            self.forces[5],
+        )
         txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
         return txt
 
@@ -168,9 +176,12 @@ class ForceSensorData(TimedData):
 
     @property
     def ctypes_struct(self):
-        return CTypesForceSensorData(self.sensor_id, self.time,
-              CTYPE_FORCES(*self.forces.tolist()),
-              CTYPE_TRIGGER(*self.trigger.tolist()))
+        return CTypesForceSensorData(
+            self.sensor_id,
+            self.time,
+            CTYPE_FORCES(*self.forces.tolist()),
+            CTYPE_TRIGGER(*self.trigger.tolist()),
+        )
 
     @ctypes_struct.setter
     def ctypes_struct(self, struct):
@@ -181,9 +192,7 @@ class ForceSensorData(TimedData):
 
 
 class UDPData(TimedData):
-    """The UDP data class, used to store UDP DATA with timestamps
-
-    """
+    """The UDP data class, used to store UDP DATA with timestamps"""
 
     def __init__(self, time: float | None, string: str | bytes):
         """Create a UDA_DATA object
@@ -202,15 +211,14 @@ class UDPData(TimedData):
 
     @property
     def unicode(self):
-        return self.byte_string.decode('utf-8', 'replace')
-
+        return self.byte_string.decode("utf-8", "replace")
 
     def startswith(self, byte_string):
-        return self.byte_string[:len(byte_string)] == byte_string
+        return self.byte_string[: len(byte_string)] == byte_string
 
 
 def bytes_startswith(a, b):
-    return a[:len(b)] == b
+    return a[: len(b)] == b
 
 
 class DAQEvents(TimedData):
@@ -222,7 +230,7 @@ class DAQEvents(TimedData):
 
     """
 
-    def __init__(self, time: float|None, code:str|int|float):
+    def __init__(self, time: float | None, code: str | int | float):
         """Create a DAQEvents object
 
         Parameters
@@ -236,7 +244,6 @@ class DAQEvents(TimedData):
 
 
 class Thresholds(object):
-
     def __init__(self, thresholds, n_channels=1):
         """Thresholds for a one or multiple channels of data"""
         self._thresholds = list(thresholds)
@@ -244,7 +251,9 @@ class Thresholds(object):
         self.set_number_of_channels(n_channels=n_channels)
 
     def is_detecting(self, channels=0):
-        return self._minmax[channels] is not None or self._prev_level[channels] is not None
+        return (
+            self._minmax[channels] is not None or self._prev_level[channels] is not None
+        )
 
     def is_level_change_detecting(self, channels=0):
         return self._prev_level[channels] is not None
@@ -254,8 +263,11 @@ class Thresholds(object):
 
     def is_detecting_anything(self):
         """is detecting something in at least one channel"""
-        nn = lambda x:x is not None
-        return len(list(filter(nn, self._prev_level)))>0 or len(list(filter(nn, self._minmax)))>0
+        nn = lambda x: x is not None
+        return (
+            len(list(filter(nn, self._prev_level))) > 0
+            or len(list(filter(nn, self._minmax))) > 0
+        )
 
     def set_number_of_channels(self, n_channels):
         self._prev_level = [None] * n_channels
@@ -291,7 +303,7 @@ class Thresholds(object):
         """sets level change detection
         returns: current level
         """
-        self._prev_level[channel]  = self.get_level(value)
+        self._prev_level[channel] = self.get_level(value)
         self._minmax[channel] = None
         return self._prev_level[channel]
 
@@ -306,7 +318,7 @@ class Thresholds(object):
             return None, None
 
         current = self.get_level(value)
-        changed = (current != self._prev_level[channel])
+        changed = current != self._prev_level[channel]
         if changed:
             self._prev_level[channel] = None
         return changed, current
@@ -326,11 +338,9 @@ class Thresholds(object):
         """
 
         lv = self.get_level(value)
-        self._minmax[channel] = _MinMaxDetector(start_value=lv,
-                                     duration_ms=duration)
+        self._minmax[channel] = _MinMaxDetector(start_value=lv, duration_ms=duration)
         self._prev_level[channel] = None
         return lv
-
 
     def get_response_minmax(self, value, channel=0):
         """checks for response minimum and maximum if set_response_minmax_detection is switch on
@@ -350,6 +360,5 @@ class Thresholds(object):
         rtn = self._minmax[channel].process(self.get_level(value))
         if rtn is not None:
             # minmax just detected
-            self._minmax[channel] = None # switch off
+            self._minmax[channel] = None  # switch off
         return rtn
-

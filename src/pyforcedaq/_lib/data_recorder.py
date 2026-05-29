@@ -2,6 +2,7 @@
 
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
+
 __author__ = "Oliver Lindemann"
 
 import atexit
@@ -33,15 +34,16 @@ set_logging(data_directory="data", log_file="recording.log")
 
 NEWLINE = "\n"
 
+
 class DataRecorder(object):
     """handles multiple sensors and udp connection"""
 
-    def __init__(self,
-                 recording_settings: RecordingSettings,
-                 force_sensor_settings:SensorSettings | List[SensorSettings],
-                 poll_udp_connection: bool = False):
-
-
+    def __init__(
+        self,
+        recording_settings: RecordingSettings,
+        force_sensor_settings: SensorSettings | List[SensorSettings],
+        poll_udp_connection: bool = False,
+    ):
         """queue_data will be saved
         see sensorprocess.__init__
 
@@ -55,15 +57,17 @@ class DataRecorder(object):
         self.recording_settings = recording_settings
 
         # create sensor processes
-        self._force_sensor_processes =[]
+        self._force_sensor_processes = []
         event_trigger = []
         for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
                 raise RuntimeError("Recorder needs a list of Force Sensor Settings!")
             else:
-                fst = SensorProcess(sensor_settings = fs,
-                                    recording_settings=recording_settings,
-                                    pipe_buffered_data_after_pause=True)
+                fst = SensorProcess(
+                    sensor_settings=fs,
+                    recording_settings=recording_settings,
+                    pipe_buffered_data_after_pause=True,
+                )
                 fst.start()
                 event_trigger.append(fst.event_trigger)
                 self._force_sensor_processes.append(fst)
@@ -80,13 +84,15 @@ class DataRecorder(object):
         self._proc_manager.add_subprocess(self.udp)
         self._proc_manager.add_subprocess(self._force_sensor_processes)
         if self.recording_settings.priority is not None:
-           level = PollingPriority.NORMAL
+            level = PollingPriority.NORMAL
         else:
             level = PollingPriority.get_priority(self.recording_settings.priority)
         self._proc_manager.set_subprocess_priorities(level=level, disable_gc=False)
 
-        logging.info("Main process priority: %s", self._proc_manager.get_main_priority())
-        #logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
+        logging.info(
+            "Main process priority: %s", self._proc_manager.get_main_priority()
+        )
+        # logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
 
         self._is_recording = False
         self._file = None
@@ -118,8 +124,7 @@ class DataRecorder(object):
 
     @property
     def sensor_settings_list(self):
-        return list(map(lambda x:x.sensor_settings,
-                        self._force_sensor_processes))
+        return list(map(lambda x: x.sensor_settings, self._force_sensor_processes))
 
     def quit(self) -> list | None:
         """Stop all recording processes, close data file and quit recording
@@ -152,28 +157,28 @@ class DataRecorder(object):
         buffer = []
         while True:
             try:
-                data = self.udp.receive_queue.get_nowait() # type: ignore
+                data = self.udp.receive_queue.get_nowait()  # type: ignore
             except AttributeError:
                 # until queue empty or no udp connection
                 break
             buffer.append(data)
-        if len(buffer)>0:
+        if len(buffer) > 0:
             self._write_data(buffer)
         return buffer
 
-    def _write_data(self, data_buffer: list,
-                   recording_screen=None,
-                   float_decimal_places: int = 4) -> None:
-        """ writes data to disk and set counters
+    def _write_data(
+        self, data_buffer: list, recording_screen=None, float_decimal_places: int = 4
+    ) -> None:
+        """writes data to disk and set counters
 
         ignores UDP remote control commands
         """
-        #DOC output format
+        # DOC output format
 
-        BLOCKSIZE = 10000 # for recording screen feedback only
+        BLOCKSIZE = 10000  # for recording screen feedback only
         write_forces = self.recording_settings.array_write_forces()
         write_trigger = self.recording_settings.array_write_trigger()
-        write_deviceid = len(self.recording_settings.device_labels)>1
+        write_deviceid = len(self.recording_settings.device_labels) > 1
         float_format = "{0:." + str(float_decimal_places) + "f},"
         buffer_len = len(data_buffer)
         for c, d in enumerate(data_buffer):
@@ -199,8 +204,10 @@ class DataRecorder(object):
 
             if recording_screen is not None and c % BLOCKSIZE == 0:
                 recording_screen.stimulus(
-                    "Saving {0} of {1} blocks".format(c//BLOCKSIZE,
-                                                       buffer_len//BLOCKSIZE)).present()
+                    "Saving {0} of {1} blocks".format(
+                        c // BLOCKSIZE, buffer_len // BLOCKSIZE
+                    )
+                ).present()
 
     def _file_write(self, s: str) -> None:
 
@@ -209,15 +216,15 @@ class DataRecorder(object):
         elif isinstance(self._file, TextIOWrapper):
             self._file.write(s)
 
-
-    def store_daq_event(self, code: str | int | float, time: float | None = None) -> None:
+    def store_daq_event(
+        self, code: str | int | float, time: float | None = None
+    ) -> None:
         """Set marker code in file
 
         DAQEvent will be timestamps and occur in the data output
 
         """
-        self._daq_event.append(DAQEvents(time = time, code = code))
-
+        self._daq_event.append(DAQEvents(time=time, code=code))
 
     def start_recording(self, determine_bias: bool = False) -> None:
         """Start polling process and record
@@ -231,12 +238,20 @@ class DataRecorder(object):
         if determine_bias:
             self.determine_biases(n_samples=1000)
 
-        if len(list(filter(lambda x:x.event_bias_is_available.is_set(),
-                   self._force_sensor_processes))) != len(self._force_sensor_processes):
-            raise RuntimeError("Sensors can't be started before bias has been determined.")
+        if len(
+            list(
+                filter(
+                    lambda x: x.event_bias_is_available.is_set(),
+                    self._force_sensor_processes,
+                )
+            )
+        ) != len(self._force_sensor_processes):
+            raise RuntimeError(
+                "Sensors can't be started before bias has been determined."
+            )
 
         # start polling
-        list(map(lambda x:x.start_polling(), self._force_sensor_processes))
+        list(map(lambda x: x.start_polling(), self._force_sensor_processes))
         self._is_recording = True
 
     def pause_recording(self, recording_screen=None) -> list:
@@ -253,7 +268,7 @@ class DataRecorder(object):
         if recording_screen is not None:
             recording_screen.stimulus("").present()
 
-        #pause polling
+        # pause polling
         for fsp in self._force_sensor_processes:
             fsp.pause_polling()
 
@@ -301,11 +316,13 @@ class DataRecorder(object):
         for x in self._force_sensor_processes:
             x.event_bias_is_available.wait()
 
-    def open_data_file(self,
-                       filename: str | Path,
-                       subdirectory: str = "data",
-                       varnames: bool = True,
-                       comment_line: str = "") -> Path:
+    def open_data_file(
+        self,
+        filename: str | Path,
+        subdirectory: str = "data",
+        varnames: bool = True,
+        comment_line: str = "",
+    ) -> Path:
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -344,40 +361,50 @@ class DataRecorder(object):
             self.path_open_file = data_dir / filename
             if self.path_open_file.is_file():
                 # print "data file already exists, adding counter"
-                filename = Path(filename.stem + "_" + strftime("%m%d%H%M", localtime()) + \
-                                filename.suffix)
+                filename = Path(
+                    filename.stem
+                    + "_"
+                    + strftime("%m%d%H%M", localtime())
+                    + filename.suffix
+                )
             else:
                 break
 
         if self.recording_settings.zip_data:
-            self._file = gzip.open(self.path_open_file, 'w')
+            self._file = gzip.open(self.path_open_file, "w")
         else:
-            self._file = open(self.path_open_file, 'w')
+            self._file = open(self.path_open_file, "w")
         print("Data file: {}".format(self.path_open_file))
 
-        self._file_write(TAG_COMMENTS + "Recorded at {0} with pyForceDAQ {1}\n".format(
-            asctime(localtime()), forceDAQVersion))
+        self._file_write(
+            TAG_COMMENTS
+            + "Recorded at {0} with pyForceDAQ {1}\n".format(
+                asctime(localtime()), forceDAQVersion
+            )
+        )
         logging.info("new file: {}".format(self.path_open_file))
 
         for s in self.sensor_settings_list:
             txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file}\n"
             self._file_write(TAG_COMMENTS + txt)
 
-        if len(comment_line)>0:
+        if len(comment_line) > 0:
             self._file_write(TAG_COMMENTS + comment_line + "\n")
 
         if varnames:
             write_forces = self.recording_settings.array_write_forces()
             write_trigger = self.recording_settings.array_write_trigger()
-            write_deviceid = len(self.recording_settings.device_labels)>1
+            write_deviceid = len(self.recording_settings.device_labels) > 1
             line = "time,delay,"
             if write_deviceid:
                 line += "device_tag,"
             for x in range(6):
                 if write_forces[x]:
                     line += ForceSensorData.forces_names[x] + ","
-            if write_trigger[0]: line += "trigger1,"
-            if write_trigger[1]: line += "trigger2,"
+            if write_trigger[0]:
+                line += "trigger1,"
+            if write_trigger[1]:
+                line += "trigger2,"
             self._file_write(line[:-1] + NEWLINE)
 
         return self.path_open_file

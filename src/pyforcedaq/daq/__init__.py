@@ -1,5 +1,4 @@
 __author__ = "Oliver Lindemann"
-__version__ = "0.6"
 
 from ..constants import USE_ATI_DLL, USE_MOCK_SENSOR, USE_PYDAQMX
 

@@ -1,6 +1,7 @@
 import pygame
 from expyriment.stimuli import Canvas
 
+
 class PGSurface(Canvas):
     """PyGame Surface: Expyriment Stimulus for direct Pygame operations and
     PixelArrays
@@ -96,5 +97,3 @@ class PGSurface(Canvas):
     def add_noise(self, grain_size, percentage, colour):
         self.unlock_pixel_array()
         return Canvas.add_noise(self, grain_size, percentage, colour)
-
-

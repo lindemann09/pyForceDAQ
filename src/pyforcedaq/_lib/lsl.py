@@ -12,8 +12,7 @@ from pylsl import (
 )
 
 
-class LSLSream():
-
+class LSLSream:
     def __init__(self):
         self.outlet = None
         self._is_init = False
@@ -22,7 +21,8 @@ class LSLSream():
     def is_init(self):
         return self._is_init
 
-    def init(self,
+    def init(
+        self,
         name: str,
         n_channels: int,
         stream_id: str,
@@ -50,11 +50,14 @@ class LSLSream():
         if self._is_init:
             return
 
-        info = StreamInfo(name, "force",
-                        channel_count=n_channels,
-                        nominal_srate=freq,
-                        channel_format=channel_format,
-                        source_id=stream_id)
+        info = StreamInfo(
+            name,
+            "force",
+            channel_count=n_channels,
+            nominal_srate=freq,
+            channel_format=channel_format,
+            source_id=stream_id,
+        )
 
         # Check if there is metadata to add to the lsl stream
         if metadata:

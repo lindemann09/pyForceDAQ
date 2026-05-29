@@ -13,12 +13,15 @@ from .types import ForceSensorData
 
 class DAQConfiguration(object):
     """Settings required for NI-DAQ"""
-    def __init__(self,
-                 device_name: str,
-                 channels: str = "ai0:7",
-                 rate: int = 1000,
-                 minVal: float = -10,
-                 maxVal: float = 10):
+
+    def __init__(
+        self,
+        device_name: str,
+        channels: str = "ai0:7",
+        rate: int = 1000,
+        minVal: float = -10,
+        maxVal: float = 10,
+    ):
         self.device_name = device_name
         self.channels = channels
         self.rate = rate
@@ -30,7 +33,6 @@ class DAQConfiguration(object):
         return "{0}/{1}".format(self.device_name, self.channels)
 
 
-
 @dataclass
 class SensorSettings(DAQConfiguration):
     """
@@ -39,6 +41,7 @@ class SensorSettings(DAQConfiguration):
             list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
             Sensors take this into account and correct data online
     """
+
     sensor_id: int
     device_label: str
     calibration_file: str
@@ -51,39 +54,48 @@ class SensorSettings(DAQConfiguration):
     reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
     def __post_init__(self):
-        super().__init__(device_name=f"{self.device_label}", #FIXME name is redundant
-                         channels=self.channels,
-                         rate=self.rate, minVal=self.minVal, maxVal=self.maxVal)
+        super().__init__(
+            device_name=f"{self.device_label}",  # FIXME name is redundant
+            channels=self.channels,
+            rate=self.rate,
+            minVal=self.minVal,
+            maxVal=self.maxVal,
+        )
         self.reverse_parameters: List[int] = []
         if self.reverse_parameter_names is not None:
-            names = [self.reverse_parameter_names] if isinstance(self.reverse_parameter_names, str) else self.reverse_parameter_names
+            names = (
+                [self.reverse_parameter_names]
+                if isinstance(self.reverse_parameter_names, str)
+                else self.reverse_parameter_names
+            )
             for para in names:
                 try:
-                    self.reverse_parameters.append(ForceSensorData.forces_names.index(para))
+                    self.reverse_parameters.append(
+                        ForceSensorData.forces_names.index(para)
+                    )
                 except Exception:
                     pass
 
 
-
-class ABCSettings(ABC): # must be a dataclass
-
+class ABCSettings(ABC):  # must be a dataclass
     def set_properties(self, property_dict: Dict[str, Any]) -> bool:
         """return true is a properties of the data class is
         missing in the dict"""
-        assert(is_dataclass(self))
+        assert is_dataclass(self)
 
         for key, values in property_dict.items():
             if hasattr(self, key):
                 setattr(self, key, values)
         # check all properties in dataclass have been set
-        for class_property in self.__dataclass_fields__.keys(): # type: ignore
+        for class_property in self.__dataclass_fields__.keys():  # type: ignore
             if class_property not in property_dict:
                 return True
         return False
 
+
 @dataclass
 class RecordingSettings(ABCSettings):
-    device_labels:  List[str] = field(default_factory=lambda: ["Dev1"])
+    device_labels: List[str] = field(default_factory=lambda: ["Dev1"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
     calibration_folder: str = CALIBRATION_FOLDER
 
@@ -100,7 +112,9 @@ class RecordingSettings(ABCSettings):
     write_trigger1: bool = False
     write_trigger2: bool = False
 
-    reverse_scaling: dict | None = field(default_factory=lambda: {"Dev1": ["Fz"], "Dev2": []})
+    reverse_scaling: dict | None = field(
+        default_factory=lambda: {"Dev1": ["Fz"], "Dev2": []}
+    )
     convert_to_forces: bool = True
     zip_data: bool = False
 
@@ -113,7 +127,14 @@ class RecordingSettings(ABCSettings):
             self.calibration_files = [self.calibration_files]
 
     def array_write_forces(self):
-        return [self.write_Fx, self.write_Fy, self.write_Fz, self.write_Tx, self.write_Ty, self.write_Tz]
+        return [
+            self.write_Fx,
+            self.write_Fy,
+            self.write_Fz,
+            self.write_Tx,
+            self.write_Ty,
+            self.write_Tz,
+        ]
 
     def array_write_trigger(self):
         return [self.write_trigger1, self.write_trigger2]
@@ -127,18 +148,20 @@ class RecordingSettings(ABCSettings):
             except KeyError:
                 return []
 
-    def sensor_settings_list(self)->List[SensorSettings]:
+    def sensor_settings_list(self) -> List[SensorSettings]:
         rtn: List[SensorSettings] = []
         for label, cal_file in zip(self.device_labels, self.calibration_files):
-            ss = SensorSettings(sensor_id = self.device_labels.index(label) + 1,
-                                device_label = label,
-                        calibration_file=str(Path(self.calibration_folder) / cal_file),
-                        reverse_parameter_names=self.reverse_parameters_for_device(label),
-                        rate = self.sampling_rate,
-                        convert_to_FT=self.convert_to_forces
-                    )
+            ss = SensorSettings(
+                sensor_id=self.device_labels.index(label) + 1,
+                device_label=label,
+                calibration_file=str(Path(self.calibration_folder) / cal_file),
+                reverse_parameter_names=self.reverse_parameters_for_device(label),
+                rate=self.sampling_rate,
+                convert_to_FT=self.convert_to_forces,
+            )
             rtn.append(ss)
         return rtn
+
 
 @dataclass
 class GUISettings(ABCSettings):
@@ -152,18 +175,20 @@ class GUISettings(ABCSettings):
     indicator_pixel_min_max: list = field(default_factory=lambda: [-150, 150])
     plot_axis: bool = False
     plot_data_indicator_for_single_sensor: list = field(
-        default_factory=lambda: [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5)])
+        default_factory=lambda: [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5)]
+    )
     plot_data_plotter_for_single_sensor: list = field(
-        default_factory=lambda: [(0, 0), (0, 1), (0, 2)])
+        default_factory=lambda: [(0, 0), (0, 1), (0, 2)]
+    )
     plot_data_indicator_for_two_sensors: list = field(
-        default_factory=lambda: [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)])
+        default_factory=lambda: [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+    )
     plot_data_plotter_for_two_sensors: list = field(
-        default_factory=lambda: [(0, 2), (1, 2)])
-
+        default_factory=lambda: [(0, 2), (1, 2)]
+    )
 
 
 class AppSettings(object):
-
     def __init__(self, filename: str | Path):
         # defaults
         self.gui = GUISettings()
@@ -176,18 +201,20 @@ class AppSettings(object):
         if os.path.isfile(self.filepath):
             self.load()
         else:
-            self.save() # defaults
+            self.save()  # defaults
 
         self.output_filename = ""
 
     def _asdict(self):
-        return {self.recording_section: self.recording.__dict__,
-             self.gui_section: self.gui.__dict__}
+        return {
+            self.recording_section: self.recording.__dict__,
+            self.gui_section: self.gui.__dict__,
+        }
 
     def load(self, filename=None):
         if filename is not None:
             self.filepath = Path(filename)
-        with open(self.filepath, 'r', encoding='utf-8') as fl:
+        with open(self.filepath, "r", encoding="utf-8") as fl:
             d = tomlkit.load(fl)
 
         a = self.gui.set_properties(d[self.gui_section])
@@ -197,7 +224,7 @@ class AppSettings(object):
             self.save()
 
     def save(self):
-        with open(self.filepath, 'w', encoding='utf-8') as fl:
+        with open(self.filepath, "w", encoding="utf-8") as fl:
             tomlkit.dump(self._asdict(), fl)
 
     @property

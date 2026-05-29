@@ -8,13 +8,14 @@ from .._lib.settings import DAQConfiguration
 
 
 class DAQReadAnalog(nidaqmx.Task):
-
     NUM_SAMPS_PER_CHAN = 1
     TIMEOUT = 1
     DAQ_TYPE = "nidaqmx"
 
-    def __init__(self, configuration: DAQConfiguration, read_array_size_in_samples: int):
-        """ DOC
+    def __init__(
+        self, configuration: DAQConfiguration, read_array_size_in_samples: int
+    ):
+        """DOC
         read_array_size_in_samples for ReadAnalogF64 call
 
         """
@@ -22,19 +23,21 @@ class DAQReadAnalog(nidaqmx.Task):
         nidaqmx.Task.__init__(self)
 
         # CreateAIVoltageChan
-        self.ai_channels.add_ai_voltage_chan(physical_channel=configuration.physicalChannel,
-                            terminal_config=nidaq_consts.TerminalConfiguration.DIFF,
-                            min_val=configuration.minVal,
-                            max_val=configuration.maxVal,
-                            units=nidaq_consts.VoltageUnits.VOLTS
-                            )
-        print('added channels')
-        #CfgSampClkTiming
-        self.timing.cfg_samp_clk_timing(rate=float(configuration.rate),
-                            active_edge=nidaq_consts.Edge.RISING,
-                            sample_mode=nidaq_consts.AcquisitionType.CONTINUOUS
-                            )
-        print('devices')
+        self.ai_channels.add_ai_voltage_chan(
+            physical_channel=configuration.physicalChannel,
+            terminal_config=nidaq_consts.TerminalConfiguration.DIFF,
+            min_val=configuration.minVal,
+            max_val=configuration.maxVal,
+            units=nidaq_consts.VoltageUnits.VOLTS,
+        )
+        print("added channels")
+        # CfgSampClkTiming
+        self.timing.cfg_samp_clk_timing(
+            rate=float(configuration.rate),
+            active_edge=nidaq_consts.Edge.RISING,
+            sample_mode=nidaq_consts.AcquisitionType.CONTINUOUS,
+        )
+        print("devices")
         print(nidaqmx.Task.devices)
         self._task_is_started = False
         self.read_array_size_in_samples = read_array_size_in_samples
@@ -54,8 +57,7 @@ class DAQReadAnalog(nidaqmx.Task):
             self._task_is_started = True
 
     def stop_data_acquisition(self):
-        """ Stop data acquisition of the NI device
-        """
+        """Stop data acquisition of the NI device"""
 
         if self._task_is_started:
             self.stop()
@@ -80,7 +82,7 @@ class DAQReadAnalog(nidaqmx.Task):
 
         """
 
-        #fill in data
+        # fill in data
         data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT)
-        np_data = np.reshape(np.array(data),(-1,)) # reshape to vector
+        np_data = np.reshape(np.array(data), (-1,))  # reshape to vector
         return np_data, len(np_data)

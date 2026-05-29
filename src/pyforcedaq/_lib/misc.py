@@ -15,11 +15,13 @@ def set_logging(data_directory, log_file):
     except:
         pass
     log_file = os.path.abspath(os.path.join(log_dir, log_file))
-    logging.basicConfig(level=logging.INFO,
-                    format='[%(asctime)s] %(message)s',
-                    datefmt='%m-%d %H:%M:%S',
-                    filename=log_file,
-                    filemode='a')
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(message)s",
+        datefmt="%m-%d %H:%M:%S",
+        filename=log_file,
+        filemode="a",
+    )
     return log_file
 
 
@@ -29,11 +31,11 @@ def list_settings_files():
 
 
 def N2g(N):
-    kg = N/9.81
-    return kg*1000
+    kg = N / 9.81
+    return kg * 1000
+
 
 class MinMaxDetector(object):
-
     def __init__(self, start_value, duration_ms):
         self._minmax = [start_value, start_value]
         self._duration_ms = duration_ms
@@ -52,7 +54,7 @@ class MinMaxDetector(object):
             elif value < self._minmax[0]:
                 self._minmax[0] = value
 
-        elif self._minmax[0] != value: # level change just occurred
+        elif self._minmax[0] != value:  # level change just occurred
             self._level_change_time = local_clock_ms()
             return self.process(value)
 
@@ -61,8 +63,10 @@ class MinMaxDetector(object):
     @property
     def is_sampling_for_minmax(self):
         """true true if currently sampling for minmax"""
-        return (self._level_change_time is not None) and \
-               (local_clock_ms() - self._level_change_time) < self._duration_ms
+        return (self._level_change_time is not None) and (
+            local_clock_ms() - self._level_change_time
+        ) < self._duration_ms
+
 
 # def find_calibration_file(calibration_folder: str, device_label: str,
 #                           calibration_suffix=".cal") -> str:
@@ -90,7 +94,8 @@ class MinMaxDetector(object):
 #         print("No calibration file found for sensor '{0}'.".format(device_label))
 #     exit()
 
-#Sensor History with moving average filtering and distance, velocity
+
+# Sensor History with moving average filtering and distance, velocity
 class SensorHistory(object):
     """The Sensory History keeps track of the last n recorded sample and
     calculates online the moving average (running mean).
@@ -128,10 +133,12 @@ class SensorHistory(object):
             self.moving_average = self.calc_history_average()
         else:
             self._correction_cnt += 1
-            self.moving_average = list(map(
-                lambda x: x[0] + (float(x[1] - x[2]) / len(self.history)),
-                zip(self.moving_average, values, pop)))
-
+            self.moving_average = list(
+                map(
+                    lambda x: x[0] + (float(x[1] - x[2]) / len(self.history)),
+                    zip(self.moving_average, values, pop),
+                )
+            )
 
     def calc_history_average(self):
         """Calculate history averages for all sensor parameter.
@@ -147,7 +154,6 @@ class SensorHistory(object):
             s = list(map(lambda x: x[0] + x[1], zip(s, t)))
         return list(map(lambda x: x / len(self.history), s))
 
-
     @property
     def history_size(self):
         return len(self.history)
@@ -159,4 +165,3 @@ class SensorHistory(object):
     @property
     def previous_moving_average(self):
         return self._previous_moving_average
-

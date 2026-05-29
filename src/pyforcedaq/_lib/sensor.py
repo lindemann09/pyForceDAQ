@@ -3,7 +3,7 @@
 See COPYING file distributed along with the pyForceDAQ copyright and license terms.
 """
 
-__author__ = 'Oliver Lindemann'
+__author__ = "Oliver Lindemann"
 
 from copy import copy
 
@@ -16,19 +16,21 @@ from .types import ForceSensorData
 
 
 class Sensor(DAQReadAnalog):
-    SENSOR_CHANNELS = range(0, 5 + 1)  # channel 0:5 for FT sensor, channel 6
-                                       # for trigger
-    TRIGGER_CHANNELS = range(5, 6 + 1) # channel 7 for trigger
-                                       # synchronization validation
+    # channel 0:5 for FT sensor, channel 6  for trigger
+    SENSOR_CHANNELS = range(0, 5 + 1)
+    # channel 7 for trigger   synchronization validation
+    TRIGGER_CHANNELS = range(5, 6 + 1)
 
-    def __init__(self, settings:SensorSettings):
-        """ DOC"""
+    def __init__(self, settings: SensorSettings):
+        """DOC"""
 
-        assert(isinstance(settings, SensorSettings))
+        assert isinstance(settings, SensorSettings)
 
-        super(Sensor, self).__init__(configuration=settings,
-                               read_array_size_in_samples= \
-                    len(Sensor.SENSOR_CHANNELS) + len(Sensor.TRIGGER_CHANNELS))
+        super(Sensor, self).__init__(
+            configuration=settings,
+            read_array_size_in_samples=len(Sensor.SENSOR_CHANNELS)
+            + len(Sensor.TRIGGER_CHANNELS),
+        )
 
         self.sensor_id = settings.sensor_id
         self.device_label = settings.device_label
@@ -40,11 +42,8 @@ class Sensor(DAQReadAnalog):
 
         self._reverse_parameters = copy(settings.reverse_parameters)
 
-
     def determine_bias(self, n_samples=100):
-        """determines the bias
-
-        """
+        """determines the bias"""
 
         task_was_running = self._task_is_started
         self.start_data_acquisition()
@@ -81,8 +80,12 @@ class Sensor(DAQReadAnalog):
         start = local_clock()
         data, _read_samples = self.read_analog()
         if self.convert_to_FT and self._calib_converter is not None:
-            forces = np.asarray(self._calib_converter.convertToFT(voltages=data[Sensor.SENSOR_CHANNELS],
-                                                reverse_parameters=self._reverse_parameters))
+            forces = np.asarray(
+                self._calib_converter.convertToFT(
+                    voltages=data[Sensor.SENSOR_CHANNELS],
+                    reverse_parameters=self._reverse_parameters,
+                )
+            )
         else:
             # array
             forces = data[Sensor.SENSOR_CHANNELS]
@@ -90,8 +93,10 @@ class Sensor(DAQReadAnalog):
                 forces[x] = -1 * forces[x]
         t = local_clock()
 
-        return ForceSensorData(time = t, acquisition_delay = t-start,
-                         sensor_id = self.sensor_id,
-                         forces = forces,
-                         trigger = data[Sensor.TRIGGER_CHANNELS])
-
+        return ForceSensorData(
+            time=t,
+            acquisition_delay=t - start,
+            sensor_id=self.sensor_id,
+            forces=forces,
+            trigger=data[Sensor.TRIGGER_CHANNELS],
+        )

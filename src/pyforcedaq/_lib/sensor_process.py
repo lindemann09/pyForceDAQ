@@ -1,4 +1,4 @@
-__author__ = 'Oliver Lindemann'
+__author__ = "Oliver Lindemann"
 
 import atexit
 import ctypes as ct
@@ -18,12 +18,13 @@ from .types import DAQEvents
 
 
 class SensorProcess(Process):
-
-    def __init__(self,
-                 sensor_settings:SensorSettings,
-                 recording_settings:RecordingSettings,
-                 pipe_buffered_data_after_pause=True,
-                  chunk_size=10000):
+    def __init__(
+        self,
+        sensor_settings: SensorSettings,
+        recording_settings: RecordingSettings,
+        pipe_buffered_data_after_pause=True,
+        chunk_size=10000,
+    ):
         """ForceSensorProcess
 
         return_buffered_data_after_pause: does not write shared data queue continuously and
@@ -35,12 +36,11 @@ class SensorProcess(Process):
 
         # type checks
         if not isinstance(sensor_settings, SensorSettings):
-            raise RuntimeError(
-                "sensor_settings has to be force_sensor.Settings object")
+            raise RuntimeError("sensor_settings has to be force_sensor.Settings object")
         if not isinstance(recording_settings, RecordingSettings):
             raise RuntimeError(
-                "recording_settings has to be force_sensor.RecordingSettings object")
-
+                "recording_settings has to be force_sensor.RecordingSettings object"
+            )
 
         super(SensorProcess, self).__init__()
         self.sensor_settings = sensor_settings
@@ -56,7 +56,9 @@ class SensorProcess(Process):
         self.event_trigger = Event()  #  software trigger
 
         self._dat = Array(ct.c_double, 6)
-        self._np_dat = np.frombuffer(self._dat.get_obj(), dtype=np.float64) #numpy view
+        self._np_dat = np.frombuffer(
+            self._dat.get_obj(), dtype=np.float64
+        )  # numpy view
         self._buffer_size = Value(ct.c_int64, 0)
         self._sample_cnt = Value(ct.c_int64, 0)
         self._event_quit_request = Event()
@@ -134,7 +136,7 @@ class SensorProcess(Process):
             self._event_sending_data.wait()
             while self._buffer_size.value > 0:  # wait until buffer is empty
                 rtn.extend(self._pipe_i.recv())
-            self._event_sending_data.clear() # stop sending
+            self._event_sending_data.clear()  # stop sending
         return rtn
 
     def join(self, timeout=None):
@@ -142,11 +144,10 @@ class SensorProcess(Process):
         if self._event_is_polling.is_set():
             self.pause_polling()
             wait_ms(100)
-            self.get_buffer() # empty buffer, required to quit process run loop
+            self.get_buffer()  # empty buffer, required to quit process run loop
 
         self._event_quit_request.set()
         super(SensorProcess, self).join(timeout)
-
 
     def run(self):
         buffer = []
@@ -158,19 +159,20 @@ class SensorProcess(Process):
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
-        ptp = PollingTimeProfile() #TODO just for testing?
+        ptp = PollingTimeProfile()  # TODO just for testing?
 
         ## create init LSL
         lsl_data_steam = LSLSream()
         lsl_hardware_trigger_stream = LSLSream()
         if self.recording_settings.lsl_stream:
             lsl_data_steam.init(
-                    name=f"Force_{sensor.device_label}",
-                    n_channels=sum(stream_forces),
-                    stream_id=f"RF_{sensor.device_label}",
-                    freq=self.sensor_settings.rate,
-                    channel_format= cf_float32,
-                    metadata={"sensor_label": self.sensor_settings.device_label})
+                name=f"Force_{sensor.device_label}",
+                n_channels=sum(stream_forces),
+                stream_id=f"RF_{sensor.device_label}",
+                freq=self.sensor_settings.rate,
+                channel_format=cf_float32,
+                metadata={"sensor_label": self.sensor_settings.device_label},
+            )
 
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
@@ -179,8 +181,8 @@ class SensorProcess(Process):
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{sensor.device_label}",
                     channel_format=cf_float32,
-                    freq=self.sensor_settings.rate)
-
+                    freq=self.sensor_settings.rate,
+                )
 
         while not self._event_quit_request.is_set():
             if self._event_is_polling.is_set():
@@ -189,10 +191,17 @@ class SensorProcess(Process):
                     # start NI device and acquire one first sample to
                     # ensure good timing
                     sensor.start_data_acquisition()
-                    buffer.append(DAQEvents(time=local_clock(),
-                                            code="started:"+sensor.device_label))
-                    logging.info("Sensor start, %s, pid %s, priority %s",
-                        sensor.device_label,self.pid, get_priority(self.pid))
+                    buffer.append(
+                        DAQEvents(
+                            time=local_clock(), code="started:" + sensor.device_label
+                        )
+                    )
+                    logging.info(
+                        "Sensor start, %s, pid %s, priority %s",
+                        sensor.device_label,
+                        self.pid,
+                        get_priority(self.pid),
+                    )
                     is_polling = True
 
                 d = sensor.poll_data()
@@ -200,15 +209,15 @@ class SensorProcess(Process):
                 ## LSL
                 if lsl_data_steam.is_init:
                     # stream only select forces
-                    lsl_data_steam.outlet.push_sample(d.forces[stream_forces]) # type: ignore
+                    lsl_data_steam.outlet.push_sample(d.forces[stream_forces])  # type: ignore
                 if lsl_hardware_trigger_stream.is_init:
                     tr = d.trigger[stream_trigger]
-                    if any(tr): # only stream if at least one trigger is active
-                        lsl_hardware_trigger_stream.outlet.push_sample(tr) # type: ignore
+                    if any(tr):  # only stream if at least one trigger is active
+                        lsl_hardware_trigger_stream.outlet.push_sample(tr)  # type: ignore
 
-                ptp.update(d.time) # needed? TODO
+                ptp.update(d.time)  # needed? TODO
                 self._dat[:] = d.forces
-                self._sample_cnt.value += 1 # type: ignore
+                self._sample_cnt.value += 1  # type: ignore
 
                 if self.event_trigger.is_set():
                     self.event_trigger.clear()
@@ -222,8 +231,11 @@ class SensorProcess(Process):
                 # pause: not polling
                 if is_polling:
                     sensor.stop_data_acquisition()
-                    buffer.append(DAQEvents(time=local_clock(),
-                                            code="pause:"+sensor.device_label))
+                    buffer.append(
+                        DAQEvents(
+                            time=local_clock(), code="pause:" + sensor.device_label
+                        )
+                    )
                     self._buffer_size.value = len(buffer)
                     logging.info(
                         "Sensor stop,  %s, pid %s, priority %s",
@@ -234,15 +246,15 @@ class SensorProcess(Process):
                     is_polling = False
                     ptp.stop()
 
-                if self._pipe_buffer_after_pause and self._buffer_size.value>0:
+                if self._pipe_buffer_after_pause and self._buffer_size.value > 0:
                     # sending data to force
                     self._event_sending_data.set()
                     chks = self._chunk_size
-                    while len(buffer)>0:
+                    while len(buffer) > 0:
                         if chks > len(buffer):
                             chks = len(buffer)
                         self._pipe_o.send(buffer[0:chks])
-                        buffer[0:chks] = [] # clear buffer
+                        buffer[0:chks] = []  # clear buffer
                         self._buffer_size.value = len(buffer)
 
                     while self._event_sending_data.is_set():
@@ -255,11 +267,11 @@ class SensorProcess(Process):
 
                 self._event_is_polling.wait(timeout=0.1)
 
-
         # stop process
         sensor.stop_data_acquisition()
         self._buffer_size.value = 0
 
         logging.info("Sensor quit, %s, %s", sensor.device_label, ptp.get_profile_str())
 
-#FIXME check trigger processing and UDP connections#FIXME check trigger processing and UDP connections
+
+# FIXME check trigger processing and UDP connections#FIXME check trigger processing and UDP connections

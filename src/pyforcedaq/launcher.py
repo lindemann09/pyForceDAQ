@@ -11,9 +11,9 @@ from ._lib.udp_connection import UDPConnection
 from .constants import DEFAULT_SETTINGS_FILE, USE_MOCK_SENSOR
 
 
-def _check_sensor_calibration_settings(device_labels: List[str],
-                                       calibrations_files : List[str],
-                                       calibration_folder :str):
+def _check_sensor_calibration_settings(
+    device_labels: List[str], calibrations_files: List[str], calibration_folder: str
+):
     rtn = []
     for x, labels in enumerate(device_labels):
         error = False
@@ -40,18 +40,22 @@ def _windows_run(settings: AppSettings):
 
     info_settings = []
     lst_settings = list_settings_files()
-    info_settings.append([_sg.Combo(
-        values=lst_settings,
-        default_value=settings.filepath.name,
-        key="Settings_file",
-        size = (34, 1),
-        enable_events = True,
-        readonly=True)])
+    info_settings.append(
+        [
+            _sg.Combo(
+                values=lst_settings,
+                default_value=settings.filepath.name,
+                key="Settings_file",
+                size=(34, 1),
+                enable_events=True,
+                readonly=True,
+            )
+        ]
+    )
     info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
     for labels, cal, error in _check_sensor_calibration_settings(
-                                                rs.device_labels,
-                                                rs.calibration_files,
-                                                rs.calibration_folder):
+        rs.device_labels, rs.calibration_files, rs.calibration_folder
+    ):
         if error:
             col = "red"
         else:
@@ -63,31 +67,54 @@ def _windows_run(settings: AppSettings):
     info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
 
     if USE_MOCK_SENSOR:
-        info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!",
-                              text_color="red")])
+        info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!", text_color="red")])
 
-    layout = [[_sg.Button("Start Recording", size=(32, 4),
-                          button_color=('black', 'lightgreen'),
-                          key="Start")],
-              [_sg.Frame('Info', size=(280, 80), layout= info)],
-              [_sg.Frame('Settings', size=(280, 140), expand_y=True, layout=info_settings)]
-              ]
-    layout.append([_sg.Frame('Data Output' , size=(280, 80), layout=[
-            [_sg.Text("Filename:", size=(8, 1)), _sg.Input(default_text='', size=(24,1),key='datafilename')],
-            [ _sg.Checkbox("Save Data", rs.save_data, key="save_data"),
-             _sg.Checkbox("LSL stream", rs.lsl_stream, key="lsl")]
-            ])])
+    layout = [
+        [
+            _sg.Button(
+                "Start Recording",
+                size=(32, 4),
+                button_color=("black", "lightgreen"),
+                key="Start",
+            )
+        ],
+        [_sg.Frame("Info", size=(280, 80), layout=info)],
+        [_sg.Frame("Settings", size=(280, 140), expand_y=True, layout=info_settings)],
+    ]
+    layout.append(
+        [
+            _sg.Frame(
+                "Data Output",
+                size=(280, 80),
+                layout=[
+                    [
+                        _sg.Text("Filename:", size=(8, 1)),
+                        _sg.Input(default_text="", size=(24, 1), key="datafilename"),
+                    ],
+                    [
+                        _sg.Checkbox("Save Data", rs.save_data, key="save_data"),
+                        _sg.Checkbox("LSL stream", rs.lsl_stream, key="lsl"),
+                    ],
+                ],
+            )
+        ]
+    )
 
-    layout.append([_sg.Button("Save settings", size=(12, 2), key="Save"), _sg.Cancel(size=(12, 2))])
+    layout.append(
+        [
+            _sg.Button("Save settings", size=(12, 2), key="Save"),
+            _sg.Cancel(size=(12, 2)),
+        ]
+    )
 
-    window = _sg.Window('ForceGUI'.format(), layout)
+    window = _sg.Window("ForceGUI".format(), layout)
     event, values = window.read()
 
     settings.recording.lsl_stream = values["lsl"]
     settings.recording.save_data = values["save_data"]
-    if len(values["datafilename"])>3:
-            settings.output_filename = values["datafilename"]
-            settings.recording.save_data = True
+    if len(values["datafilename"]) > 3:
+        settings.output_filename = values["datafilename"]
+        settings.recording.save_data = True
 
     window.close()
     return event, values, settings
@@ -110,8 +137,9 @@ def load_settings_file(settings_file: str | Path) -> AppSettings:
         exit()
     return settings
 
+
 def run_launcher():
-    _sg.theme('DarkBlue14')  # please make your windows colorful
+    _sg.theme("DarkBlue14")  # please make your windows colorful
     settings = load_settings_file(DEFAULT_SETTINGS_FILE)
 
     while True:
@@ -125,12 +153,16 @@ def run_launcher():
             break
 
     if event == "Start":
-        if not(settings.recording.save_data or settings.recording.lsl_stream):
-            ch = _sg.popup_yes_no("You have not selected any data output. "+ "Are you sure you want to continue?",
-                                  title="No data output selected!")
+        if not (settings.recording.save_data or settings.recording.lsl_stream):
+            ch = _sg.popup_yes_no(
+                "You have not selected any data output. "
+                + "Are you sure you want to continue?",
+                title="No data output selected!",
+            )
             if ch == "No":
-                return # quit
+                return  # quit
         from . import gui
+
         gui.run(settings)
     else:
         pass

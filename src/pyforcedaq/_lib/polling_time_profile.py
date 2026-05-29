@@ -4,13 +4,12 @@ from .clock import local_clock
 
 
 class PollingTimeProfile(object):
-
     def __init__(self, timing_range_ms=10):
         self._last = None
         self._timing_range_ms = 10
         self._zero_cnt = 0
 
-        #self._zero_time_polling_frequency = {}
+        # self._zero_time_polling_frequency = {}
         self.profile_frequency = np.array([0] * (timing_range_ms + 1))
 
     def stop(self):
@@ -25,9 +24,9 @@ class PollingTimeProfile(object):
                 d = self._timing_range_ms
             self.profile_frequency[d] += 1
 
-            #if d == 0:
+            # if d == 0:
             #    self._zero_cnt += 1
-            #elif self._zero_cnt > 0:
+            # elif self._zero_cnt > 0:
             #    try:
             #        self._zero_time_polling_frequency[self._zero_cnt] += 1
             #    except:
@@ -45,10 +44,14 @@ class PollingTimeProfile(object):
         return self.profile_frequency / n
 
     def get_profile_str(self):
-        rtn = str(list(self.profile_frequency)
-                  ).replace("[", "").replace("]", "").replace(" ", "")
+        rtn = (
+            str(list(self.profile_frequency))
+            .replace("[", "")
+            .replace("]", "")
+            .replace(" ", "")
+        )
         return "polling profile [{}]".format(rtn)
 
-    #@property
-    #def zero_time_polling_frequency(self):
+    # @property
+    # def zero_time_polling_frequency(self):
     #    return np.array(list(self._zero_time_polling_frequency.items()))
