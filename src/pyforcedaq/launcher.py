@@ -5,10 +5,10 @@ from typing import List
 import PySimpleGUI as _sg
 
 from . import __version__
-from ._lib.constants import DEFAULT_SETTINGS_FILE, USE_MOCK_SENSOR
 from ._lib.misc import list_settings_files
 from ._lib.settings import AppSettings
 from ._lib.udp_connection import UDPConnection
+from .constants import DEFAULT_SETTINGS_FILE, USE_MOCK_SENSOR
 
 
 def _check_sensor_calibration_settings(device_labels: List[str],

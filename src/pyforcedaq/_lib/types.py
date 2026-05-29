@@ -1,7 +1,6 @@
 __author__ = 'Oliver Lindemann'
 
 import ctypes as ct
-from typing import List
 
 import numpy as np
 from numpy.typing import NDArray

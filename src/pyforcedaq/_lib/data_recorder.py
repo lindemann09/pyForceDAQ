@@ -13,8 +13,8 @@ from time import asctime, localtime, strftime
 from typing import List
 
 from .. import __version__ as forceDAQVersion
-from . import _log
 from .clock import wait_ms
+from .misc import set_logging
 from .process_priority_manager import ProcessPriorityManager
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
@@ -29,7 +29,7 @@ from .types import (
 )
 from .udp_connection import UDPConnectionProcess
 
-_log.set_logging(data_directory="data", log_file="recording.log")
+set_logging(data_directory="data", log_file="recording.log")
 
 NEWLINE = "\n"
 

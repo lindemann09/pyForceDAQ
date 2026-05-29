@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 
 import tomlkit
 
-from .constants import CALIBRATION_FOLDER, DATA_FOLDER
+from ..constants import CALIBRATION_FOLDER, DATA_FOLDER
 from .types import ForceSensorData
 
 

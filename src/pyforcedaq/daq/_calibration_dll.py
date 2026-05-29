@@ -3,7 +3,7 @@ from typing import List
 
 from numpy.typing import NDArray
 
-from .pyATIDAQ import ATI_CDLL
+from ._pyATIDAQ import ATI_CDLL
 
 
 class CalibrationConverter(object):
