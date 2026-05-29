@@ -182,9 +182,9 @@ class DataRecorder(object):
                     line = f"{d.time}, {d.acquisition_delay},"
                     if write_deviceid:
                         line += f"{d.sensor_id},"
-                    for x in d.selected_forces(select=write_forces):
+                    for x in d.forces[write_forces]:
                         line += float_format.format(x)
-                    for x in d.selected_trigger(select=write_trigger):
+                    for x in d.trigger[write_trigger]:
                         if isinstance(x, int):
                             line += f"{x},"
                         else:

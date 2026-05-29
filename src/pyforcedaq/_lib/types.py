@@ -14,8 +14,8 @@ TAG_COMMENTS = "#"
 TAG_DAQEVENT = TAG_COMMENTS + "T"
 TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
-CTYPE_FORCES = ct.c_float * 600
-CTYPE_TRIGGER = ct.c_float * 2
+CTYPE_FORCES = ct.c_double * 600
+CTYPE_TRIGGER = ct.c_double * 2
 
 class PollingPriority(object): # TODO needed?
 
@@ -97,8 +97,8 @@ class ForceSensorData(TimedData):
         super().__init__(time)
         self.acquisition_delay = acquisition_delay
         self.sensor_id = sensor_id
-        self.forces = forces
-        self.trigger = trigger
+        self.forces = np.asarray(forces, dtype=np.float64)
+        self.trigger = np.asarray(trigger, dtype=np.float64)
         if abs(self.trigger[0]) < trigger_threshold:
             self.trigger[0] = 0
         if abs(self.trigger[1]) < trigger_threshold:
@@ -177,18 +177,9 @@ class ForceSensorData(TimedData):
     def ctypes_struct(self, struct):
         self.sensor_id = struct.sensor_id
         self.time = struct.time
-        self.force = struct.forces
+        self.forces = struct.forces
         self.trigger = struct.trigger
 
-    def selected_forces(self, select: List[bool] | NDArray[np.bool]) -> NDArray[np.float64]:
-        """Return list of selected force values."""
-        #return np.array([force for i, force in enumerate(self.forces) if select[i]]) # FIXME simplify not all force have to save in ForceClass
-        return self.forces[select]
-
-    def selected_trigger(self, select: List[bool] | NDArray[np.bool]) -> NDArray[np.float64]:
-        """Return list of selected trigger values."""
-        #return [trigger for i, trigger in enumerate(self.trigger) if select[i]]
-        return self.trigger[select]
 
 class UDPData(TimedData):
     """The UDP data class, used to store UDP DATA with timestamps

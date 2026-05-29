@@ -3,9 +3,10 @@ __author__ = 'Oliver Lindemann'
 import atexit
 import ctypes as ct
 import logging
-from multiprocessing import Event, Pipe, Process, sharedctypes
+from multiprocessing import Array, Event, Pipe, Process, Value
 
-from icecream import ic
+import numpy as np
+from numpy import typing as npt
 
 from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
@@ -54,14 +55,10 @@ class SensorProcess(Process):
         self.event_bias_is_available = Event()
         self.event_trigger = Event()  #  software trigger
 
-        self._last_Fx = sharedctypes.RawValue(ct.c_float)
-        self._last_Fy = sharedctypes.RawValue(ct.c_float)
-        self._last_Fz = sharedctypes.RawValue(ct.c_float)
-        self._last_Tx = sharedctypes.RawValue(ct.c_float)
-        self._last_Ty = sharedctypes.RawValue(ct.c_float)
-        self._last_Tz = sharedctypes.RawValue(ct.c_float)
-        self._buffer_size = sharedctypes.RawValue(ct.c_uint64)
-        self._sample_cnt = sharedctypes.Value(ct.c_uint64)
+        self._dat = Array(ct.c_double, 6)
+        self._np_dat = np.frombuffer(self._dat.get_obj(), dtype=np.float64) #numpy view
+        self._buffer_size = Value(ct.c_int64, 0)
+        self._sample_cnt = Value(ct.c_int64, 0)
         self._event_quit_request = Event()
         self._determine_bias_flag = Event()
 
@@ -69,49 +66,46 @@ class SensorProcess(Process):
         atexit.register(self.join)
 
     @property
-    def Fx(self):
-        return self._last_Fx.value
+    def Fx(self) -> float:
+        return self._dat[0]
 
     @property
-    def Fy(self):
-        return self._last_Fy.value
+    def Fy(self) -> float:
+        return self._dat[1]
 
     @property
-    def Fz(self):
-        return self._last_Fz.value
+    def Fz(self) -> float:
+        return self._dat[2]
 
     @property
-    def Tx(self):
-        return self._last_Tx.value
+    def Tx(self) -> float:
+        return self._dat[3]
 
     @property
-    def Ty(self):
-        return self._last_Ty.value
+    def Ty(self) -> float:
+        return self._dat[4]
 
     @property
-    def Tz(self):
-        return self._last_Tz.value
+    def Tz(self) -> float:
+        return self._dat[5]
 
-    def get_force(self, parameter_id):
-        if   parameter_id == 0: return self._last_Fx.value
-        elif parameter_id == 1: return self._last_Fy.value
-        elif parameter_id == 2: return self._last_Fz.value
-        elif parameter_id == 3: return self._last_Tx.value
-        elif parameter_id == 4: return self._last_Ty.value
-        elif parameter_id == 5: return self._last_Tz.value
-        else: return None
+    def get_force(self, parameter_id) -> float | None:
+        if parameter_id < 0 or parameter_id > 5:
+            return None
+        else:
+            return self._dat[parameter_id]
 
-    def get_Fxyz(self):
-        return (self._last_Fx.value, self._last_Fy.value, self._last_Fz.value)
+    def get_Fxyz(self) -> npt.NDArray[np.float64]:
+        return self._np_dat[0:3]
 
-    def Txyz(self):
-        return (self._last_Tx.value, self._last_Ty.value, self._last_Tz.value)
+    def Txyz(self) -> npt.NDArray[np.float64]:
+        return self._np_dat[3:6]
 
-    def get_sample_cnt(self):
-        return int(self._sample_cnt.value) # type: ignore
+    def get_sample_cnt(self) -> int:
+        return self._sample_cnt.value
 
-    def get_buffer_size(self):
-        return int(self._buffer_size.value)
+    def get_buffer_size(self) -> int:
+        return self._buffer_size.value
 
     def determine_bias(self, n_samples=100):
         """recording is paused after bias determination
@@ -206,16 +200,14 @@ class SensorProcess(Process):
                 ## LSL
                 if lsl_data_steam.is_init:
                     # stream only select forces
-                    lsl_data_steam.outlet.push_sample(d.selected_forces(stream_forces)) # type: ignore
+                    lsl_data_steam.outlet.push_sample(d.forces[stream_forces]) # type: ignore
                 if lsl_hardware_trigger_stream.is_init:
-                    tr = d.selected_trigger(stream_trigger)
+                    tr = d.trigger[stream_trigger]
                     if any(tr): # only stream if at least one trigger is active
                         lsl_hardware_trigger_stream.outlet.push_sample(tr) # type: ignore
 
                 ptp.update(d.time) # needed? TODO
-                self._last_Fx.value, self._last_Fy.value, self._last_Fz.value, \
-				                     self._last_Tx.value, self._last_Ty.value, \
-                                     self._last_Tz.value = d.forces
+                self._dat[:] = d.forces
                 self._sample_cnt.value += 1 # type: ignore
 
                 if self.event_trigger.is_set():
