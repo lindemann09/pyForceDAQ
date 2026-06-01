@@ -86,8 +86,8 @@ class RecordingSettings(ABCSettings):
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
     calibration_folder: str = CALIBRATION_FOLDER
 
-    lsl_stream: bool = False
-    save_data: bool = True
+    lsl_stream: bool = True
+    save_data: bool = False
     sampling_rate: int = 1000
 
     write_Fx: bool = True

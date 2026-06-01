@@ -11,7 +11,6 @@ from multiprocessing import Event, Process, Queue
 from subprocess import check_output
 
 from .clock import local_clock, wait_ms
-from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
 from .types import UDPData
 
@@ -275,7 +274,6 @@ class UDPConnectionProcess(Process):
         udp_connection = UDPConnection(udp_port=5005)
         self.start_polling()
 
-        ptp = PollingTimeProfile()
         prev_event_polling = None
 
         while not self._event_quit_request.is_set():
@@ -290,14 +288,12 @@ class UDPConnectionProcess(Process):
                     )
                 else:
                     logging.warning("UDP stop")
-                    ptp.stop()
 
             if not self._event_is_polling.is_set():
                 self._event_is_polling.wait(timeout=0.1)
             else:
                 data = udp_connection.poll()
                 t = local_clock()
-                ptp.update(t)
                 if data is not None:
                     d = UDPData(string=data, time=t)
                     self.receive_queue.put(d)
@@ -324,4 +320,4 @@ class UDPConnectionProcess(Process):
 
         udp_connection.unconnect_peer()
 
-        logging.warning("UDP quit, {}".format(ptp.get_profile_str()))
+        logging.warning("UDP quit")

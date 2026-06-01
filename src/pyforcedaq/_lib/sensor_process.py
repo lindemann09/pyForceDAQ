@@ -11,7 +11,6 @@ from numpy import typing as npt
 from .. import constants
 from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
-from .polling_time_profile import PollingTimeProfile
 from .process_priority_manager import get_priority
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
@@ -171,7 +170,6 @@ class SensorProcess(Process):
         self._event_is_polling.clear()
         self._event_sending_data.clear()
         is_polling = False
-        ptp = PollingTimeProfile()  # TODO just for testing?
 
         ## create init LSL
         lsl_data_steam = LSLSream()
@@ -227,7 +225,6 @@ class SensorProcess(Process):
                     if any(tr):  # only stream if at least one trigger is active
                         lsl_hardware_trigger_stream.outlet.push_sample(tr)  # type: ignore
 
-                ptp.update(d.time)  # needed? TODO
                 self._dat[:] = d.forces
                 self._sample_cnt.value += 1  # type: ignore
 
@@ -256,7 +253,6 @@ class SensorProcess(Process):
                         get_priority(self.pid),
                     )
                     is_polling = False
-                    ptp.stop()
 
                 if self._pipe_buffer_after_pause and self._buffer_size.value > 0:
                     # sending data to force
@@ -283,7 +279,6 @@ class SensorProcess(Process):
         sensor.daq.stop_data_acquisition()
         self._buffer_size.value = 0
 
-        logging.info("Sensor quit, %s, %s", sensor.device_label, ptp.get_profile_str())
-
+        logging.info("Sensor quit, %s", sensor.device_label)
 
 # FIXME check trigger processing and UDP connections#FIXME check trigger processing and UDP connections
