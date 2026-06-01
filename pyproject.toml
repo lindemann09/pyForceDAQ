@@ -39,3 +39,10 @@ test = [
 
 [project.scripts]
 pyforcedaq = "pyforcedaq.__main__:cli"
+
+[tool.ruff.lint]
+ignore = ["F401", "F405"]
+
+[tool.ruff.format]
+line-ending = "lf"
+indent-style = "space"
