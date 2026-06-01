@@ -4,8 +4,6 @@ from typing import List
 
 import PySimpleGUI as _sg
 
-from pyforcedaq import daq
-
 from . import __version__, constants
 from ._lib.misc import list_settings_files
 from ._lib.settings import AppSettings

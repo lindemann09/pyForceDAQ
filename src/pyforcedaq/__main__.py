@@ -3,6 +3,11 @@ import argparse
 from . import __author__, __version__, constants
 
 
+def print_version():
+    print("+" + "-" * 23 + "+")
+    print(f"| pyforceDAQ {__version__}".ljust(24) + "|")
+    print("+" + "-" * 23 + "+")
+
 def cli():
 
     parser = argparse.ArgumentParser(
@@ -46,10 +51,6 @@ def cli():
         help="Use self compiled ATI DLL",
     )
 
-    print("+" + "-" * 23 + "+")
-    print(f"| pyforceDAQ {__version__}".ljust(24) + "|")
-    print("+" + "-" * 23 + "+")
-
     args = parser.parse_args()
     if args.mock:
         constants.DAQ_TYPE = constants.MOCK_SENSOR
@@ -57,6 +58,7 @@ def cli():
         constants.DAQ_TYPE = constants.NIDAQMX # use NI-DAQmx
     constants.USE_AIFTT = not args.dll
 
+    print_version()
     if not args.omit_launcher:
         if len(args.SETTINGS_FILE) > 0:
             print("Can't use launcher and settings file")
@@ -72,4 +74,5 @@ def cli():
 
 
 if __name__ == "__main__":  # required because of threading
+    cli()
     cli()
