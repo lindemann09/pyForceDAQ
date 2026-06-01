@@ -8,6 +8,7 @@ from ._pyATIDAQ import ATI_CDLL
 print("Using self compiled ATI DLL for calibration conversion.")
 
 class CalibrationConverter(CalibrationConverterABC):
+
     def __init__(self, calibration_file: str):
         self._atidaq = ATI_CDLL()
         self._atidaq.createCalibration(calibration_file, ct.c_short(1))

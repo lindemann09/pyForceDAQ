@@ -8,7 +8,7 @@ from multiprocessing import Array, Event, Pipe, Process, Value
 import numpy as np
 from numpy import typing as npt
 
-from .. import daq
+from .. import constants
 from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
 from .polling_time_profile import PollingTimeProfile
@@ -47,7 +47,7 @@ class SensorProcess(Process):
 
         super(SensorProcess, self).__init__()
 
-        if daq_type not in [daq.NIDAQMX, daq.PYDAQMX, daq.MOCK_SENSOR]:
+        if daq_type not in [constants.NIDAQMX, constants.PYDAQMX, constants.MOCK_SENSOR]:
             raise RuntimeError(f"Unsupported daq_type: {daq_type}")
 
         self._daq_type = daq_type

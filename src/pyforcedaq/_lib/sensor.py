@@ -7,7 +7,7 @@ __author__ = "Oliver Lindemann"
 
 import numpy as np
 
-from .. import daq
+from .. import constants
 from .clock import local_clock
 from .settings import SensorSettings
 from .types import ForceSensorData
@@ -27,11 +27,11 @@ class Sensor(object):
         assert isinstance(s_settings, SensorSettings)
         assert len(self.SENSOR_CHANNELS) == len(ForceSensorData.forces_names)
 
-        if daq_type == daq.NIDAQMX:
+        if daq_type == constants.NIDAQMX:
             from ..daq.read_daq_nidaqmx import DAQReadAnalog
-        elif daq_type == daq.PYDAQMX:
+        elif daq_type == constants.PYDAQMX:
             from ..daq.read_daq_pydaqmx import DAQReadAnalog
-        elif daq_type == daq.MOCK_SENSOR:
+        elif daq_type == constants.MOCK_SENSOR:
             from ..daq.read_daq_mock_sensor import DAQReadAnalog
         else:
             raise RuntimeError(f"Unsupported daq_type: {daq_type}")
@@ -45,7 +45,7 @@ class Sensor(object):
             read_array_size_in_samples=len(Sensor.SENSOR_CHANNELS)
             + len(Sensor.TRIGGER_CHANNELS))
 
-        if daq_type == daq.MOCK_SENSOR:
+        if daq_type == constants.MOCK_SENSOR:
             self._calib_converter = None
         else:
             self._calib_converter = CalibrationConverter(s_settings.calibration_file)

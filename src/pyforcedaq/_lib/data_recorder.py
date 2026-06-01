@@ -53,7 +53,7 @@ class DataRecorder(object):
 
         You can change the used modules by settings the following constants before creating the
         DataRecorder instance:
-            * set constants.DAQ_TYPE to daq.PYDAQMX, daq.NIDAQMX or daq.MOCK_SENSOR
+            * set constants.DAQ_TYPE to constants.PYDAQMX, constants.NIDAQMX or constants.MOCK_SENSOR
             * set constants.USE_AIFTT to True or False
         """
 

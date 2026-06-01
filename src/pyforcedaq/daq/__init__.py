@@ -7,9 +7,6 @@ import numpy.typing as npt
 
 from .._lib.settings import DAQConfiguration
 
-NIDAQMX = 1 # default
-PYDAQMX = 2
-MOCK_SENSOR = 9
 
 class DAQReadAnalogABC(ABC):
     """Abstract base class for DAQ analog reading."""
