@@ -4,11 +4,12 @@ from typing import List
 
 import PySimpleGUI as _sg
 
-from . import __version__
+from pyforcedaq import daq
+
+from . import __version__, constants
 from ._lib.misc import list_settings_files
 from ._lib.settings import AppSettings
 from ._lib.udp_connection import UDPConnection
-from .constants import DEFAULT_SETTINGS_FILE, USE_MOCK_SENSOR
 
 
 def _check_sensor_calibration_settings(
@@ -66,7 +67,7 @@ def _windows_run(settings: AppSettings):
     info = [[_sg.Text(f"version: {__version__}")]]
     info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
 
-    if USE_MOCK_SENSOR:
+    if constants.DAQ_TYPE == daq.MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!", text_color="red")])
 
     layout = [
@@ -78,7 +79,7 @@ def _windows_run(settings: AppSettings):
                 key="Start",
             )
         ],
-        [_sg.Frame("Info", size=(280, 80), layout=info)],
+        [_sg.Frame("Info", size=(280, 150), layout=info)],
         [_sg.Frame("Settings", size=(280, 140), expand_y=True, layout=info_settings)],
     ]
     layout.append(
@@ -140,7 +141,7 @@ def load_settings_file(settings_file: str | Path) -> AppSettings:
 
 def run_launcher():
     _sg.theme("DarkBlue14")  # please make your windows colorful
-    settings = load_settings_file(DEFAULT_SETTINGS_FILE)
+    settings = load_settings_file(constants.DEFAULT_SETTINGS_FILE)
 
     while True:
         event, values, settings = _windows_run(settings)

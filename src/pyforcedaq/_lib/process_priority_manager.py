@@ -16,7 +16,7 @@ class ProcessPriorityManager(object):
     platform = sys.platform
     pybits = 32 + int(sys.maxsize > 2**32) * 32
     main_process_id = psutil.Process().pid
-    _normal_nice_value = psutil.Process().nice()  # usied on Linux
+    _normal_nice_value = psutil.Process().nice()  # used on Linux
 
     def __init__(self):
         self._subprocs = []

@@ -14,6 +14,7 @@ from time import asctime, localtime, strftime
 from typing import List
 
 from .. import __version__ as forceDAQVersion
+from .. import constants
 from .clock import wait_ms
 from .misc import set_logging
 from .process_priority_manager import ProcessPriorityManager
@@ -49,6 +50,11 @@ class DataRecorder(object):
 
         polling_priority has to be types.PollingPriority.{HIGH},
         {REALTIME} or {NORMAL} or None
+
+        You can change the used modules by settings the following constants before creating the
+        DataRecorder instance:
+            * set constants.DAQ_TYPE to daq.PYDAQMX, daq.NIDAQMX or daq.MOCK_SENSOR
+            * set constants.USE_AIFTT to True or False
         """
 
         if not isinstance(force_sensor_settings, list):
@@ -66,6 +72,8 @@ class DataRecorder(object):
                 fst = SensorProcess(
                     sensor_settings=fs,
                     recording_settings=recording_settings,
+                    daq_type=constants.DAQ_TYPE,
+                    use_aiftt=constants.USE_AIFTT,
                     pipe_buffered_data_after_pause=True,
                 )
                 fst.start()

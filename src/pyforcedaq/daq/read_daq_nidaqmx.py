@@ -5,15 +5,18 @@ import numpy as np
 from nidaqmx import constants as nidaq_consts
 
 from .._lib.settings import DAQConfiguration
+from . import DAQReadAnalogABC
 
+print("Using nidaqmx for DAQ access.")
 
-class DAQReadAnalog(nidaqmx.Task):
+class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
     NUM_SAMPS_PER_CHAN = 1
     TIMEOUT = 1
     DAQ_TYPE = "nidaqmx"
 
     def __init__(
-        self, configuration: DAQConfiguration, read_array_size_in_samples: int
+        self, configuration: DAQConfiguration,
+        read_array_size_in_samples: int
     ):
         """DOC
         read_array_size_in_samples for ReadAnalogF64 call
@@ -43,10 +46,10 @@ class DAQReadAnalog(nidaqmx.Task):
         self.read_array_size_in_samples = read_array_size_in_samples
 
     @property
-    def is_acquiring_data(self):
+    def is_acquiring_data(self) -> bool:
         return self._task_is_started
 
-    def start_data_acquisition(self):
+    def start_data_acquisition(self) -> None:
         """Start data acquisition of the NI device
         call always before polling
 
@@ -56,7 +59,7 @@ class DAQReadAnalog(nidaqmx.Task):
             self.start()
             self._task_is_started = True
 
-    def stop_data_acquisition(self):
+    def stop_data_acquisition(self) -> None:
         """Stop data acquisition of the NI device"""
 
         if self._task_is_started:
@@ -83,6 +86,6 @@ class DAQReadAnalog(nidaqmx.Task):
         """
 
         # fill in data
-        data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT)
+        data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT) # type: ignore
         np_data = np.reshape(np.array(data), (-1,))  # reshape to vector
         return np_data, len(np_data)

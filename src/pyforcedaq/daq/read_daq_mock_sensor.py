@@ -6,9 +6,11 @@ from typing import Tuple
 import numpy as np
 
 from .._lib.clock import StopWatch
+from . import DAQReadAnalogABC
 
+print("Using mock sensor!!")
 
-class DAQReadAnalog(object):
+class DAQReadAnalog(DAQReadAnalogABC):
     NUM_SAMPS_PER_CHAN =  1
     TIMEOUT = 1.0
     NI_DAQ_BUFFER_SIZE = 1000
@@ -69,7 +71,7 @@ class DAQReadAnalog(object):
 
         # fill in data
         if not self._task_is_started:
-            return None, None
+            return np.array([]), 0
 
         n_new_samples = int(self._simulation_timer.time_ms) - self._sample_cnt
         while n_new_samples <= 0: # wait until new sample is available

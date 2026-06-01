@@ -8,6 +8,7 @@ from multiprocessing import Array, Event, Pipe, Process, Value
 import numpy as np
 from numpy import typing as npt
 
+from .. import daq
 from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
 from .polling_time_profile import PollingTimeProfile
@@ -22,6 +23,8 @@ class SensorProcess(Process):
         self,
         sensor_settings: SensorSettings,
         recording_settings: RecordingSettings,
+        daq_type: int,
+        use_aiftt: bool,
         pipe_buffered_data_after_pause=True,
         chunk_size=10000,
     ):
@@ -43,6 +46,12 @@ class SensorProcess(Process):
             )
 
         super(SensorProcess, self).__init__()
+
+        if daq_type not in [daq.NIDAQMX, daq.PYDAQMX, daq.MOCK_SENSOR]:
+            raise RuntimeError(f"Unsupported daq_type: {daq_type}")
+
+        self._daq_type = daq_type
+        self._use_aiftt = use_aiftt
         self.sensor_settings = sensor_settings
         self.recording_settings = recording_settings
         self._pipe_buffer_after_pause = pipe_buffered_data_after_pause
@@ -152,7 +161,10 @@ class SensorProcess(Process):
     def run(self):
         buffer = []
         self._buffer_size.value = 0
-        sensor = Sensor(self.sensor_settings)
+        sensor = Sensor(self.sensor_settings,
+                        daq_type=self._daq_type,
+                        use_aiftt=self._use_aiftt)
+
         stream_forces = self.recording_settings.array_write_forces()
         stream_trigger = self.recording_settings.array_write_trigger()
 
@@ -190,7 +202,7 @@ class SensorProcess(Process):
                 if not is_polling:
                     # start NI device and acquire one first sample to
                     # ensure good timing
-                    sensor.start_data_acquisition()
+                    sensor.daq.start_data_acquisition()
                     buffer.append(
                         DAQEvents(
                             time=local_clock(), code="started:" + sensor.device_label
@@ -230,7 +242,7 @@ class SensorProcess(Process):
             else:
                 # pause: not polling
                 if is_polling:
-                    sensor.stop_data_acquisition()
+                    sensor.daq.stop_data_acquisition()
                     buffer.append(
                         DAQEvents(
                             time=local_clock(), code="pause:" + sensor.device_label
@@ -268,7 +280,7 @@ class SensorProcess(Process):
                 self._event_is_polling.wait(timeout=0.1)
 
         # stop process
-        sensor.stop_data_acquisition()
+        sensor.daq.stop_data_acquisition()
         self._buffer_size.value = 0
 
         logging.info("Sensor quit, %s, %s", sensor.device_label, ptp.get_profile_str())

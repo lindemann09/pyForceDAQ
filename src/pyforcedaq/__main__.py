@@ -1,6 +1,6 @@
 import argparse
 
-from . import __author__, __version__
+from . import __author__, __version__, constants, daq
 
 
 def cli():
@@ -31,11 +31,31 @@ def cli():
         default=False,
         help="Omit launcher GUI and start recording directly",
     )
+
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        default=False,
+        help="Use mock sensor",
+    )
+
+    parser.add_argument(
+        "--dll",
+        action="store_true",
+        default=False,
+        help="Use self compiled ATI DLL",
+    )
+
     print("+" + "-" * 23 + "+")
     print(f"| pyforceDAQ {__version__}".ljust(24) + "|")
     print("+" + "-" * 23 + "+")
 
     args = parser.parse_args()
+    if args.mock:
+        constants.DAQ_TYPE = daq.MOCK_SENSOR
+    else:
+        constants.DAQ_TYPE = daq.NIDAQMX # use NI-DAQmx
+    constants.USE_AIFTT = not args.dll
 
     if not args.omit_launcher:
         if len(args.SETTINGS_FILE) > 0:

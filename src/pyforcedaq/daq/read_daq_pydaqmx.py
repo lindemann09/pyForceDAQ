@@ -16,9 +16,11 @@ import numpy as np
 import PyDAQmx
 
 from .._lib.settings import DAQConfiguration
+from . import DAQReadAnalogABC
 
+print("Using PyDAQmx for DAQ access.")
 
-class DAQReadAnalog(PyDAQmx.Task):
+class DAQReadAnalog(PyDAQmx.Task, DAQReadAnalogABC):
     NUM_SAMPS_PER_CHAN = ct.c_int32(1)
     TIMEOUT = ct.c_longdouble(1.0)  # one second
     NI_DAQ_BUFFER_SIZE = 1000
@@ -100,7 +102,7 @@ class DAQReadAnalog(PyDAQmx.Task):
         """
 
         # fill in data
-        read_samples = ct.c_int32()
+        read_samples = ct.c_int32(0)
         read_buffer = np.zeros((self.read_array_size_in_samples,), dtype=np.float64)
 
         error = self.ReadAnalogF64(
