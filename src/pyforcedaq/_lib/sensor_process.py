@@ -3,6 +3,7 @@ __author__ = "Oliver Lindemann"
 import atexit
 import ctypes as ct
 import logging
+from collections import deque
 from multiprocessing import Array, Event, Pipe, Process, Value
 
 import numpy as np
@@ -16,8 +17,10 @@ from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 from .types import DAQEvents
 
+DETERMINE_BIAS_SAMPLES = 100
 
 class SensorProcess(Process):
+
     def __init__(
         self,
         sensor_settings: SensorSettings,
@@ -71,6 +74,7 @@ class SensorProcess(Process):
         self._sample_cnt = Value(ct.c_int64, 0)
         self._event_quit_request = Event()
         self._determine_bias_flag = Event()
+        self._determine_bias_flag2 = Event()
 
         self._bias_n_samples = 200
         atexit.register(self.join)
@@ -117,6 +121,9 @@ class SensorProcess(Process):
     def get_buffer_size(self) -> int:
         return self._buffer_size.value
 
+    def determine_bias2(self):
+        self._determine_bias_flag2.set()
+
     def determine_bias(self, n_samples=100):
         """recording is paused after bias determination
 
@@ -158,6 +165,7 @@ class SensorProcess(Process):
         super(SensorProcess, self).join(timeout)
 
     def run(self):
+        fbuffer = deque(maxlen=DETERMINE_BIAS_SAMPLES)
         buffer = []
         self._buffer_size.value = 0
         sensor = Sensor(self.sensor_settings,
@@ -227,6 +235,7 @@ class SensorProcess(Process):
 
                 self._dat[:] = d.forces
                 self._sample_cnt.value += 1  # type: ignore
+                fbuffer.append(d.forces) # for bias determination
 
                 if self.event_trigger.is_set():
                     self.event_trigger.clear()
@@ -272,6 +281,10 @@ class SensorProcess(Process):
                     sensor.determine_bias(n_samples=self._bias_n_samples)
                     self._determine_bias_flag.clear()
                     self.event_bias_is_available.set()
+
+                if self._determine_bias_flag2.is_set():
+                    sensor.determine_bias2(fbuffer)
+                    self._determine_bias_flag2.clear()
 
                 self._event_is_polling.wait(timeout=0.1)
 

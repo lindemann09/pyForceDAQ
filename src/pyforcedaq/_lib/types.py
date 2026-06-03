@@ -100,7 +100,7 @@ class ForceSensorData(TimedData):
         """
 
         super().__init__(time)
-        self.acquisition_delay = acquisition_delay
+        self.acquisition_delay = acquisition_delay ## FIXME needed?
         self.sensor_id = sensor_id
         self.forces = np.asarray(forces, dtype=np.float64)
         self.trigger = np.asarray(trigger, dtype=np.float64)

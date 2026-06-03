@@ -67,6 +67,17 @@ class Sensor(object):
                     continue
                 self._reverse_vector[idx] = -1
 
+    def determine_bias2(self, data:npt.NDArray):
+        """determines the bias"""
+
+        if np.shape(data)[1] != len(Sensor.SENSOR_CHANNELS):
+            raise ValueError(f"demeine biasdata should the shape (x, n_sensor_channels)")
+
+        if self._calib_converter is not None and isinstance(data, np.ndarray):
+            self._calib_converter.bias(np.mean(data, axis=0))
+            # not sure if bias required
+            # for recoding of voltages, that is, not convert to forces
+
     def determine_bias(self, n_samples=100):
         """determines the bias"""
 
