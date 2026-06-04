@@ -1,26 +1,31 @@
-
+import gzip
 from multiprocessing import Event, Process, Queue
 from pathlib import Path
 from queue import Empty
 
+from .settings import RecordingSettings
+from .types import (TAG_COMMENTS, TAG_DAQEVENT, TAG_UDPDATA, DAQEvents,
+                    ForceSensorData, UDPData)
+
+NEWLINE = "\n"
+
 
 class FileWriter(Process):
-
-    def __init__(self, filepath:str | Path, append_file:bool=False, close_timeout:float=0.1, autostart:bool=True):
-        """To write to a file from multiple processes. Use FileWriter.queue.put(str) to write file
-        """
+    def __init__(
+        self, recording_settings: RecordingSettings, float_decimal_places: int = 4
+    ):
+        """To write to a file from multiple processes. Use FileWriter.queue.put(str) to write file"""
 
         super().__init__()
-        self.filepath = Path(filepath)
-        self.append_mode = append_file
-        self.close_timeout = close_timeout
+        self.filepath: Path  = Path("")
+        self.append_mode = False
         self.queue = Queue()
         self._force_quit = Event()
         self._close_file = Event()
-        self._close_file.clear()
-        self._force_quit.clear()
-        if autostart:
-            self.start()
+        self._write_forces = recording_settings.array_write_forces()
+        self._write_trigger = recording_settings.array_write_trigger()
+        self._write_deviceid = len(recording_settings.device_labels) > 1
+        self._decimal_places = float_decimal_places
 
     def close_file(self):
         """closes file after all pending writes are done and no further write occurred
@@ -32,24 +37,71 @@ class FileWriter(Process):
         """forces the process to quit immediately, even if there are pending writes in the queue"""
         self._force_quit.set()
 
-    #def join(self, timeout=None):
+    def start_recording(self, file_path: Path, append_mode: bool = False):
+        """opens file for writing, if file already exists, it will be overwritten (or appended if append_mode is True)"""
+        self.filepath = file_path
+        self.append_mode = append_mode
+        self.start()
+
+    # def join(self, timeout=None):
     #    super(FileWriter, self).join(timeout)
 
     def run(self):
-        if self.append_mode:
-            mode = 'a'
-        else:
-            mode = 'w'
-        with open(self.filepath, mode, encoding='utf-8') as fl:
-            while not self._force_quit.is_set():
-                try:
-                    line = self.queue.get(timeout=self.close_timeout)
-                except Empty:
-                    if self._close_file.is_set():
-                        break
-                    else:
-                        continue
-                fl.write(line)
 
-            fl.flush()
+        if self.filepath is None:
+            raise ValueError("File path is not set. Call start_recording() with a valid file path before running the process.")
+
+        float_format = "{0:." + str(self._decimal_places) + "f},"
+        if self.append_mode:
+            mode = "a"
+        else:
+            mode = "w"
+
+        if self.filepath.suffix.endswith("gz"):
+            fl = gzip.open(self.filepath, mode)
+        else:
+            fl = open(self.filepath, mode, encoding="utf-8")
+
+        self._close_file.clear()
+        self._force_quit.clear()
+
+        while not self._force_quit.is_set():
+
+            if self._close_file.is_set():
+                try:
+                    d = self.queue.get_nowait()
+                except Empty:
+                    break  # quit process
+            else:
+                try:
+                    d = self.queue.get(timeout=0.5)
+                except Empty:
+                    continue  # wait again for events
+
+            if isinstance(d, ForceSensorData):
+                txt = f"{d.time}, {d.acquisition_delay},"
+                if self._write_deviceid:
+                    txt += f"{d.sensor_id},"
+                for x in d.forces[self._write_forces]:
+                    txt += float_format.format(x)
+                for x in d.trigger[self._write_trigger]:
+                    if isinstance(x, int):
+                        txt += f"{x},"
+                    else:
+                        txt += float_format.format(x)
+                txt = txt[:-1] + NEWLINE
+
+            elif isinstance(d, DAQEvents):
+                txt = f"{TAG_DAQEVENT},{d.time},{str(d.code)}{NEWLINE}"
+
+            elif isinstance(d, UDPData):
+                txt = f"{TAG_UDPDATA},{d.time},{d.unicode}{NEWLINE}"
+            elif isinstance(d, str):
+                txt = f"{TAG_COMMENTS} {d}"
+            else:
+                continue  # ignore unknown data types or maybe raise error (TODO)
+            fl.write(txt)
+
+        fl.flush()
+        fl.close()
 

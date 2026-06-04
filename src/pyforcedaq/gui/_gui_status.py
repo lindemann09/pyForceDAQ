@@ -46,7 +46,7 @@ class GUIStatus(object):
             info_recording += "SAVING"
         if len(info_recording) == 0:
             info_recording = "DATA ARE NOT SAVED OR STREAMED!"
-        if recorder.is_saving_data:
+        if recorder.has_file_writer:
             info_file = f"file: {recorder.path_open_file.stem}"
         else:
             if recorder.recording_settings.lsl_stream:
@@ -155,7 +155,7 @@ class GUIStatus(object):
         """returns list of sensors with new samples"""
         rtn = []
         for i, cnt in enumerate(
-            map(SensorProcess.get_sample_cnt, self.sensor_processes)
+            map(SensorProcess.get_saved_sample_cnt, self.sensor_processes)
         ):
             if self._last_processed_smpl[i] < cnt:
                 # new sample

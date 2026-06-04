@@ -6,6 +6,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import numpy as np
+from numpy import typing as npt
 
 from .. import constants
 from .clock import local_clock
@@ -67,11 +68,11 @@ class Sensor(object):
                     continue
                 self._reverse_vector[idx] = -1
 
-    def determine_bias2(self, data:npt.NDArray):
-        """determines the bias"""
+    def set_bias(self, data: npt.NDArray):
+        """sets the bias"""
 
         if np.shape(data)[1] != len(Sensor.SENSOR_CHANNELS):
-            raise ValueError(f"demeine biasdata should the shape (x, n_sensor_channels)")
+            raise ValueError(f"biasdata should have the shape (x, n_sensor_channels)")
 
         if self._calib_converter is not None:
             self._calib_converter.bias(np.mean(data, axis=0))

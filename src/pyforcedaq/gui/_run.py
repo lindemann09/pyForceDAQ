@@ -93,10 +93,10 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 plotter_thread = None
 
             if s.pause_recording:
-                recorder.pause_recording(s.background)
+                recorder.pause_saving(s.background)
                 s.background.stimulus("Paused ('b' for baseline)").present()
             else:
-                recorder.start_recording()
+                recorder.start_saving()
                 s.set_start_recording_time()
                 s.background.stimulus().present()
 
@@ -307,11 +307,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 size=(400, 50),
                 # background_colour=(30,30,30),
                 text_size=15,
-                text="n samples (total): {0}\nn samples: {1} ({2} sec.)".format(
-                    str(list(map(SensorProcess.get_sample_cnt, s.sensor_processes)))[
-                        1:-1
-                    ],
-                    str(list(map(SensorProcess.get_buffer_size, s.sensor_processes)))[
+                text="n samples (total): {0} ({1} sec.)".format(
+                    str(list(map(SensorProcess.get_saved_sample_cnt, s.sensor_processes)))[
                         1:-1
                     ],
                     s.recording_duration_in_sec,
@@ -388,7 +385,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
 
         ##### end main  loop
 
-    recorder.pause_recording(s.background)
+    recorder.pause_saving(s.background)
     s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.join()
