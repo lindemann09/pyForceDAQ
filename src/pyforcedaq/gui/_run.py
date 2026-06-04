@@ -93,7 +93,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 plotter_thread = None
 
             if s.pause_recording:
-                recorder.pause_saving(s.background)
+                recorder.pause_saving()
                 s.background.stimulus("Paused ('b' for baseline)").present()
             else:
                 recorder.start_saving()
@@ -385,7 +385,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
 
         ##### end main  loop
 
-    recorder.pause_saving(s.background)
+    recorder.pause_saving()
     s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.join()
@@ -444,9 +444,6 @@ def run(settings: AppSettings):
         force_sensor_settings=sensor_settings,
         poll_udp_connection=False,  # FIXME remove UDP polling from recorder and put it in main loop
     )
-
-    wait_ms(200)  # wait for lib init
-    recorder.determine_biases(n_samples=500)
 
     if rs.save_data:
         if len(settings.output_filename) > 3:

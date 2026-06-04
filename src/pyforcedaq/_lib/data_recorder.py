@@ -7,9 +7,8 @@ __author__ = "Oliver Lindemann"
 
 import atexit
 import logging
-from io import TextIOWrapper
 from pathlib import Path
-from time import asctime, localtime, sleep, strftime
+from time import asctime, localtime, strftime
 from typing import List
 
 from .. import __version__ as forceDAQVersion
@@ -25,7 +24,7 @@ from .udp_connection import UDPConnectionProcess
 
 set_logging(data_directory="data", log_file="recording.log")
 
-NEWLINE = "\n"
+# FIXME LSL marker event for all events
 
 
 class DataRecorder(object):
@@ -53,7 +52,7 @@ class DataRecorder(object):
             force_sensor_settings = [force_sensor_settings]
 
         self.recording_settings = recording_settings
-        self._file_writer = FileWriter(recording_settings)
+        self.file_writer = FileWriter(recording_settings)
 
         # create sensor processes
         self.force_sensor_processes: List[SensorProcess] = []
@@ -65,10 +64,9 @@ class DataRecorder(object):
                 fst = SensorProcess(
                     sensor_settings=fs,
                     recording_settings=recording_settings,
+                    file_writer_queue=self.file_writer.queue,
                     daq_type=constants.DAQ_TYPE,
-                    use_aiftt=constants.USE_AIFTT,
-                    pipe_buffered_data_after_pause=True,
-                )
+                    use_aiftt=constants.USE_AIFTT)
                 fst.start()
                 event_trigger.append(fst.event_trigger)
                 self.force_sensor_processes.append(fst)
@@ -102,7 +100,7 @@ class DataRecorder(object):
     @property
     def has_file_writer(self):
         """Property indicates whether a data file is open"""
-        return self._file_writer is not None
+        return self.file_writer is not None
 
     @property
     def is_alive(self):
@@ -155,7 +153,7 @@ class DataRecorder(object):
             buffer.append(data)
 
         for dat in buffer:
-            self._file_writer.queue.put(dat)
+            self.file_writer.queue.put(dat)
         return buffer
 
     def store_daq_event(
@@ -254,18 +252,18 @@ class DataRecorder(object):
             else:
                 break
 
-        self._file_writer.start_recording(file_path=file_path, append_mode=False)
+        self.file_writer.start_recording(file_path=file_path, append_mode=False)
         logging.info("new file: {}".format(file_path))
 
-        self._file_writer.queue.put("Recorded at {0} with pyForceDAQ {1}\n".format(
+        self.file_writer.queue.put("Recorded at {0} with pyForceDAQ {1}\n".format(
                 asctime(localtime()), forceDAQVersion))
 
         for s in self.sensor_settings_list:
             txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file}\n"
-            self._file_writer.queue.put(txt)
+            self.file_writer.queue.put(txt)
 
         if len(comment_line) > 0:
-            self._file_writer.queue.put(comment_line + "\n")
+            self.file_writer.queue.put(comment_line + "\n")
 
         if varnames:
             write_forces = self.recording_settings.array_write_forces()
@@ -281,7 +279,7 @@ class DataRecorder(object):
                 line += "trigger1,"
             if write_trigger[1]:
                 line += "trigger2,"
-            self._file_writer.queue.put(line[:-1] + "\n")
+            self.file_writer.queue.put(line[:-1] + "\n")
 
         return file_path
 
@@ -291,6 +289,7 @@ class DataRecorder(object):
         Afterwards data will not be saved anymore.
 
         """
-        self._file_writer.close_file()
-        self._file_writer.join()
-        self._file_writer.filepath = Path("")
+        self.file_writer.close_file()
+        if self.file_writer.is_alive():
+            self.file_writer.join()
+        self.file_writer.filepath = Path("")

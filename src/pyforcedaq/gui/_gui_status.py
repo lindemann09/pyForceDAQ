@@ -47,7 +47,7 @@ class GUIStatus(object):
         if len(info_recording) == 0:
             info_recording = "DATA ARE NOT SAVED OR STREAMED!"
         if recorder.has_file_writer:
-            info_file = f"file: {recorder.path_open_file.stem}"
+            info_file = f"file: {recorder.file_writer.filepath.stem}"
         else:
             if recorder.recording_settings.lsl_stream:
                 info_file = "no local file"
@@ -181,9 +181,8 @@ class GUIStatus(object):
             # pause
             self.pause_recording = not self.pause_recording
         elif key == misc.constants.K_b and self.pause_recording:
-            self.background.stimulus("Recording baseline").present()
-            self.recorder.determine_biases(n_samples=500)
-            self.background.stimulus("Paused").present()
+            self.background.stimulus("New baseline").present()
+            self.recorder.determine_biases()
 
         elif key == misc.constants.K_KP_MINUS:
             self.scaling_plotter.increase_data_range()

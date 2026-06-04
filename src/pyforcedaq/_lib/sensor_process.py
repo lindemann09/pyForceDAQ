@@ -10,12 +10,10 @@ import numpy as np
 from numpy import typing as npt
 
 from .. import constants
-from .clock import local_clock, wait_ms
 from .lsl import LSLSream, cf_float32
 from .process_priority_manager import get_priority
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
-from .types import DAQEvents
 
 DETERMINE_BIAS_SAMPLES = 100
 
@@ -158,7 +156,6 @@ class SensorProcess(Process):
                     freq=self.sensor_settings.rate,
                 )
 
-
         sensor.daq.start_data_acquisition()
         logging.info(
             "Sensor start, %s, pid %s, priority %s",
@@ -172,7 +169,9 @@ class SensorProcess(Process):
         self._flag_quit_request.clear()
         self.flag_sensor_bias_is_determined.clear()
         init_samples = DETERMINE_BIAS_SAMPLES * 2
+
         while not self._flag_quit_request.is_set():
+
             d = sensor.poll_data()
             if self.event_trigger.is_set():
                 self.event_trigger.clear()
@@ -205,8 +204,9 @@ class SensorProcess(Process):
                 self._sample_cnt.value += 1  # type: ignore
 
             if not self.flag_sensor_bias_is_determined.is_set():
+                # new baseline requested
                 sensor.set_bias(np.array(fifo))
-                self.flag_sensor_bias_is_determined.clear() # FIXME LSL marker event and file writer
+                self.flag_sensor_bias_is_determined.clear()
 
         # stop process
         sensor.daq.stop_data_acquisition()
