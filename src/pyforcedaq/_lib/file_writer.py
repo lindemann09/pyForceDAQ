@@ -8,7 +8,7 @@ from .types import (TAG_COMMENTS, TAG_DAQEVENT, TAG_UDPDATA, DAQEvents,
                     ForceSensorData, UDPData)
 
 NEWLINE = "\n"
-
+ENCODING = "utf-8"
 
 class FileWriter(Process):
     def __init__(
@@ -56,11 +56,10 @@ class FileWriter(Process):
             mode = "a"
         else:
             mode = "w"
-
         if self.filepath.suffix.endswith("gz"):
             fl = gzip.open(self.filepath, mode)
         else:
-            fl = open(self.filepath, mode, encoding="utf-8")
+            fl = open(self.filepath, mode, encoding=ENCODING)
 
         self._close_file.clear()
         self._force_quit.clear()
@@ -100,7 +99,11 @@ class FileWriter(Process):
                 txt = f"{TAG_COMMENTS} {d}"
             else:
                 continue  # ignore unknown data types or maybe raise error (TODO)
-            fl.write(txt)
+
+            if isinstance(fl, gzip.GzipFile):
+                fl.write(txt.encode(ENCODING))
+            else:
+                fl.write(txt)
 
         fl.flush()
         fl.close()
