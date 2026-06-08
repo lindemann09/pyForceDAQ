@@ -18,8 +18,7 @@ from .misc import set_logging
 from .process_priority_manager import ProcessPriorityManager
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
-from .types import (TAG_COMMENTS, TAG_DAQEVENT, TAG_UDPDATA, DAQEvents,
-                    ForceSensorData, PollingPriority, UDPData)
+from .types import DAQEvents, ForceSensorData, PollingPriority
 from .udp_connection import UDPConnectionProcess
 
 set_logging(data_directory="data", log_file="recording.log")

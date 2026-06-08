@@ -58,6 +58,8 @@ docs/_build/
 *.swp
 .idea/
 
+.DS_Store
+
 # pyForceDAQ
 data/
 events/
