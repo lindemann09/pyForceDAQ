@@ -253,10 +253,10 @@ class DataRecorder(object):
                 break
 
         self.file_writer.start_recording(file_path=file_path, append_mode=False)
-        logging.info("new file: {}".format(file_path))
+        logging.info("new file: %s", file_path)
 
-        self.file_writer.queue.put("Recorded at {0} with pyForceDAQ {1}\n".format(
-                asctime(localtime()), forceDAQVersion))
+        self.file_writer.queue.put(
+            f"Recorded at {asctime(localtime())} with pyForceDAQ {forceDAQVersion}\n")
 
         for s in self.sensor_settings_list:
             txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file}\n"
@@ -269,7 +269,7 @@ class DataRecorder(object):
             write_forces = self.recording_settings.array_write_forces()
             write_trigger = self.recording_settings.array_write_trigger()
             write_deviceid = len(self.recording_settings.device_labels) > 1
-            line = "time,delay,"
+            line = "time,"
             if write_deviceid:
                 line += "device_tag,"
             for x in range(6):

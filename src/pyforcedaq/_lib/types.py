@@ -71,12 +71,11 @@ class ForceSensorData(TimedData):
 
     def __init__(
         self,
-        time: float | None,
-        acquisition_delay: float,
+        time: float | None = None,
         forces: NDArray[np.float64] = np.zeros(6),
         trigger: NDArray[np.float64] = np.zeros(2),
-        sensor_id=0,
-        trigger_threshold=0.9,
+        sensor_id: int = 0,
+        trigger_threshold:float =0.9,
         reverse=(),
     ):
         """Create a ForceSensorData object
@@ -86,8 +85,6 @@ class ForceSensorData(TimedData):
             the id of the sensor device
         time: float, optional
             the timestamp
-        acquisition_delay: float, optional
-            time
         forces: array of six floats
             array of the force data defined as [Fx, Fy, Fz, Tx, Ty, Tz]
         trigger: array of two floats
@@ -100,7 +97,6 @@ class ForceSensorData(TimedData):
         """
 
         super().__init__(time)
-        self.acquisition_delay = acquisition_delay ## FIXME needed?
         self.sensor_id = sensor_id
         self.forces = np.asarray(forces, dtype=np.float64)
         self.trigger = np.asarray(trigger, dtype=np.float64)
@@ -113,17 +109,12 @@ class ForceSensorData(TimedData):
 
     def __str__(self):
         """converts data to string."""
-        txt = "%d,%.5f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f" % (
-            self.sensor_id,
-            self.time,
-            self.forces[0],
-            self.forces[1],
-            self.forces[2],
-            self.forces[3],
-            self.forces[4],
-            self.forces[5],
+        txt = (
+            f"{self.sensor_id:d},{self.time:.5f},{self.forces[0]:.4f},"
+            f"{self.forces[1]:.4f},{self.forces[2]:.4f},{self.forces[3]:.4f},"
+            f"{self.forces[4]:.4f},{self.forces[5]:.4f}"
         )
-        txt += ",%.4f,%.4f" % (self.trigger[0], self.trigger[1])
+        txt += f",{self.trigger[0]:.4f},{self.trigger[1]:.4f}"
         return txt
 
     @property

@@ -112,8 +112,8 @@ class Sensor(object):
 
         """
 
-        start = local_clock()
         data, _read_samples = self.daq.read_analog()
+        t = local_clock()
         if self.convert_to_FT and self._calib_converter is not None:
             forces = np.asarray(
                 self._calib_converter.convertToFT(voltages=data[Sensor.SENSOR_CHANNELS])
@@ -124,12 +124,10 @@ class Sensor(object):
 
         # reverse scaling if needed
         forces = forces * self._reverse_vector
-        t = local_clock()
 
         return ForceSensorData(
             time=t,
-            acquisition_delay=t - start,
             sensor_id=self.sensor_id,
             forces=forces,
-            trigger=data[Sensor.TRIGGER_CHANNELS],
+            trigger=data[Sensor.TRIGGER_CHANNELS]
         )

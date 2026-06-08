@@ -79,7 +79,7 @@ class FileWriter(Process):
                     continue  # wait again for events
 
             if isinstance(d, ForceSensorData):
-                txt = f"{d.time}, {d.acquisition_delay},"
+                txt = f"{d.time},"
                 if self._write_deviceid:
                     txt += f"{d.sensor_id},"
                 for x in d.forces[self._write_forces]:
