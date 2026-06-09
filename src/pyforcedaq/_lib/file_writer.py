@@ -1,4 +1,4 @@
-import gzip
+import bz2
 from multiprocessing import Event, Process, Queue
 from pathlib import Path
 from queue import Empty
@@ -56,8 +56,8 @@ class FileWriter(Process):
             mode = "a"
         else:
             mode = "w"
-        if self.filepath.suffix.endswith("gz"):
-            fl = gzip.open(self.filepath, mode)
+        if self.filepath.suffix.endswith("bz2"):
+            fl = bz2.open(self.filepath, mode)
         else:
             fl = open(self.filepath, mode, encoding=ENCODING)
 
@@ -100,7 +100,7 @@ class FileWriter(Process):
             else:
                 continue  # ignore unknown data types or maybe raise error (TODO)
 
-            if isinstance(fl, gzip.GzipFile):
+            if isinstance(fl, bz2.BZ2File):
                 fl.write(txt.encode(ENCODING))
             else:
                 fl.write(txt)

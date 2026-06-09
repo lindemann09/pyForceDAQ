@@ -235,7 +235,7 @@ class DataRecorder(object):
         data_dir.mkdir(exist_ok=True)
 
         if self.recording_settings.zip_data:
-            filename = Path(filename).with_suffix(".csv.gz")
+            filename = Path(filename).with_suffix(".csv.bz2")
         else:
             filename = Path(filename).with_suffix(".csv")
         while True:
