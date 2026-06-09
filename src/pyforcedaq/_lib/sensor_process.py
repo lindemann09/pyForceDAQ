@@ -5,6 +5,7 @@ import ctypes as ct
 import logging
 from collections import deque
 from multiprocessing import Array, Event, Process, Queue, Value
+from typing import Optional
 
 import numpy as np
 from numpy import typing as npt
@@ -23,7 +24,7 @@ class SensorProcess(Process):
         self,
         sensor_settings: SensorSettings,
         recording_settings: RecordingSettings,
-        file_writer_queue: Queue,
+        file_writer_queue: Optional[Queue],
         daq_type: int,
         use_aiftt: bool
     ):
@@ -64,7 +65,7 @@ class SensorProcess(Process):
         self._sample_cnt = Value(ct.c_int64, 0)
         self.flag_sensor_bias_is_determined = Event()
         self._flag_quit_request = Event()
-        self._flag_is_saving = Event()
+        self.__flag_is_saving = Event()
 
         self._bias_n_samples = 200
         atexit.register(self.join)
@@ -112,10 +113,14 @@ class SensorProcess(Process):
         self.flag_sensor_bias_is_determined.clear()
 
     def start_saving(self):
-        self._flag_is_saving.set()
+        if self._file_writer_queue is not None:
+            self.__flag_is_saving.set()
 
     def pause_saving(self):
-        self._flag_is_saving.clear()
+        self.__flag_is_saving.clear()
+
+    def is_saving(self) -> bool:
+        return self.__flag_is_saving.is_set()
 
     def quit(self):
         self._flag_quit_request.set()
@@ -165,7 +170,7 @@ class SensorProcess(Process):
         )
 
         # polling loop
-        self._flag_is_saving.clear()
+        self.pause_saving()
         self._flag_quit_request.clear()
         self.flag_sensor_bias_is_determined.clear()
         init_samples = DETERMINE_BIAS_SAMPLES * 2
@@ -199,7 +204,7 @@ class SensorProcess(Process):
             self._dat[:] = d.forces
             fifo.append(d.forces) # for bias determination
 
-            if self.recording_settings.save_data and self._flag_is_saving.is_set():
+            if self.is_saving() and self._file_writer_queue is not None:
                 self._file_writer_queue.put(d)
                 self._sample_cnt.value += 1  # type: ignore
 
@@ -207,9 +212,11 @@ class SensorProcess(Process):
                 # new baseline requested
                 sensor.set_bias(np.array(fifo))
                 self.flag_sensor_bias_is_determined.clear()
+                # FIXME determine bias marker event?
 
         # stop process
+        self.pause_saving()
         sensor.daq.stop_data_acquisition()
         logging.info("Sensor quit, %s", sensor.device_label)
 
-# FIXME check trigger processing and UDP connections#FIXME check trigger processing and UDP connections
+# FIXME check trigger processing and UDP connections

@@ -21,7 +21,7 @@ def _text2number_array(txt):
         for x in txt.split(","):
             rtn.append(float(x))
         return rtn
-    except:
+    except Exception:
         return None
 
 
@@ -47,7 +47,7 @@ class GUIStatus(object):
         if len(info_recording) == 0:
             info_recording = "DATA ARE NOT SAVED OR STREAMED!"
         if recorder.has_file_writer:
-            info_file = f"file: {recorder.file_writer.filepath.stem}"
+            info_file = f"file: {recorder.file_writer.filepath.stem}" # type: ignore
         else:
             if recorder.recording_settings.lsl_stream:
                 info_file = "no local file"

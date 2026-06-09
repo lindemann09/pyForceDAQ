@@ -51,7 +51,12 @@ class DataRecorder(object):
             force_sensor_settings = [force_sensor_settings]
 
         self.recording_settings = recording_settings
-        self.file_writer = FileWriter(recording_settings)
+        if recording_settings.save_data:
+            self.file_writer = FileWriter(recording_settings)
+            queue = self.file_writer.queue
+        else:
+            self.file_writer = None
+            queue = None
 
         # create sensor processes
         self.force_sensor_processes: List[SensorProcess] = []
@@ -63,7 +68,7 @@ class DataRecorder(object):
                 fst = SensorProcess(
                     sensor_settings=fs,
                     recording_settings=recording_settings,
-                    file_writer_queue=self.file_writer.queue,
+                    file_writer_queue=queue,
                     daq_type=constants.DAQ_TYPE,
                     use_aiftt=constants.USE_AIFTT)
                 fst.start()
@@ -92,27 +97,32 @@ class DataRecorder(object):
         )
         # logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
 
-        self._is_saving = False
         self._daq_event = [] # FIXME needed?
         atexit.register(self.quit)
 
     @property
     def has_file_writer(self):
         """Property indicates whether a data file is open"""
-        return self.file_writer is not None
+        return isinstance(self.file_writer, FileWriter) and self.file_writer.is_alive()
 
     @property
     def is_alive(self):
         """Property indicates whether the recording processes are alive"""
         try:
             return self.force_sensor_processes[0].is_alive()
-        except Exception:
+        except IndexError:
             return False
 
     @property
     def is_saving(self):
         """Property indicates whether the recording is started or paused"""
-        return self._is_saving
+        if  self.has_file_writer:
+            for fsp in self.force_sensor_processes:
+                if not fsp.is_saving:
+                    return False
+            return True # all sensor processes are saving, file writer is alive
+        else:
+            return False
 
     @property
     def sensor_settings_list(self):
@@ -151,8 +161,9 @@ class DataRecorder(object):
                 break
             buffer.append(data)
 
-        for dat in buffer:
-            self.file_writer.queue.put(dat)
+        if isinstance(self.file_writer, FileWriter):
+            for dat in buffer:
+                self.file_writer.queue.put(dat)
         return buffer
 
     def store_daq_event(
@@ -177,7 +188,6 @@ class DataRecorder(object):
         for fsp in self.force_sensor_processes:
             fsp.flag_sensor_bias_is_determined.wait() # wait is no initial bias is set yet
             fsp.start_saving()
-        self._is_saving = True
 
     def pause_saving(self):
         """Pauses all polling processes and process data
@@ -191,7 +201,6 @@ class DataRecorder(object):
         # pause polling
         for fsp in self.force_sensor_processes:
             fsp.pause_saving()
-        self._is_saving = False # FEEDBACK RECORDER SCREEN
 
 
     def determine_biases(self) -> None:
@@ -204,7 +213,7 @@ class DataRecorder(object):
         subdirectory: str = "data",
         varnames: bool = True,
         comment_line: str = "",
-    ) -> Path:
+    ) -> Path | None:
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -229,6 +238,9 @@ class DataRecorder(object):
                 full path the actually used file (incl. timestamp)
 
         """
+
+        if not isinstance(self.file_writer, FileWriter):
+            return
 
         # create filename
         data_dir = Path.cwd() / subdirectory
@@ -288,7 +300,8 @@ class DataRecorder(object):
         Afterwards data will not be saved anymore.
 
         """
-        self.file_writer.close_file()
-        if self.file_writer.is_alive():
-            self.file_writer.join()
-        self.file_writer.filepath = Path("")
+        if isinstance(self.file_writer, FileWriter):
+            self.file_writer.close_file()
+            if self.file_writer.is_alive():
+                self.file_writer.join()
+            self.file_writer.filepath = Path("")
