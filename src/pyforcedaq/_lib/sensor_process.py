@@ -211,7 +211,7 @@ class SensorProcess(Process):
             if not self.flag_sensor_bias_is_determined.is_set():
                 # new baseline requested
                 sensor.set_bias(np.array(fifo))
-                self.flag_sensor_bias_is_determined.clear()
+                self.flag_sensor_bias_is_determined.set()
                 # FIXME determine bias marker event?
 
         # stop process

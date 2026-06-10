@@ -1,6 +1,8 @@
 import numpy as np
 from expyriment.misc import constants
-from expyriment.stimuli import Canvas, Rectangle, TextLine
+from expyriment.stimuli import Canvas, Rectangle
+
+from ._layout import make_text_line
 
 
 def level_indicator(
@@ -53,7 +55,7 @@ def level_indicator(
             level.plot(indicator)
 
     # text labels
-    txt = TextLine(
+    txt = make_text_line(
         text=text,
         text_size=text_size,
         position=(0, -1 * (int(height / 2.0) + text_gap)),

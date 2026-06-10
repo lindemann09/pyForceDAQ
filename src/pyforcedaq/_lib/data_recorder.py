@@ -206,6 +206,8 @@ class DataRecorder(object):
     def determine_biases(self) -> None:
         for x in self.force_sensor_processes:
             x.determine_bias()
+        for x in self.force_sensor_processes:
+            x.flag_sensor_bias_is_determined.wait()
 
     def open_data_file(
         self,

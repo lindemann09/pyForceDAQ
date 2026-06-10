@@ -21,7 +21,7 @@ from .._lib.sensor_process import SensorProcess
 from .._lib.settings import AppSettings, GUISettings, SensorSettings
 from ..constants import DEFAULT_OUTPUT_FILENAME, DEFAULT_SETTINGS_FILE
 from ._gui_status import GUIStatus
-from ._layout import colours, get_pygame_rect, logo_text_line
+from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator
 from ._plotter import PlotterThread
 
@@ -162,7 +162,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 stimuli.Canvas(
                     position=pos, size=(30, 20), colour=misc.constants.C_BLACK
                 ).present(update=False, clear=False)
-                txt = stimuli.TextLine(
+                txt = make_text_line(
                     position=pos,
                     text=str(s.scaling_indicator.min),
                     text_size=15,
@@ -174,7 +174,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 stimuli.Canvas(
                     position=pos, size=(30, 20), colour=misc.constants.C_BLACK
                 ).present(update=False, clear=False)
-                txt = stimuli.TextLine(
+                txt = make_text_line(
                     position=pos,
                     text=str(s.scaling_indicator.max),
                     text_size=15,
@@ -285,7 +285,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                         size=(50, 30),
                         colour=misc.constants.C_BLACK,
                     ).present(update=False, clear=False)
-                    txt = stimuli.TextLine(
+                    txt = make_text_line(
                         position=(xpos, ypos),
                         text=str(axis_labels[cnt]),
                         text_size=15,

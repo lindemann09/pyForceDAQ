@@ -38,21 +38,27 @@ def logo_text_line(text):
         position=(0, 150),
     )
     logo.scale(0.6)
-    stimuli.TextLine(
+    make_text_line(
         text="Version " + forceDAQVersion,
         position=(0, 80),
         text_size=14,
         text_colour=expy_constants.C_EXPYRIMENT_ORANGE,
     ).plot(blank)
     logo.plot(blank)
-    stimuli.TextLine(text=text).plot(blank)
+    make_text_line(text=text, position=(0, 0), text_size=12, text_colour=expy_constants.C_WHITE).plot(blank)
     return blank
+
+def make_text_line(text, position, text_size, text_colour):
+    """helper function"""
+    return stimuli.TextLine(text, position=position, text_size=text_size,
+                            text_colour=text_colour, text_font="Courier")
 
 
 class RecordingScreen(object):
 
-    def __init__(self, window_size, txt_top_center, txt_top_left, text_colour):
-        """Expyriment has to be intialized"""
+    def __init__(self, window_size, txt_top_center, txt_top_left, text_colour,
+                 no_pause_option:bool = False):
+        # NOTE: Expyriment has to be intialized
         margin = 30
         self.left = -1 * window_size[0] / 2 + margin
         self.right = window_size[0] / 2 - margin
@@ -62,30 +68,28 @@ class RecordingScreen(object):
         self.text_colour = text_colour
         self.elements = []
         self.add_text_line_left(
-            "Force Recorder " + str(forceDAQVersion),
+            f"{forceDAQVersion}",
             [self.left, self.top],
             text_size=15,
+            text_colour=None
         )
-        self.add_text_line_left("(p) pause/unpause", [self.left, self.bottom])
-        self.add_text_line_left("(v) switch view", [self.left + 160, self.bottom + 20])
-        self.add_text_line_left("(f) switch filtered", [self.left + 160, self.bottom])
+        col = expy_constants.C_GREY
+        if not no_pause_option:
+            self.add_text_line_left("P: pause/unpause saving", [self.left, self.bottom + 20], text_colour=col)
+        self.add_text_line_left("B: set baseline", [self.left, self.bottom], text_colour=col)
+        self.add_text_line_left("V: toggle view", [self.left + 190, self.bottom + 20], text_colour=col)
+        self.add_text_line_left("F: toggle show filtered", [self.left + 190, self.bottom], text_colour=col)
         self.add_text_line_left(
-            "(+/-): axes scaling", [self.left + 340, self.bottom + 20]
+            "+/-: axes scaling", [self.left + 380, self.bottom + 20], text_colour=col
         )
-        self.add_text_line_left("(up/down): axes shift", [self.left + 340, self.bottom])
+        self.add_text_line_left("up/down: axes shift", [self.left + 380, self.bottom], text_colour=col)
         self.add_text_line_left(
-            "(t): change thresholds", [self.left + 560, self.bottom]
+            "T: change thresholds", [self.left + 580, self.bottom], text_colour=col
         )
-        self.add_text_line_right("(q) quit recording", [self.right, self.bottom])
+        self.add_text_line_right("Q: quit recording", [self.right, self.bottom], text_colour=col)
+
         self.add_text_line_right(txt_top_center, [self.right, self.top], text_size=15)
         self.add_text_line_centered(txt_top_left, [0, self.top], text_size=15)
-
-    @staticmethod
-    def _text_line(text, position, text_size, text_colour):
-        """helper function"""
-        return stimuli.TextLine(
-            text, position=position, text_size=text_size, text_colour=text_colour
-        )
 
     def add_text_line_centered(
         self, text, position, text_size=12, text_colour=None
@@ -93,7 +97,7 @@ class RecordingScreen(object):
         if text_colour is None:
             text_colour = self.text_colour
         self.elements.append(
-            RecordingScreen._text_line(text, position, text_size, text_colour)
+            make_text_line(text, position, text_size, text_colour)
         )
 
     def add_text_line_right(
@@ -102,7 +106,7 @@ class RecordingScreen(object):
         """text_line right aligned"""
         if text_colour is None:
             text_colour = self.text_colour
-        txt = RecordingScreen._text_line(text, position, text_size, text_colour)
+        txt = make_text_line(text, position, text_size, text_colour)
         txt.move((-1 * (txt.surface_size[0] / 2), 0))
         self.elements.append(txt)
 
@@ -112,7 +116,7 @@ class RecordingScreen(object):
         """text line left aligned"""
         if text_colour is None:
             text_colour = self.text_colour
-        txt = RecordingScreen._text_line(text, position, text_size, text_colour)
+        txt = make_text_line(text, position, text_size, text_colour)
         txt.move((txt.surface_size[0] / 2, 0))
         self.elements.append(txt)
 
@@ -122,7 +126,7 @@ class RecordingScreen(object):
         for elem in self.elements:
             elem.plot(canvas)
         if len(infotext) > 0:
-            RecordingScreen._text_line(
+            make_text_line(
                 text=infotext, position=[0, 0], text_size=36,
                 text_colour=self.text_colour
             ).plot(canvas)

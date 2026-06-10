@@ -1,6 +1,7 @@
 __author__ = "Oliver Lindemann"
 
 
+from time import sleep
 from typing import Tuple
 
 from expyriment import io, misc
@@ -115,7 +116,7 @@ class GUIStatus(object):
 
         if self.recorder.has_file_writer:
             if self.pause_recording:
-                info_recording += "PAUSED RECORDING"
+                info_recording += "SAVING PAUSED "
                 txt_col = expy_constants.C_RED
             else:
                 info_recording += "SAVING"
@@ -134,7 +135,9 @@ class GUIStatus(object):
             window_size=self.screen_size,
             txt_top_center=info_file,
             txt_top_left=info_recording,
-            text_colour=txt_col)
+            text_colour=txt_col,
+            no_pause_option = not self.recorder.has_file_writer
+            )
 
     def check_refresh_required(self):
         """also resets clock"""
@@ -180,9 +183,12 @@ class GUIStatus(object):
             self.background = self._make_background()
             self.background.stimulus().present()
 
-        elif key == misc.constants.K_b and self.pause_recording:
+        elif key == misc.constants.K_b:
             self.background.stimulus("New baseline").present()
             self.recorder.determine_biases()
+            sleep(1)
+            self.background.stimulus().present()
+
 
         elif key == misc.constants.K_KP_MINUS:
             self.scaling_plotter.increase_data_range()
