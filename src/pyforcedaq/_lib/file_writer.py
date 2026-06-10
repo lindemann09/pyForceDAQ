@@ -4,8 +4,7 @@ from pathlib import Path
 from queue import Empty
 
 from .settings import RecordingSettings
-from .types import (TAG_COMMENTS, TAG_DAQEVENT, TAG_UDPDATA, DAQEvents,
-                    ForceSensorData, UDPData)
+from .types import TAG_COMMENTS, ForceSensorData
 
 NEWLINE = "\n"
 ENCODING = "utf-8"
@@ -90,11 +89,6 @@ class FileWriter(Process):
                         txt += float_format.format(x)
                 txt = txt[:-1] + NEWLINE
 
-            elif isinstance(d, DAQEvents):
-                txt = f"{TAG_DAQEVENT},{d.time},{str(d.code)}{NEWLINE}"
-
-            elif isinstance(d, UDPData):
-                txt = f"{TAG_UDPDATA},{d.time},{d.unicode}{NEWLINE}"
             elif isinstance(d, str):
                 txt = f"{TAG_COMMENTS} {d}"
             else:

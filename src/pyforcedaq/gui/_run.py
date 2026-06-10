@@ -7,7 +7,6 @@ __author__ = "Oliver Lindemann"
 import logging
 import os
 from pathlib import Path
-from pickle import dumps
 from time import sleep
 from typing import List
 
@@ -20,25 +19,21 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import AppSettings, GUISettings, SensorSettings
+from .._lib.types import ForceSensorData
 from ..constants import DEFAULT_OUTPUT_FILENAME
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator
 from ._plotter import PlotterThread
 
-# eedback
-COMMAND_STR = b"$"
-RESPONSE_MINMAX = COMMAND_STR + b"xRM1"
-RESPONSE_MINMAX2 = COMMAND_STR + b"xRM2"
-CHANGED_LEVEL = COMMAND_STR + b"xCL1"
-CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
+# Feedback
+
+RESPONSE_MINMAX = "RM"
+RESPONSE_MINMAX2 = "RM2"
+CHANGED_LEVEL = "CL"
+CHANGED_LEVEL2 = "CL2"
 
 def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[str]):
-    """udp command:
-    "start", "pause", "stop"
-    "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
-    "thresholds stop" : stop level detection
-    """
 
     indicator_grid = 70  # distance between indicator center
     plotter_width = 900
@@ -52,8 +47,10 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
     exp.keyboard.clear()
 
     last_recording_status = None
-
+    last_thresholds = None
+    recorder.lsl_events_stream.push_sample(["Recording started, " + forceDAQVersion])
     s.background.stimulus().present()
+
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
             wait_ms(100)
@@ -61,35 +58,32 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
         ################################ process keyboard
         s.process_key(exp.keyboard.check(check_for_control_keys=False))
 
-        ##############################  process udp
-        udp = recorder.process_and_write_udp_events()
-        while len(udp) > 0:
-            s.process_udp_event(udp.pop(0))
-
         ########################### process new samples
         for x in s.check_new_samples():
             s.update_history(sensor=x)
 
-            if s.thresholds is not None:
+            if s.thresholds is not None and isinstance(s.force_id_level_detect, int):
                 # level change detection
                 level_change, tmp = s.thresholds.get_level_change(
-                    s.history[x].moving_average[gs.level_detection_parameter], channel=x
+                    s.history[x].moving_average(s.force_id_level_detect), channel=x
                 )
                 if level_change:
                     if x == 1:
-                        recorder.udp.send_queue.put(CHANGED_LEVEL2 + dumps(tmp))  # type: ignore
+                        resp = f"{CHANGED_LEVEL}-{tmp}"
                     else:
-                        recorder.udp.send_queue.put(CHANGED_LEVEL + dumps(tmp))  # type: ignore
+                        resp = f"{CHANGED_LEVEL2}-{tmp}"
+                    recorder.lsl_events_stream.push_sample([resp])
 
-                # minmax detection
-                tmp = s.thresholds.get_response_minmax(
-                    s.history[x].moving_average[gs.level_detection_parameter], channel=x
-                )
-                if tmp is not None:
-                    if x == 1:
-                        recorder.udp.send_queue.put(RESPONSE_MINMAX2 + dumps(tmp))  # type: ignore
-                    else:
-                        recorder.udp.send_queue.put(RESPONSE_MINMAX + dumps(tmp))  # type: ignore
+                ## minmax detection FIXME needs to call first  "set_response_minmax_detection"
+                # tmp = s.thresholds.get_response_minmax(
+                #     s.history[x].moving_average(s.force_id_level_detect), channel=x
+                # )
+                # if tmp[0] is not None:
+                #     if x == 1:
+                #         resp = f"{RESPONSE_MINMAX}-{tmp}"
+                #     else:
+                #         resp = f"{RESPONSE_MINMAX2}-{tmp}"
+                #     recorder.lsl_events_stream.push_sample([resp])
 
         ######################## show pause or recording screen
         if s.pause_recording != last_recording_status:
@@ -106,10 +100,12 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
         if s.check_refresh_required():  # do not give priority to visual output
             update_rects = []
 
-            if s.check_thresholds_changed():
+            if s.thresholds != last_thresholds:
+                # thresholds have changed
                 _draw_plotter_thread_thresholds(
                     plotter_thread, s.thresholds, s.scaling_plotter
                 )
+                last_thresholds = s.thresholds
 
             if s.plot_indicator:
                 ############################################  plot_indicator
@@ -132,7 +128,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
                         + 0.5 * indicator_grid
                     )
 
-                    if cnt == gs.level_detection_parameter:
+                    if cnt == s.force_id_level_detect:
                         thr = s.thresholds
                     else:
                         thr = None
@@ -236,11 +232,11 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
                     tmp = np.array(
                         list(
                             map(
-                                lambda x: s.history[x[0]].moving_average[x[1]],
+                                lambda x: s.history[x[0]].moving_average(x[1]),
                                 s.plot_data_plotter,
                             )
                         ),
-                        dtype=float,
+                        dtype=np.float64,
                     )
                 else:
                     tmp = np.array(
@@ -250,7 +246,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
                                 s.plot_data_plotter,
                             )
                         ),
-                        dtype=float,
+                        dtype=np.float64,
                     )
 
                 if s.thresholds is not None:
@@ -316,33 +312,31 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
-            #FIXME Threshold levels down work
-
             # Sensor info
             pos = (200, 250)
             tmp = stimuli.Canvas(
-                position=pos, size=(400, 50), colour=misc.constants.C_BLACK
+                position=pos, size=(600, 50), colour=misc.constants.C_BLACK
             )
             tmp.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(tmp, exp.screen.size))
             if s.thresholds is not None:
                 if s.n_sensors > 1:
                     tmp = [
-                        s.thresholds.get_level(s.level_detection_parameter_average(0)),
-                        s.thresholds.get_level(s.level_detection_parameter_average(1)),
+                        s.thresholds.get_level(s.get_average_level_detection_parameter(0)),
+                        s.thresholds.get_level(s.get_average_level_detection_parameter(1)),
                     ]
                 else:
-                    tmp = s.thresholds.get_level(s.level_detection_parameter_average(0))
+                    tmp = s.thresholds.get_level(s.get_average_level_detection_parameter(0))
+
 
                 txt = stimuli.TextBox(
                     position=pos,
-                    size=(400, 50),
+                    size=(600, 50),
                     text_size=15,
                     text="T: {0} L: {1}".format(s.thresholds, tmp),
                     text_colour=misc.constants.C_YELLOW,
                     text_justification=0,
                 )
-
                 txt.present(update=False, clear=False)
 
             pos = (400, 250)
@@ -362,30 +356,13 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
                 )
                 txt.present(update=False, clear=False)
 
-            # last_udp input
-            if s.last_udp_data is not None:
-                pos = (420, 250)
-                stimuli.Canvas(
-                    position=pos, size=(200, 30), colour=misc.constants.C_BLACK
-                ).present(update=False, clear=False)
-                txt = stimuli.TextBox(
-                    position=pos,
-                    size=(200, 30),
-                    # background_colour=(30,30,30),
-                    text_size=15,
-                    text="UDP:" + str(s.last_udp_data),
-                    text_colour=misc.constants.C_YELLOW,
-                    text_justification=0,
-                )
-                txt.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(txt, exp.screen.size))
-
             pygame.display.update(update_rects)
             # end plotting screen
 
         ##### end main  loop
 
     recorder.pause_saving()
+    recorder.lsl_events_stream.push_sample(["Recording stopped"])
     s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.join()
@@ -435,15 +412,13 @@ def run(settings: AppSettings):
     pygame.display.set_caption(f"pyforceDAQ {forceDAQVersion}")
 
     icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.png")
-    print(f"Loading icon from {icon_path}")
     pygame.display.set_icon(pygame.image.load(icon_path))
 
     logo_text_line("Initializing Force Recording").present()
     show_logo_time = 0.5
     recorder = DataRecorder(
         recording_settings=rs,
-        force_sensor_settings=sensor_settings,
-        poll_udp_connection=False,  # FIXME remove UDP polling from recorder and put it in main loop
+        force_sensor_settings=sensor_settings
     )
 
     if rs.save_data:

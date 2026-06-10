@@ -5,34 +5,13 @@ __version__ = "0.5"
 
 import atexit
 import logging
-import os
 import socket
 from multiprocessing import Event, Process, Queue
-from subprocess import check_output
 
 from .clock import local_clock, wait_ms
+from .misc import get_lan_ip
 from .process_priority_manager import get_priority
 from .types import UDPData
-
-
-def get_lan_ip():
-    if os.name == "nt":
-        # Windows
-        return socket.gethostbyname(socket.gethostname())
-    else:
-        # Linux and macOS
-        try:
-            # Try Linux command first
-            rtn = check_output(["hostname", "-I"]).decode().strip()
-            return rtn.split()[0] if rtn else None
-        except:
-            try:
-                # Fallback to macOS command
-                rtn = check_output(["ipconfig", "getifaddr", "en0"]).decode().strip()
-                return rtn if rtn else None
-            except:
-                # Fallback to socket method if both commands fail
-                return socket.gethostbyname(socket.gethostname())
 
 
 class UDPConnection(object):
@@ -196,7 +175,7 @@ class UDPConnectionProcess(Process):
         # Server that prints each input and echos it to the client
         # that is currently connected
 
-        from udp_connection import UDPConnectionProcess, Queue
+        from pyforcedaq._lib.udp_connection import UDPConnectionProcess, Queue
 
         receive_queue = Queue()
         udp_p = UDPConnectionProcess(receive_queue=receive_queue)

@@ -62,7 +62,8 @@ class SensorProcess(Process):
         self._np_dat = np.frombuffer(
             self._dat.get_obj(), dtype=np.float64
         )  # numpy view
-        self._sample_cnt = Value(ct.c_int64, 0)
+        self._saved_sample_cnt = Value(ct.c_int64, 0)
+        self._total_sample_cnt = Value(ct.c_int64, 0)
         self.flag_sensor_bias_is_determined = Event()
         self._flag_quit_request = Event()
         self.__flag_is_saving = Event()
@@ -107,7 +108,10 @@ class SensorProcess(Process):
         return self._np_dat[3:6]
 
     def get_saved_sample_cnt(self) -> int:
-        return self._sample_cnt.value
+        return self._saved_sample_cnt.value
+
+    def get_total_sample_cnt(self) -> int:
+        return self._total_sample_cnt.value
 
     def determine_bias(self):
         self.flag_sensor_bias_is_determined.clear()
@@ -144,6 +148,7 @@ class SensorProcess(Process):
         if self.recording_settings.lsl_stream:
             lsl_data_steam.init(
                 name=f"Force_{sensor.device_label}",
+                content_type="force",
                 n_channels=sum(stream_forces),
                 stream_id=f"RF_{sensor.device_label}",
                 freq=self.sensor_settings.rate,
@@ -155,6 +160,7 @@ class SensorProcess(Process):
             if n_hardware_trigger > 0:
                 lsl_hardware_trigger_stream.init(
                     name=f"Trigger_{sensor.device_label}",
+                    content_type="Marker",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{sensor.device_label}",
                     channel_format=cf_float32,
@@ -192,31 +198,28 @@ class SensorProcess(Process):
                 continue
 
             ## LSL
-            if lsl_data_steam.is_init:
-                # stream only select forces
-                lsl_data_steam.outlet.push_sample(d.forces[stream_forces])  # type: ignore
+            lsl_data_steam.push_sample(d.forces[stream_forces])
             if lsl_hardware_trigger_stream.is_init:
                 tr = d.trigger[stream_trigger]
                 if any(tr):  # only stream if at least one trigger is active
                     lsl_hardware_trigger_stream.outlet.push_sample(tr)  # type: ignore
 
             # write to shared memory and file writer queue
+            self._total_sample_cnt.value += 1 # type: ignore
             self._dat[:] = d.forces
             fifo.append(d.forces) # for bias determination
 
             if self.is_saving() and self._file_writer_queue is not None:
                 self._file_writer_queue.put(d)
-                self._sample_cnt.value += 1  # type: ignore
+                self._saved_sample_cnt.value += 1  # type: ignore
 
             if not self.flag_sensor_bias_is_determined.is_set():
                 # new baseline requested
                 sensor.set_bias(np.array(fifo))
                 self.flag_sensor_bias_is_determined.set()
-                # FIXME determine bias marker event?
 
         # stop process
         self.pause_saving()
         sensor.daq.stop_data_acquisition()
         logging.info("Sensor quit, %s", sensor.device_label)
 
-# FIXME check trigger processing and UDP connections

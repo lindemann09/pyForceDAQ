@@ -1,3 +1,6 @@
+from typing import List
+
+from numpy import typing as npt
 from pylsl import (
     StreamInfo,
     StreamOutlet,
@@ -24,6 +27,7 @@ class LSLSream:
     def init(
         self,
         name: str,
+        content_type: str,
         n_channels: int,
         stream_id: str,
         freq: int,
@@ -35,12 +39,13 @@ class LSLSream:
 
         Args:
             name: name of the stream
+            content_type: content type of stream. By convention LSL uses the content
+                types defined in the XDF file format specification where
             n_channels: number of channels per sample
             channel_format: format/type of each channel (ex: string, int, ...)
                             same format for each channel
             stream_id: unique identifier of the stream
-            content_type: content type of stream. By convention LSL uses the content
-                types defined in the XDF file format specification where
+
                 applicable
             freq: sampling rate in Hz
 
@@ -51,8 +56,7 @@ class LSLSream:
             return
 
         info = StreamInfo(
-            name,
-            "force",
+            name, content_type,
             channel_count=n_channels,
             nominal_srate=freq,
             channel_format=channel_format,
@@ -70,7 +74,7 @@ class LSLSream:
         self._is_init = True
         self.outlet = StreamOutlet(info)
 
-    def push_sample(self, sample: list):
+    def push_sample(self, sample: List | npt.NDArray):
         """Push a sample to the LSL stream if it is initialized."""
         if not self._is_init:
             # Don't do anything

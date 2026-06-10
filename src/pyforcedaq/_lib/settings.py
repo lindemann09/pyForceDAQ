@@ -152,6 +152,7 @@ class RecordingSettings(ABCSettings):
 
 @dataclass
 class GUISettings(ABCSettings):
+
     level_detection_parameter: str = "Fz"
     window_font: str = "freemono"
     moving_average_size: int = 5
@@ -173,7 +174,6 @@ class GUISettings(ABCSettings):
     plot_data_plotter_for_two_sensors: list = field(
         default_factory=lambda: [(0, 2), (1, 2)]
     )
-
 
 class AppSettings(object):
     def __init__(self, filename: str | Path):

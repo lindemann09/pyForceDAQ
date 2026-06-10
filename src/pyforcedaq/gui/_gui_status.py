@@ -4,6 +4,7 @@ __author__ = "Oliver Lindemann"
 from time import sleep
 from typing import List, Tuple
 
+import numpy as np
 from expyriment import io, misc
 
 from .._lib.data_recorder import DataRecorder
@@ -56,7 +57,9 @@ class GUIStatus(object):
 
         self.sensor_processes = recorder.force_sensor_processes
         self.n_sensors = len(self.sensor_processes)
-        self.history = []
+        self.force_id_level_detect = ForceSensorData.force_id(gui_settings.level_detection_parameter)
+
+        self.history: List[SensorHistory] = []
         for _ in range(self.n_sensors):
             self.history.append(
                 SensorHistory(
@@ -69,9 +72,7 @@ class GUIStatus(object):
         self.clear_screen = True
         self.thresholds = None
         self.set_marker = False
-        self.last_udp_data = None
         self._last_processed_smpl = [0] * self.n_sensors
-        self._last_thresholds = None
         self._clock = misc.Clock()
 
         self.sensor_info_str = ""
@@ -159,21 +160,13 @@ class GUIStatus(object):
         """returns list of sensors with new samples"""
         rtn = []
         for i, cnt in enumerate(
-            map(SensorProcess.get_saved_sample_cnt, self.sensor_processes)
+            map(SensorProcess.get_total_sample_cnt, self.sensor_processes)
         ):
             if self._last_processed_smpl[i] < cnt:
                 # new sample
                 self._last_processed_smpl[i] = cnt
                 rtn.append(i)
         return rtn
-
-    def check_thresholds_changed(self):
-        """returns only true if not changed between calls"""
-        if self.thresholds != self._last_thresholds:
-            # new sample
-            self._last_thresholds = self.thresholds
-            return True
-        return False
 
     def process_key(self, key):
         if key == misc.constants.K_q or key == misc.constants.K_ESCAPE:
@@ -229,19 +222,12 @@ class GUIStatus(object):
             else:
                 self.thresholds = None
 
-    def process_udp_event(self, udp_event):
-        """remote control"""
-        self.set_marker = True
-        self.last_udp_data = udp_event.byte_string
-
-    def update_history(self, sensor):
+    def update_history(self, sensor:int):
         self.history[sensor].update(self.sensor_processes[sensor].get_Fxyz())
 
-    def level_detection_parameter_average(self, sensor):
+    def get_average_level_detection_parameter(self, sensor:int) -> np.floating | None:
         """just a short cut"""
-        if sensor < self.n_sensors:
-            return self.history[sensor].moving_average[
-                self.gs.level_detection_parameter
-            ]
+        if sensor < self.n_sensors and isinstance(self.force_id_level_detect, int):
+            return self.history[sensor].moving_average(self.force_id_level_detect)
         else:
             return None

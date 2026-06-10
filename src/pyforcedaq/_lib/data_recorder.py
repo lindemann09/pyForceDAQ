@@ -14,12 +14,12 @@ from typing import List
 from .. import __version__ as forceDAQVersion
 from .. import constants
 from .file_writer import FileWriter
+from .lsl import LSLSream, cf_string
 from .misc import set_logging
 from .process_priority_manager import ProcessPriorityManager
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
-from .types import DAQEvents, ForceSensorData, PollingPriority
-from .udp_connection import UDPConnectionProcess
+from .types import ForceSensorData, PollingPriority
 
 set_logging(data_directory="data", log_file="recording.log")
 
@@ -27,14 +27,12 @@ set_logging(data_directory="data", log_file="recording.log")
 
 
 class DataRecorder(object):
-    """handles multiple sensors and udp connection"""
+    """handles multiple sensors, file writing and process management, LSL stream for events"""
 
     def __init__(
         self,
         recording_settings: RecordingSettings,
-        force_sensor_settings: SensorSettings | List[SensorSettings],
-        poll_udp_connection: bool = False,
-    ):
+        force_sensor_settings: SensorSettings | List[SensorSettings]):
         """queue_data will be saved
         see sensorprocess.__init__
 
@@ -74,17 +72,23 @@ class DataRecorder(object):
                 fst.start()
                 event_trigger.append(fst.event_trigger)
                 self.force_sensor_processes.append(fst)
+        # LSL stream
+        self.lsl_events_stream = LSLSream()
+        if self.recording_settings.lsl_stream:
+            self.lsl_events_stream.init(
+                    name="Events_forceDAQ",
+                    content_type="Marker",
+                    n_channels=1,
+                    stream_id="FE",
+                    freq=0,
+                    channel_format=cf_string,
+                    metadata={}
+                )
 
-        # create udp connection process
-        if poll_udp_connection:
-            self.udp = UDPConnectionProcess(event_trigger=event_trigger)
-            self.udp.start()
-        else:
-            self.udp = None
+
 
         # process managing FIYME needed?
         self._proc_manager = ProcessPriorityManager()
-        self._proc_manager.add_subprocess(self.udp)
         self._proc_manager.add_subprocess(self.force_sensor_processes)
         if self.recording_settings.priority is not None:
             level = PollingPriority.NORMAL
@@ -96,8 +100,6 @@ class DataRecorder(object):
             "Main process priority: %s", self._proc_manager.get_main_priority()
         )
         # logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
-
-        self._daq_event = [] # FIXME needed?
         atexit.register(self.quit)
 
     @property
@@ -145,36 +147,7 @@ class DataRecorder(object):
             fsp.join()
         self.close_data_file()
 
-        if self.udp is not None:
-            self.udp.quit()
-
         logging.info("Quit recording")
-
-    def process_and_write_udp_events(self) -> list:
-        """process udp events and return them"""
-        buffer = []
-        while True:
-            try:
-                data = self.udp.receive_queue.get_nowait()  # type: ignore
-            except AttributeError:
-                # until queue empty or no udp connection
-                break
-            buffer.append(data)
-
-        if isinstance(self.file_writer, FileWriter):
-            for dat in buffer:
-                self.file_writer.queue.put(dat)
-        return buffer
-
-    def store_daq_event(
-        self, code: str | int | float, time: float | None = None
-    ) -> None:
-        """Set marker code in file
-
-        DAQEvent will be timestamps and occur in the data output
-
-        """
-        self._daq_event.append(DAQEvents(time=time, code=code))
 
     def start_saving(self) -> None:
         """Start polling process and record
@@ -188,6 +161,7 @@ class DataRecorder(object):
         for fsp in self.force_sensor_processes:
             fsp.flag_sensor_bias_is_determined.wait() # wait is no initial bias is set yet
             fsp.start_saving()
+        self.lsl_events_stream.push_sample(["Start saving"])
 
     def pause_saving(self):
         """Pauses all polling processes and process data
@@ -201,6 +175,7 @@ class DataRecorder(object):
         # pause polling
         for fsp in self.force_sensor_processes:
             fsp.pause_saving()
+        self.lsl_events_stream.push_sample(["Pause saving"])
 
 
     def determine_biases(self) -> None:
@@ -208,6 +183,8 @@ class DataRecorder(object):
             x.determine_bias()
         for x in self.force_sensor_processes:
             x.flag_sensor_bias_is_determined.wait()
+        self.lsl_events_stream.push_sample(["New Baseline"])
+
 
     def open_data_file(
         self,
@@ -303,7 +280,9 @@ class DataRecorder(object):
 
         """
         if isinstance(self.file_writer, FileWriter):
+            self.pause_saving()
             self.file_writer.close_file()
             if self.file_writer.is_alive():
                 self.file_writer.join()
             self.file_writer.filepath = Path("")
+

@@ -10,8 +10,6 @@ from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
 TAG_COMMENTS = "#"
-TAG_DAQEVENT = TAG_COMMENTS + "T"
-TAG_UDPDATA = TAG_COMMENTS + "UDP"
 
 CTYPE_FORCES = ct.c_double * 600
 CTYPE_TRIGGER = ct.c_double * 2
@@ -181,6 +179,13 @@ class ForceSensorData(TimedData):
         self.forces = struct.forces
         self.trigger = struct.trigger
 
+    @classmethod
+    def force_id(cls, force_label) -> float | None:
+        """returns the id of the force parameter with the given label or None if not found"""
+        try:
+            return cls.forces_names.index(force_label)
+        except ValueError:
+            return None
 
 class UDPData(TimedData):
     """The UDP data class, used to store UDP DATA with timestamps"""
@@ -210,28 +215,6 @@ class UDPData(TimedData):
 
 def bytes_startswith(a, b):
     return a[: len(b)] == b
-
-
-class DAQEvents(TimedData):
-    """The DAQEvents data class, used to store trigger
-
-    See Also
-    --------
-    DataRecorder.set_daq_event()
-
-    """
-
-    def __init__(self, time: float | None, code: str | int | float):
-        """Create a DAQEvents object
-
-        Parameters
-        ----------
-        time : float
-        code : numerical or string
-
-        """
-        super().__init__(time)
-        self.code = code
 
 
 class Thresholds(object):
@@ -268,7 +251,7 @@ class Thresholds(object):
     def thresholds(self):
         return self._thresholds
 
-    def get_level(self, value):
+    def get_level(self, value) -> int:
         """return [int]
         int: the level of current sensor value depending of thresholds (array)
 
@@ -298,20 +281,14 @@ class Thresholds(object):
         self._minmax[channel] = None
         return self._prev_level[channel]
 
-    def get_level_change(self, value, channel=0):
+    def get_level_change(self, value, channel=0) -> tuple[bool, int] | tuple[None, None]:
         """return tuple with level_change (boolean) and current level (int)
-        if level change detection is switch on
-
-        Note: after detected level change detection is switched off!
         """
-
-        if self._prev_level[channel] is None:
-            return None, None
 
         current = self.get_level(value)
         changed = current != self._prev_level[channel]
         if changed:
-            self._prev_level[channel] = None
+            self._prev_level[channel] = current
         return changed, current
 
     def __str__(self):
@@ -333,7 +310,7 @@ class Thresholds(object):
         self._prev_level[channel] = None
         return lv
 
-    def get_response_minmax(self, value, channel=0):
+    def get_response_minmax(self, value, channel=0) -> tuple[int, int] | tuple[None, None]:
         """checks for response minimum and maximum if set_response_minmax_detection is switch on
         With this function you add a sample and check if the response can be classified. If so,
         it returns a tuple with the minimum and maximum response level during the response period
@@ -346,7 +323,7 @@ class Thresholds(object):
         """
 
         if self._minmax[channel] is None:
-            return None
+            return None, None
 
         rtn = self._minmax[channel].process(self.get_level(value))
         if rtn is not None:

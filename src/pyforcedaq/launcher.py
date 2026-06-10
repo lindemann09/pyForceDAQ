@@ -6,9 +6,8 @@ from typing import List
 import PySimpleGUI as _sg
 
 from . import __version__, constants
-from ._lib.misc import list_settings_files
+from ._lib.misc import get_lan_ip, list_settings_files
 from ._lib.settings import AppSettings
-from ._lib.udp_connection import UDPConnection
 
 
 def _check_sensor_calibration_settings(
@@ -64,7 +63,7 @@ def _windows_run(settings: AppSettings):
         info_settings.append([_sg.Text(f"- {labels}: {cal}", text_color=col)])
 
     info = [[_sg.Text(f"version: {__version__}")]]
-    info.append([_sg.Text(f"IP address: {UDPConnection.MY_IP}")])
+    info.append([_sg.Text(f"IP address: {get_lan_ip()}")])
 
     if constants.DAQ_TYPE == constants.MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!", text_color="red")])

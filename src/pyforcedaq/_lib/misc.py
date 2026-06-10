@@ -1,7 +1,12 @@
 import logging
 import os
+import socket
 import sys
 from pathlib import Path
+from subprocess import check_output
+
+import numpy as np
+from numpy import typing as npt
 
 from ..constants import SETTINGS_FILE_EXTENSION
 from .clock import local_clock_ms
@@ -67,32 +72,26 @@ class MinMaxDetector(object):
             local_clock_ms() - self._level_change_time
         ) < self._duration_ms
 
+def get_lan_ip():
+    if os.name == "nt":
+        # Windows
+        return socket.gethostbyname(socket.gethostname())
+    else:
+        # Linux and macOS
+        try:
+            # Try Linux command first
+            rtn = check_output(["hostname", "-I"]).decode().strip()
+            return rtn.split()[0] if rtn else None
+        except:
+            try:
+                # Fallback to macOS command
+                rtn = check_output(["ipconfig", "getifaddr", "en0"]).decode().strip()
+                return rtn if rtn else None
+            except:
+                # Fallback to socket method if both commands fail
+                return socket.gethostbyname(socket.gethostname())
 
-# def find_calibration_file(calibration_folder: str, device_label: str,
-#                           calibration_suffix=".cal") -> str:
 
-#     needle = 'Serial="{0}"'.format(device_label)
-#     calibration_files = []
-#     for x in listdir(path.abspath(calibration_folder)):
-#         filename = path.join(calibration_folder, x)
-#         if path.isfile(filename) and filename.endswith(calibration_suffix):
-#             with open(filename, "r") as fl:
-#                 for l in fl:
-#                     if l.find(needle)>0:
-#                         print("Found calibration file for sensor '{0}' : {1}.".format(
-#                             device_label, filename))
-#                         calibration_files.append(filename)
-
-#     if len(calibration_files) == 1:
-#         return calibration_files[0]
-#     elif len(calibration_files) > 1:
-#         print("Multiple calibration files found for sensor '{0}'".format(device_label))
-#         for f in calibration_files:
-#             print("  - {0}".format(f))
-#         print("Please ensure that only one calibration file exists for each sensor")
-#     else:
-#         print("No calibration file found for sensor '{0}'.".format(device_label))
-#     exit()
 
 
 # Sensor History with moving average filtering and distance, velocity
@@ -105,10 +104,7 @@ class SensorHistory(object):
     """
 
     def __init__(self, history_size, number_of_parameter):
-        self.history = [[0] * number_of_parameter] * history_size
-        self.moving_average = [0] * number_of_parameter
-        self._correction_cnt = 0
-        self._previous_moving_average = self.moving_average
+        self.history = [np.zeros(number_of_parameter, dtype=np.float64) for _ in range(history_size)]
 
     def __str__(self):
         return str(self.history)
@@ -124,35 +120,16 @@ class SensorHistory(object):
 
         """
 
-        self._previous_moving_average = self.moving_average
-        pop = self.history.pop(0)
+        self.history.pop(0)
         self.history.append(values)
-        # pop first element and calc moving average
-        if self._correction_cnt > 10000:
-            self._correction_cnt = 0
-            self.moving_average = self.calc_history_average()
-        else:
-            self._correction_cnt += 1
-            self.moving_average = list(
-                map(
-                    lambda x: x[0] + (float(x[1] - x[2]) / len(self.history)),
-                    zip(self.moving_average, values, pop),
-                )
-            )
 
-    def calc_history_average(self):
-        """Calculate history averages for all sensor parameter.
+    def moving_averages(self) -> npt.NDArray[np.floating]:
+        """Returns a list of moving averages for all sensor parameters."""
+        return np.mean(self.history, axis=0)
 
-        The method is more time consuming than calling the property
-        `moving_average`. It is does however not suffer from accumulated
-        rounding-errors such as moving average.
-
-        """
-
-        s = [float(0)] * self.number_of_parameter
-        for t in self.history:
-            s = list(map(lambda x: x[0] + x[1], zip(s, t)))
-        return list(map(lambda x: x / len(self.history), s))
+    def moving_average(self, sensor:int) -> np.floating:
+        """Returns the moving average for a specific sensor parameter."""
+        return np.mean([x[sensor] for x in self.history])
 
     @property
     def history_size(self):
@@ -161,7 +138,3 @@ class SensorHistory(object):
     @property
     def number_of_parameter(self):
         return len(self.history[0])
-
-    @property
-    def previous_moving_average(self):
-        return self._previous_moving_average
