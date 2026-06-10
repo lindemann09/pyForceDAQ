@@ -7,6 +7,7 @@ __author__ = "Oliver Lindemann"
 import logging
 from pathlib import Path
 from pickle import dumps
+from time import sleep
 from typing import List
 
 import numpy as np
@@ -49,6 +50,9 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
     plotter_thread = None
     exp.keyboard.clear()
 
+    last_recording_status = None
+
+    s.background.stimulus().present()
     while not s.quit_recording:  ######## process loop
         if s.pause_recording:
             wait_ms(100)
@@ -87,18 +91,12 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                         recorder.udp.send_queue.put(RESPONSE_MINMAX + dumps(tmp))  # type: ignore
 
         ######################## show pause or recording screen
-        if s.check_recording_status_change():
-            if plotter_thread is not None:
-                plotter_thread.join()
-                plotter_thread = None
-
+        if s.pause_recording != last_recording_status:
+            last_recording_status = s.pause_recording
             if s.pause_recording:
                 recorder.pause_saving()
-                s.background.stimulus("Paused ('b' for baseline)").present()
             else:
                 recorder.start_saving()
-                s.set_start_recording_time()
-                s.background.stimulus().present()
 
         ###########################
         ########################### plotting
@@ -307,12 +305,9 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                 size=(400, 50),
                 # background_colour=(30,30,30),
                 text_size=15,
-                text="n samples (total): {0} ({1} sec.)".format(
+                text="n samples (total): {0}".format(
                     str(list(map(SensorProcess.get_saved_sample_cnt, s.sensor_processes)))[
-                        1:-1
-                    ],
-                    s.recording_duration_in_sec,
-                ),
+                        1:-1]),
                 text_colour=misc.constants.C_YELLOW,
                 text_justification=0,
             )
@@ -438,7 +433,7 @@ def run(settings: AppSettings):
     control.initialize(exp)
     exp.mouse.show_cursor()  # type: ignore #
     logo_text_line("Initializing Force Recording").present()
-
+    show_logo_time = 0.5
     recorder = DataRecorder(
         recording_settings=rs,
         force_sensor_settings=sensor_settings,
@@ -453,11 +448,13 @@ def run(settings: AppSettings):
             bkg = logo_text_line("")
             output_filename = io.TextInput("Filename", background_stimulus=bkg).get()
             output_filename = output_filename.replace(" ", "_")  # type: ignore
-
+            show_logo_time  = 0
         else:
             output_filename = DEFAULT_OUTPUT_FILENAME
 
         recorder.open_data_file(output_filename, subdirectory="data", comment_line="")
+
+    sleep(show_logo_time)
 
     _main_loop(exp, recorder=recorder, gs=settings.gui)
 

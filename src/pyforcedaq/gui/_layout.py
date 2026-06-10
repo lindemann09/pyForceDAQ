@@ -5,17 +5,17 @@ import os
 
 import pygame
 from expyriment import stimuli
-from expyriment.misc import constants
+from expyriment.misc import constants as expy_constants
 
 from .. import __version__ as forceDAQVersion
 
 colours = [
-    constants.C_RED,
-    constants.C_GREEN,
-    constants.C_YELLOW,
-    constants.C_BLUE,
-    constants.C_EXPYRIMENT_ORANGE,
-    constants.C_EXPYRIMENT_PURPLE,
+    expy_constants.C_RED,
+    expy_constants.C_GREEN,
+    expy_constants.C_YELLOW,
+    expy_constants.C_BLUE,
+    expy_constants.C_EXPYRIMENT_ORANGE,
+    expy_constants.C_EXPYRIMENT_PURPLE,
 ]
 
 
@@ -42,7 +42,7 @@ def logo_text_line(text):
         text="Version " + forceDAQVersion,
         position=(0, 80),
         text_size=14,
-        text_colour=constants.C_EXPYRIMENT_ORANGE,
+        text_colour=expy_constants.C_EXPYRIMENT_ORANGE,
     ).plot(blank)
     logo.plot(blank)
     stimuli.TextLine(text=text).plot(blank)
@@ -50,7 +50,8 @@ def logo_text_line(text):
 
 
 class RecordingScreen(object):
-    def __init__(self, window_size, txt_top_center, txt_top_left):
+
+    def __init__(self, window_size, txt_top_center, txt_top_left, text_colour):
         """Expyriment has to be intialized"""
         margin = 30
         self.left = -1 * window_size[0] / 2 + margin
@@ -58,6 +59,7 @@ class RecordingScreen(object):
         self.top = window_size[1] / 2 - margin
         self.bottom = -1 * window_size[1] / 2 + margin
 
+        self.text_colour = text_colour
         self.elements = []
         self.add_text_line_left(
             "Force Recorder " + str(forceDAQVersion),
@@ -79,31 +81,37 @@ class RecordingScreen(object):
         self.add_text_line_centered(txt_top_left, [0, self.top], text_size=15)
 
     @staticmethod
-    def _text_line(text, position, text_size=12, text_colour=(255, 150, 50)):
+    def _text_line(text, position, text_size, text_colour):
         """helper function"""
         return stimuli.TextLine(
             text, position=position, text_size=text_size, text_colour=text_colour
         )
 
     def add_text_line_centered(
-        self, text, position, text_size=12, text_colour=(255, 150, 50)
+        self, text, position, text_size=12, text_colour=None
     ):
+        if text_colour is None:
+            text_colour = self.text_colour
         self.elements.append(
             RecordingScreen._text_line(text, position, text_size, text_colour)
         )
 
     def add_text_line_right(
-        self, text, position, text_size=12, text_colour=(255, 150, 50)
+        self, text, position, text_size=12, text_colour=None
     ):
         """text_line right aligned"""
+        if text_colour is None:
+            text_colour = self.text_colour
         txt = RecordingScreen._text_line(text, position, text_size, text_colour)
         txt.move((-1 * (txt.surface_size[0] / 2), 0))
         self.elements.append(txt)
 
     def add_text_line_left(
-        self, text, position, text_size=12, text_colour=(255, 150, 50)
+        self, text, position, text_size=12, text_colour=None
     ):
         """text line left aligned"""
+        if text_colour is None:
+            text_colour = self.text_colour
         txt = RecordingScreen._text_line(text, position, text_size, text_colour)
         txt.move((txt.surface_size[0] / 2, 0))
         self.elements.append(txt)
@@ -115,6 +123,7 @@ class RecordingScreen(object):
             elem.plot(canvas)
         if len(infotext) > 0:
             RecordingScreen._text_line(
-                text=infotext, position=[0, 0], text_size=36
+                text=infotext, position=[0, 0], text_size=36,
+                text_colour=self.text_colour
             ).plot(canvas)
         return canvas

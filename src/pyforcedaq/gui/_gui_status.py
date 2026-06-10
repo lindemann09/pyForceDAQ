@@ -10,7 +10,7 @@ from .._lib.misc import SensorHistory
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import GUISettings
 from .._lib.types import ForceSensorData, Thresholds
-from ._layout import RecordingScreen, logo_text_line
+from ._layout import RecordingScreen, expy_constants, logo_text_line
 from ._scaling import Scaling
 
 
@@ -35,30 +35,8 @@ class GUIStatus(object):
 
         self.gs = gui_settings
         self.recorder = recorder
+        self.screen_size = screen_size
 
-        if recorder.recording_settings.lsl_stream:
-            info_recording = "LSL STREAM"
-            if recorder.recording_settings.save_data:
-                info_recording += " | "
-        else:
-            info_recording = ""
-        if recorder.recording_settings.save_data:
-            info_recording += "SAVING"
-        if len(info_recording) == 0:
-            info_recording = "DATA ARE NOT SAVED OR STREAMED!"
-        if recorder.has_file_writer:
-            info_file = f"file: {recorder.file_writer.filepath.stem}" # type: ignore
-        else:
-            if recorder.recording_settings.lsl_stream:
-                info_file = "no local file"
-            else:
-                info_file = info_recording
-
-        self.background = RecordingScreen(
-            window_size=screen_size,
-            txt_top_center=info_file,
-            txt_top_left=info_recording,
-        )
         self.scaling_plotter = Scaling(
             min=gui_settings.data_min_max[0],
             max=gui_settings.data_min_max[1],
@@ -82,7 +60,6 @@ class GUIStatus(object):
                 )
             )
 
-        self._start_recording_time = 0
         self.pause_recording = True
         self.quit_recording = False
         self.clear_screen = True
@@ -90,7 +67,6 @@ class GUIStatus(object):
         self.set_marker = False
         self.last_udp_data = None
         self._last_processed_smpl = [0] * self.n_sensors
-        self._last_recording_status = None
         self._last_thresholds = None
         self._clock = misc.Clock()
 
@@ -125,12 +101,40 @@ class GUIStatus(object):
                 str(x[0]) + "_" + ForceSensorData.forces_names[x[1]]
             )
 
-    def set_start_recording_time(self):
-        self._start_recording_time = self._clock.time
+        self.background = self._make_background()
 
-    @property
-    def recording_duration_in_sec(self):
-        return (self._clock.time - self._start_recording_time) / 1000
+    def _make_background(self, default_text_colour=expy_constants.C_YELLOW) -> RecordingScreen:
+        txt_col = default_text_colour
+
+        if self.recorder.recording_settings.lsl_stream:
+            info_recording = "LSL STREAM"
+            if self.recorder.recording_settings.save_data:
+                info_recording += " | "
+        else:
+            info_recording = ""
+
+        if self.recorder.has_file_writer:
+            if self.pause_recording:
+                info_recording += "PAUSED RECORDING"
+                txt_col = expy_constants.C_RED
+            else:
+                info_recording += "SAVING"
+                txt_col = expy_constants.C_GREEN
+        if len(info_recording) == 0:
+            info_recording = "DATA ARE NOT SAVED OR STREAMED!"
+        if self.recorder.has_file_writer:
+            info_file = f"file: {self.recorder.file_writer.filepath.name}" # type: ignore
+        else:
+            if self.recorder.recording_settings.lsl_stream:
+                info_file = "no local file"
+            else:
+                info_file = info_recording
+
+        return RecordingScreen(
+            window_size=self.screen_size,
+            txt_top_center=info_file,
+            txt_top_left=info_recording,
+            text_colour=txt_col)
 
     def check_refresh_required(self):
         """also resets clock"""
@@ -139,15 +143,8 @@ class GUIStatus(object):
         else:
             intervall = self.gs.screen_refresh_interval_plotter
 
-        if not self.pause_recording and self._clock.stopwatch_time >= intervall:
+        if self._clock.stopwatch_time >= intervall:
             self._clock.reset_stopwatch()
-            return True
-        return False
-
-    def check_recording_status_change(self):
-        """returns only onces true if not changed between calls"""
-        if self.pause_recording != self._last_recording_status:
-            self._last_recording_status = self.pause_recording
             return True
         return False
 
@@ -180,6 +177,9 @@ class GUIStatus(object):
         elif key == misc.constants.K_p:
             # pause
             self.pause_recording = not self.pause_recording
+            self.background = self._make_background()
+            self.background.stimulus().present()
+
         elif key == misc.constants.K_b and self.pause_recording:
             self.background.stimulus("New baseline").present()
             self.recorder.determine_biases()
