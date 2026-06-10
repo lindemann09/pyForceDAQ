@@ -26,7 +26,7 @@ class SensorProcess(Process):
         recording_settings: RecordingSettings,
         file_writer_queue: Optional[Queue],
         daq_type: int,
-        use_aiftt: bool
+        use_aiftt: bool = True
     ):
         """ForceSensorProcess
 

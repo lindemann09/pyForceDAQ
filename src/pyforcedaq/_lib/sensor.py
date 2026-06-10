@@ -1,6 +1,10 @@
-"""class to record force sensor data
+"""Sensor class for reading data from NI devices and converting to force data.
 
-See COPYING file distributed along with the pyForceDAQ copyright and license terms.
+Per default the NIDAQMX library is installed and access the NI instruments data.
+If the PyDAQMX library is installed, this library is used instead.
+
+For conversion to force data, the ATI dll will be used (use_aiftt=True, DEFAULT). Alternatively, you
+might use your own complied dll and pyforceDAQ own interface to the DLL (use_aiftt=False)
 """
 
 __author__ = "Oliver Lindemann"
@@ -22,7 +26,7 @@ class Sensor(object):
 
     def __init__(self, s_settings: SensorSettings,
                  daq_type: int,
-                 use_aiftt: bool):
+                 use_aiftt: bool=True):
         """DOC"""
 
         assert isinstance(s_settings, SensorSettings)
@@ -72,7 +76,7 @@ class Sensor(object):
         """sets the bias"""
 
         if np.shape(data)[1] != len(Sensor.SENSOR_CHANNELS):
-            raise ValueError(f"biasdata should have the shape (x, n_sensor_channels)")
+            raise ValueError("Bias data should have the shape (x, n_sensor_channels)")
 
         if self._calib_converter is not None:
             self._calib_converter.bias(np.mean(data, axis=0))
