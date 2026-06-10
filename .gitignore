@@ -59,6 +59,7 @@ docs/_build/
 .idea/
 
 .DS_Store
+calibration/
 
 # pyForceDAQ
 data/
