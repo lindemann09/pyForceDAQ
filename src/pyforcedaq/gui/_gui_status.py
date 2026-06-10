@@ -2,7 +2,7 @@ __author__ = "Oliver Lindemann"
 
 
 from time import sleep
-from typing import Tuple
+from typing import List, Tuple
 
 from expyriment import io, misc
 
@@ -27,16 +27,19 @@ def _text2number_array(txt):
 
 
 class GUIStatus(object):
+
     def __init__(
         self,
         gui_settings: GUISettings,
         recorder: DataRecorder,
         screen_size: Tuple[int, int],
+        top_left_info:List[str] = [""]
     ):
 
         self.gs = gui_settings
         self.recorder = recorder
         self.screen_size = screen_size
+        self.top_left_info = top_left_info
 
         self.scaling_plotter = Scaling(
             min=gui_settings.data_min_max[0],
@@ -133,8 +136,9 @@ class GUIStatus(object):
 
         return RecordingScreen(
             window_size=self.screen_size,
-            txt_top_center=info_file,
-            txt_top_left=info_recording,
+            txt_top_left=self.top_left_info,
+            txt_top_right=info_file,
+            txt_top_center=info_recording,
             text_colour=txt_col,
             no_pause_option = not self.recorder.has_file_writer
             )

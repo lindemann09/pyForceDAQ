@@ -2,6 +2,8 @@ __author__ = "Oliver Lindemann"
 
 # helper functions
 import os
+from copy import copy
+from typing import List
 
 import pygame
 from expyriment import stimuli
@@ -31,6 +33,7 @@ def get_pygame_rect(stimulus, screen_size):
     return pygame.Rect(rect_pos, stim_size)
 
 
+
 def logo_text_line(text):
     blank = stimuli.Canvas(size=(600, 400))
     logo = stimuli.Picture(
@@ -56,7 +59,11 @@ def make_text_line(text, position, text_size, text_colour):
 
 class RecordingScreen(object):
 
-    def __init__(self, window_size, txt_top_center, txt_top_left, text_colour,
+    def __init__(self, window_size,
+                 txt_top_left: List[str],
+                 txt_top_center:str,
+                 txt_top_right:str,
+                 text_colour,
                  no_pause_option:bool = False):
         # NOTE: Expyriment has to be intialized
         margin = 30
@@ -67,12 +74,14 @@ class RecordingScreen(object):
 
         self.text_colour = text_colour
         self.elements = []
-        self.add_text_line_left(
-            f"{forceDAQVersion}",
-            [self.left, self.top],
-            text_size=15,
-            text_colour=None
-        )
+
+        txt_list = copy(txt_top_left)
+        txt_list.insert(0, f"Version {forceDAQVersion}")
+        for cnt, txt in enumerate(txt_list):
+            self.add_text_line_left(
+                txt,
+                [self.left, self.top - cnt * 20],
+                text_size=15,text_colour=None)
         col = expy_constants.C_GREY
         if not no_pause_option:
             self.add_text_line_left("P: pause/unpause saving", [self.left, self.bottom + 20], text_colour=col)
@@ -88,8 +97,8 @@ class RecordingScreen(object):
         )
         self.add_text_line_right("Q: quit recording", [self.right, self.bottom], text_colour=col)
 
-        self.add_text_line_right(txt_top_center, [self.right, self.top], text_size=15)
-        self.add_text_line_centered(txt_top_left, [0, self.top], text_size=15)
+        self.add_text_line_right(txt_top_right, [self.right, self.top], text_size=15)
+        self.add_text_line_centered(txt_top_center, [0, self.top], text_size=15)
 
     def add_text_line_centered(
         self, text, position, text_size=12, text_colour=None

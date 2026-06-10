@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 
 import tomlkit
 
-from ..constants import CALIBRATION_FOLDER, DATA_FOLDER
+from ..constants import CALIBRATION_FOLDER, DATA_FOLDER, SETTINGS_FILE_EXTENSION
 
 
 class DAQConfiguration(object):
@@ -185,11 +185,12 @@ class AppSettings(object):
         self.recording_section = "Recording"
 
         self.filepath = Path(filename)
+        self.filepath = self.filepath.with_suffix(SETTINGS_FILE_EXTENSION)
         if os.path.isfile(self.filepath):
             self.load()
         else:
             self.save()  # defaults
-
+            print(f"WARNING: {self.filepath} not found, creating new settings file with defaults")
         self.output_filename = ""
 
     def _asdict(self):

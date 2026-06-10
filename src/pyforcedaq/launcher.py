@@ -1,3 +1,4 @@
+import glob
 from os import path
 from pathlib import Path
 from typing import List
@@ -139,7 +140,13 @@ def load_settings_file(settings_file: str | Path) -> AppSettings:
 
 def run_launcher():
     _sg.theme("DarkBlue14")  # please make your windows colorful
-    settings = load_settings_file(constants.DEFAULT_SETTINGS_FILE)
+
+    toml_files = glob.glob("*.toml")
+    if len(toml_files) == 0:
+        settings_file = constants.DEFAULT_SETTINGS_FILE
+    else:
+        settings_file = toml_files[0]
+    settings = load_settings_file(settings_file)
 
     while True:
         event, values, settings = _windows_run(settings)

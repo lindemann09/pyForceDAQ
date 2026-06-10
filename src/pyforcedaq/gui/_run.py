@@ -19,7 +19,7 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import AppSettings, GUISettings, SensorSettings
-from ..constants import DEFAULT_OUTPUT_FILENAME, DEFAULT_SETTINGS_FILE
+from ..constants import DEFAULT_OUTPUT_FILENAME
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator
@@ -33,7 +33,7 @@ CHANGED_LEVEL = COMMAND_STR + b"xCL1"
 CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
 
 
-def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
+def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[str]):
     """udp command:
     "start", "pause", "stop"
     "thresholds = [x,...]" : start level detection for Fz parameter and set threshold
@@ -44,7 +44,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
     plotter_width = 900
     plotter_position = (0, -30)
 
-    s = GUIStatus(gui_settings=gs, recorder=recorder, screen_size=exp.screen.size)
+    s = GUIStatus(gui_settings=gs, recorder=recorder, screen_size=exp.screen.size,
+                  top_left_info=info_strings)
 
     # plotter
     plotter_thread = None
@@ -295,14 +296,15 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                     update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
             # counter
-            pos = (-230, 250)
+            pos = (-270, 240)
+
             stimuli.Canvas(
-                position=pos, size=(400, 50), colour=misc.constants.C_BLACK
+                position=pos, size=(400, 20), colour=misc.constants.C_BLACK
             ).present(update=False, clear=False)
 
             txt = stimuli.TextBox(
                 position=pos,
-                size=(400, 50),
+                size=(400, 20),
                 # background_colour=(30,30,30),
                 text_size=15,
                 text="n samples (total): {0}".format(
@@ -314,7 +316,9 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
             txt.present(update=False, clear=False)
             update_rects.append(get_pygame_rect(txt, exp.screen.size))
 
-            # Infos
+            #FIXME Threshold levels down work
+
+            # Sensor info
             pos = (200, 250)
             tmp = stimuli.Canvas(
                 position=pos, size=(400, 50), colour=misc.constants.C_BLACK
@@ -329,6 +333,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
                     ]
                 else:
                     tmp = s.thresholds.get_level(s.level_detection_parameter_average(0))
+
                 txt = stimuli.TextBox(
                     position=pos,
                     size=(400, 50),
@@ -387,11 +392,6 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings):
 
 
 def run_settings_file(settings_file: str | Path = ""):
-
-    if isinstance(settings_file, str) and len(settings_file) < 2:
-        # load default settings file if not specified
-        settings_file = DEFAULT_SETTINGS_FILE
-
     return run(AppSettings(settings_file))
 
 
@@ -456,7 +456,8 @@ def run(settings: AppSettings):
 
     sleep(show_logo_time)
 
-    _main_loop(exp, recorder=recorder, gs=settings.gui)
+    _main_loop(exp, recorder=recorder, gs=settings.gui,
+               info_strings=[f"{settings.filepath.name}"])
 
     recorder.quit()
     control.end()
