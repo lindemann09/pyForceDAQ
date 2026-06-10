@@ -2,7 +2,6 @@ __author__ = "Oliver Lindemann"
 
 # helper functions
 import os
-from copy import copy
 from typing import List
 
 import pygame
@@ -19,7 +18,6 @@ colours = [
     expy_constants.C_EXPYRIMENT_ORANGE,
     expy_constants.C_EXPYRIMENT_PURPLE,
 ]
-
 
 def get_pygame_rect(stimulus, screen_size):
     """little helper function that returns the pygame rect from stimuli"""
@@ -75,9 +73,7 @@ class RecordingScreen(object):
         self.text_colour = text_colour
         self.elements = []
 
-        txt_list = copy(txt_top_left)
-        txt_list.insert(0, f"Version {forceDAQVersion}")
-        for cnt, txt in enumerate(txt_list):
+        for cnt, txt in enumerate(txt_top_left):
             self.add_text_line_left(
                 txt,
                 [self.left, self.top - cnt * 20],

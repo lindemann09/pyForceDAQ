@@ -5,6 +5,7 @@ See COPYING file distributed along with the pyForceDAQ copyright and license ter
 __author__ = "Oliver Lindemann"
 
 import logging
+import os
 from pathlib import Path
 from pickle import dumps
 from time import sleep
@@ -31,7 +32,6 @@ RESPONSE_MINMAX = COMMAND_STR + b"xRM1"
 RESPONSE_MINMAX2 = COMMAND_STR + b"xRM2"
 CHANGED_LEVEL = COMMAND_STR + b"xCL1"
 CHANGED_LEVEL2 = COMMAND_STR + b"xCL2"
-
 
 def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[str]):
     """udp command:
@@ -432,6 +432,12 @@ def run(settings: AppSettings):
 
     control.initialize(exp)
     exp.mouse.show_cursor()  # type: ignore #
+    pygame.display.set_caption(f"pyforceDAQ {forceDAQVersion}")
+
+    icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.png")
+    print(f"Loading icon from {icon_path}")
+    pygame.display.set_icon(pygame.image.load(icon_path))
+
     logo_text_line("Initializing Force Recording").present()
     show_logo_time = 0.5
     recorder = DataRecorder(

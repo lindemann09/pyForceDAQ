@@ -168,7 +168,6 @@ def run_launcher():
             if ch == "No":
                 return  # quit
         from . import gui
-
         gui.run(settings)
     else:
         pass

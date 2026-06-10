@@ -1,6 +1,6 @@
 [project]
 name = "pyForceDAQ"
-version = "2.0.5-dev5"
+version = "2.0.6"
 description = "A Python package for data acquisition and analysis in force-based experiments."
 authors = [
     { name = "Oliver Lindemann", email = "lindemann@essb.eur.nl" },

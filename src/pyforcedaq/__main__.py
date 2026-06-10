@@ -22,14 +22,6 @@ def cli():
     parser.add_argument("SETTINGS_FILE", nargs="?", default="", help="settings file")
 
     parser.add_argument(
-        "-l",
-        "--launcher",
-        action="store_true",
-        default=False,
-        help="Run with launcher GUI to edit settings and start recording",
-    )
-
-    parser.add_argument(
         "-o",
         "--omit-launcher",
         action="store_true",
@@ -70,9 +62,12 @@ def cli():
     else:
         from .gui import run_settings_file
 
+        if len(args.SETTINGS_FILE) == 0:
+            print("No settings file provided, can't start recording")
+            exit()
+
         run_settings_file(args.SETTINGS_FILE)
 
 
 if __name__ == "__main__":  # required because of threading
-    cli()
     cli()
