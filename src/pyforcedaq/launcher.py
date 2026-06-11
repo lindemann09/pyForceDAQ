@@ -1,3 +1,4 @@
+import os
 from os import path
 from pathlib import Path
 from typing import List
@@ -105,7 +106,8 @@ def _windows_run(settings: AppSettings):
         ]
     )
 
-    window = _sg.Window("ForceGUI".format(), layout)
+    icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.ico")
+    window = _sg.Window("ForceGUI".format(), layout,  icon=icon_path)
     event, values = window.read()
 
     settings.recording.lsl_stream = values["lsl"]

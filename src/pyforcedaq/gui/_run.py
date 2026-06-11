@@ -411,7 +411,7 @@ def run(settings: AppSettings):
     exp.mouse.show_cursor()  # type: ignore #
     pygame.display.set_caption(f"pyforceDAQ {forceDAQVersion}")
 
-    icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.png")
+    icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.ico")
     pygame.display.set_icon(pygame.image.load(icon_path))
 
     logo_text_line("Initializing Force Recording").present()

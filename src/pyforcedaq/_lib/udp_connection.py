@@ -1,4 +1,7 @@
-"""A lan connect class using udp"""
+"""A lan connect class using udp
+
+currently not used in pyForceDAQ but might be useful for future extensions.
+"""
 
 __author__ = "Oliver Lindemann <oliver@expyriment.org>"
 __version__ = "0.5"
@@ -10,7 +13,6 @@ from multiprocessing import Event, Process, Queue
 
 from .clock import local_clock, wait_ms
 from .misc import get_lan_ip
-from .process_priority_manager import get_priority
 from .types import UDPData
 
 
@@ -260,11 +262,7 @@ class UDPConnectionProcess(Process):
                 # event pooling changed
                 prev_event_polling = self._event_is_polling.is_set()
                 if prev_event_polling:
-                    logging.warning(
-                        "UDP start, pid {}, priority {}".format(
-                            self.pid, get_priority(self.pid)
-                        )
-                    )
+                    logging.warning(f"UDP start, pid {self.pid}")
                 else:
                     logging.warning("UDP stop")
 
