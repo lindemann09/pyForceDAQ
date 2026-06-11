@@ -15,23 +15,6 @@ CTYPE_FORCES = ct.c_double * 600
 CTYPE_TRIGGER = ct.c_double * 2
 
 
-class PollingPriority(object):  # TODO needed?
-    NORMAL = "normal"
-    HIGH = "high"
-    REALTIME = "real_time"
-
-    @staticmethod
-    def get_priority(priority_str):
-        """returns normal or the higher priority if detected"""
-        if isinstance(priority_str, str):
-            if priority_str.find("real") >= 0 and priority_str.find("time") >= 0:
-                return PollingPriority.REALTIME
-            elif priority_str.startswith("high"):
-                return PollingPriority.HIGH
-
-        return PollingPriority.NORMAL
-
-
 class CTypesForceSensorData(ct.Structure):
     _fields_ = [
         ("sensor_id", ct.c_int),
@@ -207,7 +190,7 @@ class UDPData(TimedData):
 
     @property
     def unicode(self):
-        return self.byte_string.decode("utf-8", "replace")
+        return self.byte_string.decode("utf-8", "replace")  # pyright: ignore[reportAttributeAccessIssue]
 
     def startswith(self, byte_string):
         return self.byte_string[: len(byte_string)] == byte_string

@@ -12,7 +12,6 @@ from numpy import typing as npt
 
 from .. import constants
 from .lsl import LSLSream, cf_float32
-from .process_priority_manager import get_priority
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
@@ -169,11 +168,11 @@ class SensorProcess(Process):
 
         sensor.daq.start_data_acquisition()
         logging.info(
-            "Sensor start, %s, pid %s, priority %s",
+            "Sensor start, %s, pid %s",
             sensor.device_label,
-            self.pid,
-            get_priority(self.pid),
+            self.pid
         )
+        # FIXME logging is inconsistent, check logging and console output
 
         # polling loop
         self.pause_saving()

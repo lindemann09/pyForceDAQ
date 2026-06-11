@@ -16,10 +16,9 @@ from .. import constants
 from .file_writer import FileWriter
 from .lsl import LSLSream, cf_string
 from .misc import set_logging
-from .process_priority_manager import ProcessPriorityManager
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
-from .types import ForceSensorData, PollingPriority
+from .types import ForceSensorData
 
 set_logging(data_directory="data", log_file="recording.log")
 
@@ -85,21 +84,6 @@ class DataRecorder(object):
                     metadata={}
                 )
 
-
-
-        # process managing FIYME needed?
-        self._proc_manager = ProcessPriorityManager()
-        self._proc_manager.add_subprocess(self.force_sensor_processes)
-        if self.recording_settings.priority is not None:
-            level = PollingPriority.NORMAL
-        else:
-            level = PollingPriority.get_priority(self.recording_settings.priority)
-        self._proc_manager.set_subprocess_priorities(level=level, disable_gc=False)
-
-        logging.info(
-            "Main process priority: %s", self._proc_manager.get_main_priority()
-        )
-        # logging.info("Subprocess priorities: {}".format(self._proc_manager.get_subprocess_priorities()))
         atexit.register(self.quit)
 
     @property
