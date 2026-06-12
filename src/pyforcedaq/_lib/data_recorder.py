@@ -226,7 +226,8 @@ class DataRecorder(object):
             else:
                 break
 
-        self.file_writer.start_recording(file_path=file_path, append_mode=False)
+        self.file_writer.set_file(file_path=file_path, append_mode=False)
+        self.file_writer.start()
         logging.info("new file: %s", file_path)
 
         self.file_writer.queue.put(
@@ -268,5 +269,5 @@ class DataRecorder(object):
             self.file_writer.close_file()
             if self.file_writer.is_alive():
                 self.file_writer.join()
-            self.file_writer.filepath = Path("")
+            self.file_writer.set_file("")
 
