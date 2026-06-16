@@ -6,8 +6,8 @@ from typing import List
 import PySimpleGUI as _sg
 
 from . import __version__, constants
-from ._lib.misc import get_lan_ip, list_settings_files
-from ._lib.settings import AppSettings
+from ._lib.misc import get_lan_ip
+from ._lib.settings import AppSettings, list_settings_files
 
 
 def _check_sensor_calibration_settings(
@@ -33,12 +33,11 @@ def _check_sensor_calibration_settings(
     return rtn
 
 
-def _windows_run(settings: AppSettings):
+def _windows_run(settings: AppSettings, lst_settings: List[str]):
     rs = settings.recording
     n_sensor = len(rs.device_labels)
 
     info_settings = []
-    lst_settings = list_settings_files()
     info_settings.append(
         [
             _sg.Combo(
@@ -120,7 +119,7 @@ def _windows_run(settings: AppSettings):
     return event, values, settings
 
 
-def load_settings_file(settings_file: str | Path) -> AppSettings:
+def _load_settings_file(settings_file: str | Path) -> AppSettings:
     settings = AppSettings(filename=settings_file)
 
     rs = settings.recording
@@ -141,20 +140,20 @@ def load_settings_file(settings_file: str | Path) -> AppSettings:
 def run_launcher():
     _sg.theme("DarkBlue14")  # please make your windows colorful
 
-    toml_files = list_settings_files()
-    if len(toml_files) == 0:
-        settings_file = constants.DEFAULT_SETTINGS_FILE
+    app_setting_files = list_settings_files()
+    if len(app_setting_files) == 0:
+        raise FileNotFoundError("No settings files found. Please create a settings file first.")
     else:
-        settings_file = toml_files[0]
-    settings = load_settings_file(settings_file)
+        settings_file = app_setting_files[0]
+    settings = _load_settings_file(settings_file)
 
     while True:
-        event, values, settings = _windows_run(settings)
+        event, values, settings = _windows_run(settings, app_setting_files)
 
         if event == "Save":
             settings.save()
         elif event == "Settings_file":
-            settings = load_settings_file(values["Settings_file"])
+            settings = _load_settings_file(values["Settings_file"])
         else:
             break
 

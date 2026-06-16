@@ -30,11 +30,6 @@ def set_logging(data_directory, log_file):
     return log_file
 
 
-def list_settings_files():
-    """Returns a list of all settings files in the current directory."""
-    return [f.name for f in Path(".").glob(f"*{SETTINGS_FILE_EXTENSION}")]
-
-
 def N2g(N):
     kg = N / 9.81
     return kg * 1000

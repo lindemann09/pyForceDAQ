@@ -1,6 +1,7 @@
 import argparse
 
 from . import __author__, __version__, constants
+from ._lib.settings import AppSettings, list_settings_files
 
 
 def print_version():
@@ -57,8 +58,15 @@ def cli():
             exit()
 
         from .launcher import run_launcher
+        try:
+            return run_launcher()
+        except FileNotFoundError:
+            ans = input("No settings file found. Create one with defaults? [Y/n]: ")
+            if ans.lower() == "y" or ans.lower() == "yes":
+                AppSettings(constants.DEFAULT_SETTINGS_FILE, create_if_not_exists=True)  # create new settings file with defaults
+            else:
+                exit()
 
-        return run_launcher()
     else:
         from .gui import run_settings_file
 

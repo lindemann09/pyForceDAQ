@@ -19,7 +19,6 @@ from .._lib.clock import wait_ms
 from .._lib.data_recorder import DataRecorder
 from .._lib.sensor_process import SensorProcess
 from .._lib.settings import AppSettings, GUISettings, SensorSettings
-from .._lib.types import ForceSensorData
 from ..constants import DEFAULT_OUTPUT_FILENAME
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
@@ -369,7 +368,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
 
 
 def run_settings_file(settings_file: str | Path = ""):
-    return run(AppSettings(settings_file))
+    return run(AppSettings(settings_file, create_if_not_exists=False))
 
 
 def run(settings: AppSettings):

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import tomlkit
+from tomlkit.exceptions import NonExistentKey
 
 from ..constants import CALIBRATION_FOLDER, DATA_FOLDER, SETTINGS_FILE_EXTENSION
 
@@ -176,7 +177,8 @@ class GUISettings(ABCSettings):
     )
 
 class AppSettings(object):
-    def __init__(self, filename: str | Path):
+
+    def __init__(self, filename: str | Path, create_if_not_exists: bool = False):
         # defaults
         self.gui = GUISettings()
         self.gui_section = "GUI"
@@ -189,8 +191,11 @@ class AppSettings(object):
         if os.path.isfile(self.filepath):
             self.load()
         else:
-            self.save()  # defaults
-            print(f"WARNING: {self.filepath} not found, creating new settings file with defaults")
+            if create_if_not_exists:
+                self.save()  # defaults
+                print(f"Creating new settings file with defaults: {self.filepath}")
+            else:
+                raise FileNotFoundError(f"Settings file {self.filepath} not found")
         self.output_filename = ""
 
     def _asdict(self):
@@ -222,3 +227,16 @@ class AppSettings(object):
     @property
     def data_folder(self) -> Path:
         return self.filepath.parent / DATA_FOLDER
+
+
+def list_settings_files():
+    """Returns a list of all settings files in the current directory."""
+    rtn = []
+    for f in Path(".").glob(f"*{SETTINGS_FILE_EXTENSION}"):
+        try:
+            AppSettings(f)  # try to load settings file to check if it's valid
+            rtn.append(f.name)
+        except NonExistentKey:
+            pass
+
+    return rtn
