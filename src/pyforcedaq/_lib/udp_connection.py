@@ -79,10 +79,11 @@ class UDPConnection(object):
 
         # process data
         if data == UDPConnection.CONNECT:
-            # connection request
-            self.peer_ip = sender[0]
-            if not self.send(UDPConnection.COMMAND_REPLY):
-                self.peer_ip = None
+            # connection request - only accept if not already connected or from known peer
+            if self.peer_ip is None or self.peer_ip == sender[0]:
+                self.peer_ip = sender[0]
+                if not self.send(UDPConnection.COMMAND_REPLY):
+                    self.peer_ip = None
         elif sender[0] != self.peer_ip:
             return None  # ignore data
         elif data == UDPConnection.PING:
