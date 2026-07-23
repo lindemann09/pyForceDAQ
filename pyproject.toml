@@ -36,6 +36,11 @@ test = [
     "pytest>=9.0.3",
 ]
 
+[project.urls]
+Documentation = "https://github.com/lindemann09/pyforcedaq"
+Source = "https://github.com/lindemann09/pyforcedaq"
+
+
 [project.scripts]
 pyforcedaq = "pyforcedaq.__main__:cli"
 
