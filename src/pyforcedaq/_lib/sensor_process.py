@@ -11,7 +11,7 @@ import numpy as np
 from numpy import typing as npt
 
 from .. import constants
-from .lsl import LSLStream, cf_float32
+from .lsl import LSLStream, cf_double64
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
@@ -151,7 +151,7 @@ class SensorProcess(Process):
                 n_channels=sum(stream_forces),
                 stream_id=f"RF_{sensor.device_label}",
                 freq=self.sensor_settings.rate,
-                channel_format=cf_float32,
+                channel_format=cf_double64,
                 metadata={"sensor_label": self.sensor_settings.device_label},
             )
 
@@ -162,7 +162,7 @@ class SensorProcess(Process):
                     content_type="Marker",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{sensor.device_label}",
-                    channel_format=cf_float32,
+                    channel_format=cf_double64,
                     freq=self.sensor_settings.rate,
                 )
 
