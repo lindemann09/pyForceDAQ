@@ -15,7 +15,7 @@ from pylsl import (
 )
 
 
-class LSLSream:
+class LSLStream:
     def __init__(self):
         self.outlet = None
         self._is_init = False

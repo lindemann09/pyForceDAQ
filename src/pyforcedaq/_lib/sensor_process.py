@@ -11,7 +11,7 @@ import numpy as np
 from numpy import typing as npt
 
 from .. import constants
-from .lsl import LSLSream, cf_float32
+from .lsl import LSLStream, cf_float32
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
@@ -142,8 +142,8 @@ class SensorProcess(Process):
         stream_trigger = self.recording_settings.array_write_trigger()
 
         ## create init LSL
-        lsl_data_steam = LSLSream()
-        lsl_hardware_trigger_stream = LSLSream()
+        lsl_data_steam = LSLStream()
+        lsl_hardware_trigger_stream = LSLStream()
         if self.recording_settings.lsl_stream:
             lsl_data_steam.init(
                 name=f"Force_{sensor.device_label}",

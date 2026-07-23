@@ -14,7 +14,7 @@ from typing import List
 from .. import __version__ as forceDAQVersion
 from .. import constants
 from .file_writer import FileWriter
-from .lsl import LSLSream, cf_string
+from .lsl import LSLStream, cf_string
 from .misc import set_logging
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
@@ -72,7 +72,7 @@ class DataRecorder(object):
                 event_trigger.append(fst.event_trigger)
                 self.force_sensor_processes.append(fst)
         # LSL stream
-        self.lsl_events_stream = LSLSream()
+        self.lsl_events_stream = LSLStream()
         if self.recording_settings.lsl_stream:
             self.lsl_events_stream.init(
                     name="Events_forceDAQ",
