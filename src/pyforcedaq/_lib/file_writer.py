@@ -23,7 +23,7 @@ class FileWriter(Process):
         self._filepath: Path  = Path(filepath)
         self._append_mode = append_mode
         self.queue = Queue()
-        self._force_quit = Event()
+        self._enforce_quit = Event()
         self._close_file = Event()
         self._write_forces = recording_settings.array_write_forces()
         self._write_trigger = recording_settings.array_write_trigger()
@@ -45,9 +45,9 @@ class FileWriter(Process):
         """
         self._close_file.set()
 
-    def force_quit(self):
+    def enforce_quit(self):
         """forces the process to quit immediately, even if there are pending writes in the queue"""
-        self._force_quit.set()
+        self._enforce_quit.set()
 
     def join(self, timeout=None):
         self._close_file.set()
@@ -69,9 +69,9 @@ class FileWriter(Process):
             fl = open(self._filepath, mode, encoding=ENCODING)
 
         self._close_file.clear()
-        self._force_quit.clear()
+        self._enforce_quit.clear()
 
-        while not self._force_quit.is_set():
+        while not self._enforce_quit.is_set():
 
             if self._close_file.is_set():
                 try:
