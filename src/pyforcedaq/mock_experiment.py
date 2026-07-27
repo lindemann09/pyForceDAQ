@@ -116,7 +116,9 @@ def run_snarc():
     ######### START ##############
 
 
-    control.start(exp)
+    control.start(exp, skip_ready_screen=True)
+    stimuli.TextScreen("Mock experiment", "The demo is sending LSL trial trigger.").present()
+    exp.keyboard.wait(constants.K_SPACE)
 
     # permute block order across subjects
     if exp.get_permuted_bws_factor_condition('mapping_order') == "right_odd_first":
