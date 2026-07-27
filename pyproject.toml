@@ -1,6 +1,6 @@
 [project]
 name = "pyForceDAQ"
-version = "2.0.12"
+version = "2.0.13"
 description = "A Python package for data acquisition and analysis in force-based experiments."
 authors = [
     { name = "Oliver Lindemann", email = "lindemann@essb.eur.nl" },
@@ -43,6 +43,7 @@ Source = "https://github.com/lindemann09/pyforcedaq"
 
 [project.scripts]
 pyforcedaq = "pyforcedaq.__main__:cli"
+mock_experiment = "pyforcedaq.mock_experiment:run_snarc"
 
 [tool.ruff.lint]
 ignore = ["F401", "F405"]
