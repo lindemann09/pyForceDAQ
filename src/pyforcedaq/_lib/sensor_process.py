@@ -15,9 +15,10 @@ from .lsl import LSLStream, cf_double64
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
-DETERMINE_BIAS_SAMPLES = 100
 
 class SensorProcess(Process):
+
+    DETERMINE_BIAS_SAMPLES = 100
 
     def __init__(
         self,
@@ -67,7 +68,6 @@ class SensorProcess(Process):
         self._flag_quit_request = Event()
         self.__flag_is_saving = Event()
 
-        self._bias_n_samples = 200
         atexit.register(self.join)
 
     @property
@@ -133,7 +133,7 @@ class SensorProcess(Process):
         super(SensorProcess, self).join(timeout)
 
     def run(self):
-        fifo = deque(maxlen=DETERMINE_BIAS_SAMPLES)
+        fifo = deque(maxlen=SensorProcess.DETERMINE_BIAS_SAMPLES)
         sensor = Sensor(self.sensor_settings,
                         daq_type=self._daq_type,
                         use_aiftt=self._use_aiftt)
@@ -178,7 +178,7 @@ class SensorProcess(Process):
         self.pause_saving()
         self._flag_quit_request.clear()
         self.flag_sensor_bias_is_determined.clear()
-        init_samples = DETERMINE_BIAS_SAMPLES * 2
+        init_samples = SensorProcess.DETERMINE_BIAS_SAMPLES * 2
 
         while not self._flag_quit_request.is_set():
 
