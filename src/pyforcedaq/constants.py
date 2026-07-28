@@ -1,8 +1,14 @@
-NIDAQMX = 1
-PYDAQMX = 2
-MOCK_SENSOR = 9
+from enum import Enum
 
-DAQ_TYPE = NIDAQMX # default to nidaqmx, use constants.MOCK_SENSOR for mock sensor, constants.PYDAQMX for PyDAQmx
+
+class DaqType(Enum):
+    NIDAQMX = 1
+    PYDAQMX = 2
+    MOCK_SENSOR = 9
+    UNDEFINED = 0
+
+
+DAQ_TYPE = DaqType.UNDEFINED
 USE_AIFTT = True # <-- change to False to use ATI DLL for calibration conversion, otherwise use atiiaftt
 
 SETTINGS_FILE_EXTENSION = ".toml"

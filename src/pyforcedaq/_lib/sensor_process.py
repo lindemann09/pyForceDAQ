@@ -3,14 +3,13 @@ __author__ = "Oliver Lindemann"
 import atexit
 import ctypes as ct
 import logging
-from collections import deque
 from multiprocessing import Array, Event, Process, Queue, Value
 from typing import Optional
 
 import numpy as np
 from numpy import typing as npt
 
-from .. import constants
+from ..constants import DaqType
 from . import lsl
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
@@ -18,14 +17,15 @@ from .settings import RecordingSettings, SensorSettings
 
 class SensorProcess(Process):
 
-    DETERMINE_BIAS_SAMPLES = 100
+    DETERMINE_BIAS_SAMPLES = 20
+    INIT_SAMPLES = 100
 
     def __init__(
         self,
         sensor_settings: SensorSettings,
         recording_settings: RecordingSettings,
         file_writer_queue: Optional[Queue],
-        daq_type: int,
+        daq_type: DaqType,
         use_aiftt: bool = True
     ):
         """ForceSensorProcess
@@ -46,9 +46,6 @@ class SensorProcess(Process):
             )
 
         super(SensorProcess, self).__init__()
-
-        if daq_type not in [constants.NIDAQMX, constants.PYDAQMX, constants.MOCK_SENSOR]:
-            raise RuntimeError(f"Unsupported daq_type: {daq_type}")
 
         self._daq_type = daq_type
         self._use_aiftt = use_aiftt
@@ -133,9 +130,9 @@ class SensorProcess(Process):
         super(SensorProcess, self).join(timeout)
 
     def run(self):
-        fifo = deque(maxlen=SensorProcess.DETERMINE_BIAS_SAMPLES)
         sensor = Sensor(self.sensor_settings,
                         daq_type=self._daq_type,
+                        buffer_size=SensorProcess.DETERMINE_BIAS_SAMPLES,
                         use_aiftt=self._use_aiftt)
 
         stream_forces = self.recording_settings.array_write_forces()
@@ -178,7 +175,7 @@ class SensorProcess(Process):
         self.pause_saving()
         self._flag_quit_request.clear()
         self.flag_sensor_bias_is_determined.clear()
-        init_samples = SensorProcess.DETERMINE_BIAS_SAMPLES * 2
+        init_samples = SensorProcess.INIT_SAMPLES
 
         while not self._flag_quit_request.is_set():
 
@@ -188,12 +185,10 @@ class SensorProcess(Process):
                 d.trigger[0] = 1 # FIXME LSL marker stream
 
             if init_samples > 0:
-                # initial samples for bias determination, do not write to LSL or file writer queue
+                # initial samples that are used and merely used bias determination, do not write to LSL or file writer queue
                 init_samples -= 1
-                fifo.append(d.forces)
-                if init_samples == 0:
-                    sensor.set_bias(np.array(fifo))
-                    self.flag_sensor_bias_is_determined.set()
+                if init_samples <= 0:
+                    sensor.determine_bias()
                 continue
 
             ## LSL
@@ -207,7 +202,6 @@ class SensorProcess(Process):
             # write to shared memory and file writer queue
             self._total_sample_cnt.value += 1 # type: ignore
             self._dat[:] = d.forces
-            fifo.append(d.forces) # for bias determination
 
             if self.is_saving() and self._file_writer_queue is not None:
                 self._file_writer_queue.put(d)
@@ -215,7 +209,7 @@ class SensorProcess(Process):
 
             if not self.flag_sensor_bias_is_determined.is_set():
                 # new baseline requested
-                sensor.set_bias(np.array(fifo))
+                sensor.determine_bias()
                 self.flag_sensor_bias_is_determined.set()
 
         # stop process

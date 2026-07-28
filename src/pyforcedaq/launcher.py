@@ -65,7 +65,7 @@ def _windows_run(settings: AppSettings, lst_settings: List[str]):
     info = [[_sg.Text(f"version: {__version__}")]]
     info.append([_sg.Text(f"IP address: {get_lan_ip()}")])
 
-    if constants.DAQ_TYPE == constants.MOCK_SENSOR:
+    if constants.DAQ_TYPE == constants.DaqType.MOCK_SENSOR:
         info.append([_sg.Text("!!!  USING MOCK SENSORS  !!!", text_color="red")])
 
     layout = [

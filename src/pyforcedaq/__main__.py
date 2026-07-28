@@ -46,9 +46,9 @@ def cli():
 
     args = parser.parse_args()
     if args.mock:
-        constants.DAQ_TYPE = constants.MOCK_SENSOR
+        constants.DAQ_TYPE = constants.DaqType.MOCK_SENSOR
     else:
-        constants.DAQ_TYPE = constants.NIDAQMX # use NI-DAQmx
+        constants.DAQ_TYPE = constants.DaqType.NIDAQMX # use NI-DAQmx
     constants.USE_AIFTT = not args.dll
 
     print_version()
