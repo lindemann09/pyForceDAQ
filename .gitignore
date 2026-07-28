@@ -62,6 +62,7 @@ docs/_build/
 calibration/
 
 # pyForceDAQ
+calibration/
 data/
 events/
 doc/_build
