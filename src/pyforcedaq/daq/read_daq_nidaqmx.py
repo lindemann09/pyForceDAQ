@@ -42,7 +42,7 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
             samps_per_chan=1000 # use for buffering
         )
         print("devices")
-        print(nidaqmx.Task.devices)
+
         self._task_is_started = False
         self.read_array_size_in_samples = read_array_size_in_samples
 
