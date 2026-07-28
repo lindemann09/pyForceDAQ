@@ -13,8 +13,8 @@ from typing import List
 
 from .. import __version__ as forceDAQVersion
 from .. import constants
+from . import lsl
 from .file_writer import FileWriter
-from .lsl import LSLStream, cf_string
 from .misc import set_logging
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
@@ -72,17 +72,18 @@ class DataRecorder(object):
                 event_trigger.append(fst.event_trigger)
                 self.force_sensor_processes.append(fst)
         # LSL stream
-        self.lsl_events_stream = LSLStream()
         if self.recording_settings.lsl_stream:
-            self.lsl_events_stream.init(
+            self.lsl_events_stream = lsl.init_stream(
                     name="Events_forceDAQ",
                     content_type="Marker",
                     n_channels=1,
                     stream_id="FE",
                     freq=0,
-                    channel_format=cf_string,
+                    channel_format=lsl.cf_string,
                     metadata={}
                 )
+        else:
+            self.lsl_events_stream = None
 
         atexit.register(self.quit)
 
@@ -145,7 +146,8 @@ class DataRecorder(object):
         for fsp in self.force_sensor_processes:
             fsp.flag_sensor_bias_is_determined.wait() # wait is no initial bias is set yet
             fsp.start_saving()
-        self.lsl_events_stream.push_sample(["Start saving"])
+        if self.lsl_events_stream is not None:
+            self.lsl_events_stream.push_sample(["Start saving"])
 
     def pause_saving(self):
         """Pauses all polling processes and process data
@@ -159,7 +161,8 @@ class DataRecorder(object):
         # pause polling
         for fsp in self.force_sensor_processes:
             fsp.pause_saving()
-        self.lsl_events_stream.push_sample(["Pause saving"])
+        if self.lsl_events_stream is not None:
+            self.lsl_events_stream.push_sample(["Pause saving"])
 
 
     def determine_biases(self) -> None:
@@ -167,7 +170,8 @@ class DataRecorder(object):
             x.determine_bias()
         for x in self.force_sensor_processes:
             x.flag_sensor_bias_is_determined.wait()
-        self.lsl_events_stream.push_sample(["New Baseline"])
+        if self.lsl_events_stream is not None:
+            self.lsl_events_stream.push_sample(["New Baseline"])
 
 
     def open_data_file(

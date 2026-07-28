@@ -11,7 +11,7 @@ import numpy as np
 from numpy import typing as npt
 
 from .. import constants
-from .lsl import LSLStream, cf_double64
+from . import lsl
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
@@ -142,27 +142,27 @@ class SensorProcess(Process):
         stream_trigger = self.recording_settings.array_write_trigger()
 
         ## create init LSL
-        lsl_data_steam = LSLStream()
-        lsl_hardware_trigger_stream = LSLStream()
+        lsl_data_steam = None
+        lsl_hardware_trigger_stream = None
         if self.recording_settings.lsl_stream:
-            lsl_data_steam.init(
+            lsl_data_steam = lsl.init_stream(
                 name=f"Force_{sensor.device_label}",
                 content_type="force",
                 n_channels=sum(stream_forces),
                 stream_id=f"RF_{sensor.device_label}",
                 freq=self.sensor_settings.rate,
-                channel_format=cf_double64,
+                channel_format=lsl.cf_double64,
                 metadata={"sensor_label": self.sensor_settings.device_label},
             )
 
             n_hardware_trigger = sum(stream_trigger)
             if n_hardware_trigger > 0:
-                lsl_hardware_trigger_stream.init(
+                lsl_hardware_trigger_stream = lsl.init_stream(
                     name=f"Trigger_{sensor.device_label}",
                     content_type="Marker",
                     n_channels=n_hardware_trigger,
                     stream_id=f"Tr_{sensor.device_label}",
-                    channel_format=cf_double64,
+                    channel_format=lsl.cf_double64,
                     freq=self.sensor_settings.rate,
                 )
 
@@ -197,11 +197,12 @@ class SensorProcess(Process):
                 continue
 
             ## LSL
-            lsl_data_steam.push_sample(d.forces[stream_forces])
-            if lsl_hardware_trigger_stream.is_init:
+            if lsl_data_steam is not None:
+                lsl_data_steam.push_sample(d.forces[stream_forces])
+            if lsl_hardware_trigger_stream is not None:
                 tr = d.trigger[stream_trigger]
                 if any(tr):  # only stream if at least one trigger is active
-                    lsl_hardware_trigger_stream.outlet.push_sample(tr)  # type: ignore
+                    lsl_hardware_trigger_stream.push_sample(tr)
 
             # write to shared memory and file writer queue
             self._total_sample_cnt.value += 1 # type: ignore

@@ -2,13 +2,11 @@ import logging
 import os
 import socket
 import sys
-from pathlib import Path
 from subprocess import check_output
 
 import numpy as np
 from numpy import typing as npt
 
-from ..constants import SETTINGS_FILE_EXTENSION
 from .clock import local_clock_ms
 
 

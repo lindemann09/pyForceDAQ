@@ -1,31 +1,24 @@
-from typing import List
+"""Convenience functions for working with LSL streams.
 
-from numpy import typing as npt
-from pylsl import (
-    StreamInfo,
-    StreamOutlet,
-    cf_double64,
-    cf_float32,
-    cf_int8,
-    cf_int16,
-    cf_int32,
-    cf_int64,
-    cf_string,
-    cf_undefined,
+v0.1.0
+"""
+
+import pylsl
+from pylsl import (  # useful constants and functions from pylsl
+        cf_double64,
+        cf_float32,
+        cf_int8,
+        cf_int16,
+        cf_int32,
+        cf_int64,
+        cf_string,
+        cf_undefined,
+        local_clock,
+        resolve_streams,
 )
 
 
-class LSLStream:
-    def __init__(self):
-        self.outlet = None
-        self._is_init = False
-
-    @property
-    def is_init(self):
-        return self._is_init
-
-    def init(
-        self,
+def init_stream(
         name: str,
         content_type: str,
         n_channels: int,
@@ -33,7 +26,7 @@ class LSLStream:
         freq: int,
         channel_format: int,
         metadata: dict | None = None,
-    ):
+    ) -> pylsl.StreamOutlet:
         """
         Initialise a LSL stream
 
@@ -52,10 +45,8 @@ class LSLStream:
         Return:
             outlet: StreamOulet to push samples with LSL
         """
-        if self._is_init:
-            return
 
-        info = StreamInfo(
+        info = pylsl.StreamInfo(
             name, content_type,
             channel_count=n_channels,
             nominal_srate=freq,
@@ -71,12 +62,25 @@ class LSLStream:
             for key, data in metadata.items():
                 xml_info.append_child_value(key, str(data))
 
-        self._is_init = True
-        self.outlet = StreamOutlet(info)
+        return pylsl.StreamOutlet(info)
 
-    def push_sample(self, sample: List | npt.NDArray):
-        """Push a sample to the LSL stream if it is initialized."""
-        if not self._is_init:
-            # Don't do anything
-            return
-        self.outlet.push_sample(sample)  # type: ignore
+
+def open_stream(prop:str, value:str, timeout:float = pylsl.FOREVER) -> pylsl.StreamInlet:
+    """Open a LSL stream with a specific value for a given property.
+
+    Keyword arguments:
+    prop -- The StreamInfo property that should have a specific value (e.g.,
+            "name", "type", "source_id", or "desc/manufacturer").
+    value -- The string value that the property should have (e.g., "EEG" as
+             the type property).
+    timeout -- Optionally a timeout of the operation, in seconds. If the
+               timeout expires, less than the desired number of streams
+               (possibly none) will be returned. (default FOREVER)
+
+    Returns a StreamInlet object to read from the stream.
+    """
+
+    streams = pylsl.resolve_byprop(prop, value, minimum=1, timeout=timeout)
+    if not streams:
+        raise RuntimeError(f"No stream found with {prop}={value}")
+    return pylsl.StreamInlet(streams[0])

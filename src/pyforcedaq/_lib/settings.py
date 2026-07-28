@@ -17,10 +17,10 @@ class DAQConfiguration(object):
     def __init__(
         self,
         device_name: str,
-        channels: str = "ai0:7",
-        rate: int = 1000,
-        minVal: float = -10,
-        maxVal: float = 10,
+        channels: str ,
+        rate: int,
+        minVal: float,
+        maxVal: float,
     ):
         self.device_name = device_name
         self.channels = channels
@@ -46,11 +46,11 @@ class SensorSettings(DAQConfiguration):
     device_label: str
     calibration_file: str
     # DAQ settings
-    channels: str = "ai0:7"
+    channels: str
     rate: int = 1000
+    convert_to_FT: bool = True
     minVal: float = -10
     maxVal: float = 10
-    convert_to_FT: bool = True
     reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
     def __post_init__(self):
@@ -66,6 +66,7 @@ class SensorSettings(DAQConfiguration):
 
 
 class ABCSettings(ABC):  # must be a dataclass
+
     def set_properties(self, property_dict: Dict[str, Any]) -> bool:
         """return true is a properties of the data class is
         missing in the dict"""
@@ -84,6 +85,7 @@ class ABCSettings(ABC):  # must be a dataclass
 @dataclass
 class RecordingSettings(ABCSettings):
     device_labels: List[str] = field(default_factory=lambda: ["Dev1"])
+    device_channels: List[str] = field(default_factory=lambda: ["ai0:7"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
     calibration_folder: str = CALIBRATION_FOLDER
 
@@ -109,10 +111,29 @@ class RecordingSettings(ABCSettings):
     priority: str | None = "normal"
 
     def __post_init__(self):
+
         if isinstance(self.device_labels, str):
             self.device_labels = [self.device_labels]
         if isinstance(self.calibration_files, str):
             self.calibration_files = [self.calibration_files]
+        if isinstance(self.device_channels, str):
+            self.device_channels = [self.device_channels]
+
+    def set_properties(self, property_dict: Dict[str, Any]) -> bool:
+        """return true if a properties of the data class is
+        missing or changed in the dict"""
+
+        rtn = super().set_properties(property_dict)
+        assert is_dataclass(self)
+
+        n = len(self.device_labels)
+        if len(self.calibration_files) == 1 and n>1:
+            self.calibration_files = self.calibration_files * n
+            rtn = True
+        if len(self.device_channels) == 1 and n>1:
+            self.device_channels = self.device_channels * n
+            rtn = True
+        return rtn
 
     def array_write_forces(self):
         return [
@@ -138,10 +159,11 @@ class RecordingSettings(ABCSettings):
 
     def sensor_settings_list(self) -> List[SensorSettings]:
         rtn: List[SensorSettings] = []
-        for label, cal_file in zip(self.device_labels, self.calibration_files):
+        for label, cal_file, channels in zip(self.device_labels, self.calibration_files, self.device_channels):
             ss = SensorSettings(
                 sensor_id=self.device_labels.index(label) + 1,
                 device_label=label,
+                channels=channels,
                 calibration_file=str(Path(self.calibration_folder) / cal_file),
                 reverse_parameter_names=self.reverse_parameters_for_device(label),
                 rate=self.sampling_rate,
@@ -201,7 +223,7 @@ class AppSettings(object):
     def _asdict(self):
         return {
             self.recording_section: self.recording.__dict__,
-            self.gui_section: self.gui.__dict__,
+            self.gui_section: self.gui.__dict__
         }
 
     def load(self, filename=None):

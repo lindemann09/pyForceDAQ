@@ -147,7 +147,6 @@ def run_launcher():
     else:
         settings_file = app_setting_files[0]
     settings = _load_settings_file(settings_file)
-
     while True:
         event, values, settings = _windows_run(settings, app_setting_files)
 

@@ -63,7 +63,7 @@ class FileWriter(Process):
             mode = "a"
         else:
             mode = "w"
-        if self._filepath.suffix.endswith("bz2"):
+        if self._filepath.suffix.endswith(".bz2"):
             fl = bz2.open(self._filepath, mode)
         else:
             fl = open(self._filepath, mode, encoding=ENCODING)

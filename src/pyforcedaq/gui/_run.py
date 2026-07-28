@@ -47,7 +47,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
 
     last_recording_status = None
     last_thresholds = None
-    recorder.lsl_events_stream.push_sample(["Recording started, " + forceDAQVersion])
+    if recorder.lsl_events_stream is not None:
+        recorder.lsl_events_stream.push_sample(["Recording started, " + forceDAQVersion])
     s.background.stimulus().present()
 
     while not s.quit_recording:  ######## process loop
@@ -71,7 +72,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
                         resp = f"{CHANGED_LEVEL}-{tmp}"
                     else:
                         resp = f"{CHANGED_LEVEL2}-{tmp}"
-                    recorder.lsl_events_stream.push_sample([resp])
+                    if recorder.lsl_events_stream is not None:
+                        recorder.lsl_events_stream.push_sample([resp])
 
                 ## minmax detection FIXME needs to call first  "set_response_minmax_detection"
                 # tmp = s.thresholds.get_response_minmax(
@@ -361,7 +363,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[
         ##### end main  loop
 
     recorder.pause_saving()
-    recorder.lsl_events_stream.push_sample(["Recording stopped"])
+    if recorder.lsl_events_stream is not None:
+        recorder.lsl_events_stream.push_sample(["Recording stopped"])
     s.background.stimulus("Quitting").present()
     if plotter_thread is not None:
         plotter_thread.join()

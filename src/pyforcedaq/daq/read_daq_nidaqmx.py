@@ -39,6 +39,7 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
             rate=float(configuration.rate),
             active_edge=nidaq_consts.Edge.RISING,
             sample_mode=nidaq_consts.AcquisitionType.CONTINUOUS,
+            samps_per_chan=1000 # use for buffering
         )
         print("devices")
         print(nidaqmx.Task.devices)
@@ -85,7 +86,7 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
 
         """
 
-        # fill in data
+        # FIXME nidaq_consts.READ_ALL_AVAILABLE
         data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT) # type: ignore
         np_data = np.reshape(np.array(data), (-1,))  # reshape to vector
         return np_data, len(np_data)

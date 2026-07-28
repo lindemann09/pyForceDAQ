@@ -13,7 +13,7 @@ ordinal sequences is spatially organized. Cognition, 87(3), B87-95.
 from expyriment import control, design, stimuli
 from expyriment.misc import constants
 
-from ._lib.lsl import LSLStream, cf_string
+from ._lib import lsl
 
 
 def run_snarc():
@@ -59,13 +59,12 @@ def run_snarc():
     error_beep = stimuli.Tone(duration=200, frequency=2000)
     error_beep.preload()
 
-    lsl_stream = LSLStream()
-    lsl_stream.init(
+    lsl_stream = lsl.init_stream(
                         name="ExpTrigger",
                         content_type="Markers",
                         n_channels=1,
                         stream_id="Tr1",
-                        channel_format="string",
+                        channel_format=lsl.cf_string,
                         freq=0,
                     )
 
