@@ -70,11 +70,11 @@ class Sensor(object):
         self.convert_to_FT = s_settings.convert_to_FT
 
         self._reverse_vector = np.ones(len(ForceSensorData.forces_names))
-        if s_settings.reverse_parameter_names is not None:
-            if isinstance(s_settings.reverse_parameter_names, str):
-                names = [s_settings.reverse_parameter_names]
+        if s_settings.reverse_scaling is not None:
+            if isinstance(s_settings.reverse_scaling, str):
+                names = [s_settings.reverse_scaling]
             else:
-                names = s_settings.reverse_parameter_names
+                names = s_settings.reverse_scaling
             for para in names:
                 try:
                     idx = ForceSensorData.forces_names.index(para)

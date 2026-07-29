@@ -10,41 +10,6 @@ from tomlkit.exceptions import NonExistentKey
 from ..constants import SETTINGS_FILE_EXTENSION
 
 
-@dataclass
-class SensorBasicSettings:
-    """basic Settings for a sensor that are in the toml settings file"""
-
-    device_label: str
-    calibration_file_name: str
-    channels: str
-    reverse_parameter_names: List[str]
-
-    @property
-    def physicalChannel(self):
-        return "{0}/{1}".format(self.device_label, self.channels)
-
-@dataclass
-class SensorSettings(SensorBasicSettings):
-    """
-    :parameter:
-        reverse_parameter_names: string or list of strings
-            list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
-            Sensors take this into account and correct data online
-    """
-
-    sensor_id: int
-    calibration_folder: Path
-    rate: int = 1000
-    convert_to_FT: bool = True
-    minVal: float = -10
-    maxVal: float = 10
-
-
-
-
-
-
-
 class ABCSettings(ABC):  # must be a dataclass
 
     def set_properties(self, property_dict: Dict[str, Any]) -> bool:
@@ -62,8 +27,39 @@ class ABCSettings(ABC):  # must be a dataclass
         return False
 
 
+
+@dataclass
+class SensorBasicSettings(ABCSettings):
+    """basic settings for a sensor that are in the toml settings file
+    :parameter:
+        reverse_scaling: ist of strings
+            list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
+            Sensors take this into account and correct data online
+    """
+
+    device_label: str
+    calibration_file_name: str
+    channels: str
+    reverse_scaling: List[str]
+
+    @property
+    def physicalChannel(self):
+        return "{0}/{1}".format(self.device_label, self.channels)
+
+@dataclass
+class SensorSettings(SensorBasicSettings):
+
+    sensor_id: int
+    calibration_folder: Path
+    rate: int = 1000
+    convert_to_FT: bool = True
+    minVal: float = -10
+    maxVal: float = 10
+
+
 @dataclass
 class RecordingSettings(ABCSettings):
+
     device_labels: List[str] = field(default_factory=lambda: ["Dev1"])
     device_channels: List[str] = field(default_factory=lambda: ["ai0:7"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
@@ -83,6 +79,9 @@ class RecordingSettings(ABCSettings):
     write_trigger1: bool = False
     write_trigger2: bool = False
 
+    sensors: List[SensorBasicSettings] = field(default_factory=lambda: [
+        SensorBasicSettings(device_label='Dev1',channels="ai0:7",
+            calibration_file_name="FT9334.cal", reverse_scaling=["Fz"])])
     reverse_scaling: dict | None = field(
         default_factory=lambda: {"Dev1": [], "Dev2": ["Fz"]}
     )
@@ -161,7 +160,7 @@ class RecordingSettings(ABCSettings):
                 device_label=label,
                 calibration_file_name=cal_file,
                 channels=channels,
-                reverse_parameter_names=self.reverse_parameters_for_device(label),
+                reverse_scaling=self.reverse_parameters_for_device(label),
                 sensor_id=self.device_labels.index(label) + 1,
                 calibration_folder=self.absolute_path_calibration(working_dir),
                 rate=self.sampling_rate,
@@ -231,6 +230,10 @@ class AppSettings(object):
             self.file = Path(filename)
         with open(self.file, "r", encoding="utf-8") as fl:
             d = tomlkit.load(fl)
+        rec_section = d[self.recording_section]
+        if "device_labels" in rec_section:
+            # old settings convert to new format
+            rec_section = __old_recording_settings_to_new(rec_section)
 
         a = self.gui.set_properties(d[self.gui_section])
         b = self.recording.set_properties(d[self.recording_section])
@@ -262,7 +265,7 @@ def list_settings_files():
     return rtn
 
 
-def old_recording_settings_to_new(d: dict):
+def __old_recording_settings_to_new(d: dict):
     """ensures backward compatibility with old settings files
     that used device_labels, device_channels, calibration_files"""
 
