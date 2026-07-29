@@ -5,12 +5,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import tomlkit
+from icecream import ic
 from tomlkit.exceptions import NonExistentKey
 
 from ..constants import SETTINGS_FILE_EXTENSION
 
 
-class DAQConfiguration(object):
+class NIDAQConfiguration(object):
     """Settings required for NI-DAQ"""
 
     def __init__(
@@ -33,7 +34,7 @@ class DAQConfiguration(object):
 
 
 @dataclass
-class SensorSettings(DAQConfiguration):
+class SensorSettings(NIDAQConfiguration):
     """
     :parameter:
         reverse_parameter_names: string or list of strings
@@ -257,8 +258,10 @@ class AppSettings(object):
             self.save()
 
     def save(self):
+
+        txt = tomlkit.dumps(self._asdict())
         with open(self.file, "w", encoding="utf-8") as fl:
-            tomlkit.dump(self._asdict(), fl)
+            fl.write(txt)
 
     @property
     def recording_as_json(self):

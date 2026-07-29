@@ -5,7 +5,7 @@ from typing import Tuple
 
 import numpy.typing as npt
 
-from ..settings import DAQConfiguration
+from ..settings import NIDAQConfiguration
 
 
 class DAQReadAnalogABC(ABC):
@@ -13,7 +13,7 @@ class DAQReadAnalogABC(ABC):
 
     @abstractmethod
     def __init__(self,
-                 configuration: DAQConfiguration,
+                 configuration: NIDAQConfiguration,
                  read_array_size_in_samples: int):
         """Initialize the DAQ device."""
         pass

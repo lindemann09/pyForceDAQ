@@ -4,7 +4,7 @@ import nidaqmx
 import numpy as np
 from nidaqmx import constants as nidaq_consts
 
-from ..settings import DAQConfiguration
+from ..settings import NIDAQConfiguration
 from . import DAQReadAnalogABC
 
 
@@ -13,7 +13,7 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
     TIMEOUT = 1
 
     def __init__(
-        self, configuration: DAQConfiguration,
+        self, configuration: NIDAQConfiguration,
         read_array_size_in_samples: int
     ):
         """DOC
