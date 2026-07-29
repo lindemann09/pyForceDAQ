@@ -177,7 +177,7 @@ class UDPConnectionProcess(Process):
         # Server that prints each input and echos it to the client
         # that is currently connected
 
-        from pyforcedaq._lib.udp_connection import UDPConnectionProcess, Queue
+        from pyforcedaq.lib.udp_connection import UDPConnectionProcess, Queue
 
         receive_queue = Queue()
         udp_p = UDPConnectionProcess(receive_queue=receive_queue)

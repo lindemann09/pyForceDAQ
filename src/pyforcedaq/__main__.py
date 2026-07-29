@@ -1,7 +1,7 @@
 import argparse
 
 from . import __author__, __version__, constants
-from ._lib.settings import AppSettings, list_settings_files
+from .lib.settings import AppSettings
 
 
 def print_version():

@@ -7,11 +7,11 @@ from typing import List, Tuple
 import numpy as np
 from expyriment import io, misc
 
-from .._lib.data_recorder import DataRecorder
-from .._lib.misc import SensorHistory
-from .._lib.sensor_process import SensorProcess
-from .._lib.settings import GUISettings
-from .._lib.types import ForceSensorData, Thresholds
+from ..lib.data_recorder import DataRecorder
+from ..lib.misc import SensorHistory
+from ..lib.sensor_process import SensorProcess
+from ..lib.settings import GUISettings
+from ..lib.types import ForceSensorData, Thresholds
 from ._layout import RecordingScreen, expy_constants, logo_text_line
 from ._scaling import Scaling
 
