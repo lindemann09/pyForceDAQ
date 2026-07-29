@@ -8,13 +8,13 @@ __author__ = "Oliver Lindemann"
 import atexit
 import logging
 from pathlib import Path
-from time import asctime, localtime, strftime
+from time import asctime, localtime
 from typing import List
 
 from .. import __version__ as forceDAQVersion
 from .. import constants
 from . import lsl
-from .file_writer import FileWriter
+from .file_writer import FileWriter, unique_file_path
 from .misc import set_logging
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
@@ -175,21 +175,18 @@ class DataRecorder(object):
 
     def open_data_file(
         self,
-        filename: str | Path,
-        subdirectory: str = "data",
+        file_path: str | Path,
         varnames: bool = True,
         comment_line: str = "",
-    ) -> Path | None:
+    ) -> Path:
         """Create a data file
 
         Only if data file has been opened, data will be saved!
 
         Parameters
         ----------
-        filename : string
-            the filename
-        subdirectory : string, optional
-            the data subdirectory
+        file_path : string
+            the path to the datafile
         time_stamp_filename : boolean, optional
             if True all filename will contain a timestamp. This is usefull to
             ensure that data will not overwritten
@@ -200,7 +197,7 @@ class DataRecorder(object):
 
         Returns
         -------
-        filename : string
+        file_path : Path
                 full path the actually used file (incl. timestamp)
 
         """
@@ -209,27 +206,14 @@ class DataRecorder(object):
             return
 
         # create filename
-        data_dir = Path.cwd() / subdirectory
-        data_dir.mkdir(exist_ok=True)
-
+        file_path = Path(file_path)
+        file_path.parent.mkdir(exist_ok=True)
         if self.recording_settings.zip_data:
-            filename = Path(filename).with_suffix(".csv.bz2")
+            file_path = unique_file_path(file_path.with_suffix(".csv.bz2"))
         else:
-            filename = Path(filename).with_suffix(".csv")
-        while True:
-            file_path = data_dir / filename
-            if file_path.is_file():
-                #get unique filename by adding timestamp if file already exists
-                filename = Path(
-                    filename.stem
-                    + "_"
-                    + strftime("%m%d%H%M", localtime())
-                    + filename.suffix
-                )
-            else:
-                break
+            file_path = unique_file_path(file_path.with_suffix(".csv"))
 
-        self.file_writer.set_file(file_path=file_path, append_mode=False)
+        self.file_writer.set_file(file_path, append_mode=False)
         self.file_writer.start()
         logging.info("new file: %s", file_path)
 

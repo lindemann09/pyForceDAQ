@@ -387,6 +387,7 @@ def run(settings: AppSettings):
     """
     #
     rs = settings.recording
+    working_dir = settings.file.parent
     logging.info("New Recording with forceDAQ %s", forceDAQVersion)
     logging.info("Sensors %s", rs.calibration_files)
     logging.info("Settings %s", settings.recording_as_json)
@@ -396,7 +397,7 @@ def run(settings: AppSettings):
     if not isinstance(rs.calibration_files, (list, tuple)):
         rs.calibration_files = [rs.calibration_files]
 
-    sensor_settings: List[SensorSettings] = rs.sensor_settings_list()
+    sensor_settings: List[SensorSettings] = rs.sensor_settings_list(working_dir)
 
     # expyriment
     control.defaults.initialise_delay = 0
@@ -422,7 +423,6 @@ def run(settings: AppSettings):
         recording_settings=rs,
         force_sensor_settings=sensor_settings
     )
-
     if rs.save_data:
         if len(settings.output_filename) > 3:
             output_filename = settings.output_filename
@@ -435,12 +435,13 @@ def run(settings: AppSettings):
         else:
             output_filename = DEFAULT_OUTPUT_FILENAME
 
-        recorder.open_data_file(output_filename, subdirectory="data", comment_line="")
+        filepath = rs.absolute_path_data(working_dir) / output_filename
+        recorder.open_data_file(filepath, comment_line="")
 
     sleep(show_logo_time)
 
     _main_loop(exp, recorder=recorder, gs=settings.gui,
-               info_strings=[f"{settings.filepath.name}"])
+               info_strings=[f"{settings.file.name}"])
 
     recorder.quit()
     control.end()

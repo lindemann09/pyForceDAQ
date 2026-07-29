@@ -8,6 +8,7 @@ Uses the atiiaftt library for converting voltages to force data, if installed.
 __author__ = "Oliver Lindemann"
 
 from collections import deque
+from pathlib import Path
 
 import atiiaftt
 import numpy as np
@@ -22,8 +23,8 @@ from .types import ForceSensorData
 
 class CalibrationConverter(object):  # type: ignore
 
-    def __init__(self, calibration_file:str):
-        self._ftsensor = atiiaftt.FTSensor(calibration_file, index=1)
+    def __init__(self, calibration_file: str | Path):
+        self._ftsensor = atiiaftt.FTSensor(str(calibration_file), index=1)
 
     def convertToFT(self, voltages:NDArray) -> list:
         return self._ftsensor.convertToFt(voltages.tolist()) #TODO: to list needed?

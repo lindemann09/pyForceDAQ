@@ -14,7 +14,7 @@ launch the GUI force from your Python program:
 
 import relevant stuff to program your own force:
 ``
-    from pyforcedaq import force
+    from pyforcedaq import lib as forcedaqlib
 ``
 
 

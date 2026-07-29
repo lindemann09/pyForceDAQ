@@ -1,5 +1,4 @@
 import json
-import os
 from abc import ABC
 from dataclasses import dataclass, field, is_dataclass
 from pathlib import Path
@@ -8,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 import tomlkit
 from tomlkit.exceptions import NonExistentKey
 
-from ..constants import CALIBRATION_FOLDER, DATA_FOLDER, SETTINGS_FILE_EXTENSION
+from ..constants import SETTINGS_FILE_EXTENSION
 
 
 class DAQConfiguration(object):
@@ -44,7 +43,7 @@ class SensorSettings(DAQConfiguration):
 
     sensor_id: int
     device_label: str
-    calibration_file: str
+    calibration_file: Path
     # DAQ settings
     channels: str
     rate: int = 1000
@@ -87,7 +86,8 @@ class RecordingSettings(ABCSettings):
     device_labels: List[str] = field(default_factory=lambda: ["Dev1"])
     device_channels: List[str] = field(default_factory=lambda: ["ai0:7"])
     calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
-    calibration_folder: str = CALIBRATION_FOLDER
+    calibration_folder: str = "./calibration"
+    data_folder: str = "./data"
 
     lsl_stream: bool = True
     save_data: bool = False
@@ -135,6 +135,21 @@ class RecordingSettings(ABCSettings):
             rtn = True
         return rtn
 
+    def absolute_path_calibration(self, working_dir: str | Path) -> Path:
+        fld = Path(self.calibration_folder)
+        if fld.is_absolute():
+            return fld
+        else:
+            return Path(working_dir).absolute() / fld
+
+    def absolute_path_data(self, working_dir: str | Path) -> Path:
+        fld = Path(self.data_folder)
+        if fld.is_absolute():
+            return fld
+        else:
+            return Path(working_dir).absolute() / fld
+
+
     def array_write_forces(self):
         return [
             self.write_Fx,
@@ -157,14 +172,15 @@ class RecordingSettings(ABCSettings):
             except KeyError:
                 return []
 
-    def sensor_settings_list(self) -> List[SensorSettings]:
+    def sensor_settings_list(self, working_dir: str | Path) -> List[SensorSettings]:
         rtn: List[SensorSettings] = []
         for label, cal_file, channels in zip(self.device_labels, self.calibration_files, self.device_channels):
+            cal_file_path = self.absolute_path_calibration(working_dir) / cal_file
             ss = SensorSettings(
                 sensor_id=self.device_labels.index(label) + 1,
                 device_label=label,
                 channels=channels,
-                calibration_file=str(Path(self.calibration_folder) / cal_file),
+                calibration_file=cal_file_path,
                 reverse_parameter_names=self.reverse_parameters_for_device(label),
                 rate=self.sampling_rate,
                 convert_to_FT=self.convert_to_forces,
@@ -198,6 +214,7 @@ class GUISettings(ABCSettings):
         default_factory=lambda: [(0, 2), (1, 2)]
     )
 
+
 class AppSettings(object):
 
     def __init__(self, filename: str | Path, create_if_not_exists: bool = False):
@@ -208,17 +225,18 @@ class AppSettings(object):
         self.recording = RecordingSettings()
         self.recording_section = "Recording"
 
-        self.filepath = Path(filename)
-        self.filepath = self.filepath.with_suffix(SETTINGS_FILE_EXTENSION)
-        if os.path.isfile(self.filepath):
+        self.file = Path(filename)
+        self.file = self.file.with_suffix(SETTINGS_FILE_EXTENSION)
+        if self.file.exists():
             self.load()
         else:
             if create_if_not_exists:
                 self.save()  # defaults
-                print(f"Creating new settings file with defaults: {self.filepath}")
+                print(f"Creating new settings file with defaults: {self.file}")
             else:
-                raise FileNotFoundError(f"Settings file {self.filepath} not found")
-        self.output_filename = ""
+                raise FileNotFoundError(f"Settings file {self.file} not found")
+
+        self.output_filename:str = ""
 
     def _asdict(self):
         return {
@@ -226,29 +244,25 @@ class AppSettings(object):
             self.gui_section: self.gui.__dict__
         }
 
-    def load(self, filename=None):
+    def load(self, filename: str | Path | None = None):
         if filename is not None:
-            self.filepath = Path(filename)
-        with open(self.filepath, "r", encoding="utf-8") as fl:
+            self.file = Path(filename)
+        with open(self.file, "r", encoding="utf-8") as fl:
             d = tomlkit.load(fl)
 
         a = self.gui.set_properties(d[self.gui_section])
         b = self.recording.set_properties(d[self.recording_section])
         if a or b:
-            # missing property in settings file ->
+            # missing property in settings file
             self.save()
 
     def save(self):
-        with open(self.filepath, "w", encoding="utf-8") as fl:
+        with open(self.file, "w", encoding="utf-8") as fl:
             tomlkit.dump(self._asdict(), fl)
 
     @property
     def recording_as_json(self):
         return json.dumps(self.recording.__dict__)
-
-    @property
-    def data_folder(self) -> Path:
-        return self.filepath.parent / DATA_FOLDER
 
 
 def list_settings_files():

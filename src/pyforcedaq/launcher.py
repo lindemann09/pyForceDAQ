@@ -13,7 +13,7 @@ APP_ICON = b'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAA0W0lEQVR4nO2dCZxU1ZX
 
 
 def _check_sensor_calibration_settings(
-    device_labels: List[str], calibrations_files: List[str], calibration_folder: str
+    device_labels: List[str], calibrations_files: List[str], calibration_folder: Path
 ):
     rtn = []
     for x, labels in enumerate(device_labels):
@@ -36,6 +36,7 @@ def _check_sensor_calibration_settings(
 
 def _windows_run(settings: AppSettings, lst_settings: List[str]):
     rs = settings.recording
+    working_dir = settings.file.parent
     n_sensor = len(rs.device_labels)
 
     info_settings = []
@@ -43,7 +44,7 @@ def _windows_run(settings: AppSettings, lst_settings: List[str]):
         [
             _sg.Combo(
                 values=lst_settings,
-                default_value=settings.filepath.name,
+                default_value=settings.file.name,
                 key="Settings_file",
                 size=(34, 1),
                 enable_events=True,
@@ -53,7 +54,7 @@ def _windows_run(settings: AppSettings, lst_settings: List[str]):
     )
     info_settings.append([_sg.Text(f"Number of sensors: {n_sensor}")])
     for labels, cal, error in _check_sensor_calibration_settings(
-        rs.device_labels, rs.calibration_files, rs.calibration_folder
+        rs.device_labels, rs.calibration_files, rs.absolute_path_calibration(working_dir)
     ):
         if error:
             col = "red"
