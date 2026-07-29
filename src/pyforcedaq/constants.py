@@ -3,7 +3,6 @@ from enum import Enum
 
 class DaqType(Enum):
     NIDAQMX = 1
-    PYDAQMX = 2
     MOCK_SENSOR = 9
     UNDEFINED = 0
 

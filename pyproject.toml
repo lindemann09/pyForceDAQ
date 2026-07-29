@@ -29,9 +29,6 @@ dev = [
     "ipython>=9.14.0",
     "ruff>=0.15.15",
 ]
-pydaqmx = [
-    "pydaqmx>=1.4.7",
-]
 test = [
     "pytest>=9.0.3",
 ]

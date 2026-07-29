@@ -1,7 +1,6 @@
 """Sensor class for reading data from NI devices and converting to force data.
 
 Per default the NIDAQMX library is installed and access the NI instruments data.
-If the PyDAQMX library is installed, this library is used instead.
 
 Uses the atiiaftt library for converting voltages to force data, if installed.
 """
@@ -16,6 +15,7 @@ from numpy.typing import NDArray
 
 from ..constants import DaqType
 from .clock import local_clock
+from .daq import mock_daq, ni_daq
 from .settings import SensorSettings
 from .types import ForceSensorData
 
@@ -46,18 +46,17 @@ class Sensor(object):
         assert isinstance(s_settings, SensorSettings)
         assert len(self.SENSOR_CHANNELS) == len(ForceSensorData.forces_names)
 
+        n_channels = len(self.SENSOR_CHANNELS) + len(self.TRIGGER_CHANNELS)
         if daq_type == DaqType.NIDAQMX:
-            from ..daq.read_daq_nidaqmx import DAQReadAnalog
-        elif daq_type == DaqType.PYDAQMX:
-            from ..daq.read_daq_pydaqmx import DAQReadAnalog
+            self.daq = ni_daq.DAQReadAnalog(configuration=s_settings,
+                                     read_array_size_in_samples=n_channels)
         elif daq_type == DaqType.MOCK_SENSOR:
-            from ..daq.read_daq_mock_sensor import DAQReadAnalog
+            self.daq = mock_daq.DAQReadAnalog(configuration=s_settings,
+                                     read_array_size_in_samples=n_channels)
         else:
             raise RuntimeError(f"Unsupported daq_type: {daq_type}")
 
-        self.daq = DAQReadAnalog(configuration=s_settings,
-            read_array_size_in_samples=len(Sensor.SENSOR_CHANNELS)
-            + len(Sensor.TRIGGER_CHANNELS))
+
 
         if daq_type == DaqType.MOCK_SENSOR:
             self._calib_converter = None
