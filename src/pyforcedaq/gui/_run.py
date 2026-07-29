@@ -19,7 +19,7 @@ from ..constants import DEFAULT_OUTPUT_FILENAME
 from ..lib.clock import wait_ms
 from ..lib.data_recorder import DataRecorder
 from ..lib.sensor_process import SensorProcess
-from ..lib.settings import AppSettings, GUISettings, SensorSettings
+from ..lib.settings import AppSettings, GUISettings, SensorBasicSettings, SensorSettings
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator

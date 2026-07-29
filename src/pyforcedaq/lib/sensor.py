@@ -62,7 +62,8 @@ class Sensor(object):
         if daq_type == DaqType.MOCK_SENSOR:
             self._calib_converter = None
         else:
-            self._calib_converter = CalibrationConverter(s_settings.calibration_file)
+            cal_file = s_settings.calibration_folder / s_settings.calibration_file_name
+            self._calib_converter = CalibrationConverter(cal_file)
 
         self.sensor_id = s_settings.sensor_id
         self.device_label = s_settings.device_label

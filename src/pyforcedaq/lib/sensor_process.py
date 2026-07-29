@@ -38,7 +38,7 @@ class SensorProcess(Process):
 
         # type checks
         if not isinstance(sensor_settings, SensorSettings):
-            raise RuntimeError("sensor_settings has to be force_sensor.Settings object")
+            raise RuntimeError("sensor_settings has to be force_sensor settings object")
         if not isinstance(recording_settings, RecordingSettings):
             raise RuntimeError(
                 "recording_settings has to be force_sensor.RecordingSettings object"

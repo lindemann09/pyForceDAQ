@@ -5,36 +5,26 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import tomlkit
-from icecream import ic
 from tomlkit.exceptions import NonExistentKey
 
 from ..constants import SETTINGS_FILE_EXTENSION
 
 
-class NIDAQConfiguration(object):
-    """Settings required for NI-DAQ"""
+@dataclass
+class SensorBasicSettings:
+    """basic Settings for a sensor that are in the toml settings file"""
 
-    def __init__(
-        self,
-        device_name: str,
-        channels: str ,
-        rate: int,
-        minVal: float,
-        maxVal: float,
-    ):
-        self.device_name = device_name
-        self.channels = channels
-        self.rate = rate
-        self.minVal = minVal
-        self.maxVal = maxVal
+    device_label: str
+    calibration_file_name: str
+    channels: str
+    reverse_parameter_names: List[str]
 
     @property
     def physicalChannel(self):
-        return "{0}/{1}".format(self.device_name, self.channels)
-
+        return "{0}/{1}".format(self.device_label, self.channels)
 
 @dataclass
-class SensorSettings(NIDAQConfiguration):
+class SensorSettings(SensorBasicSettings):
     """
     :parameter:
         reverse_parameter_names: string or list of strings
@@ -43,25 +33,15 @@ class SensorSettings(NIDAQConfiguration):
     """
 
     sensor_id: int
-    device_label: str
-    calibration_file: Path
-    # DAQ settings
-    channels: str
+    calibration_folder: Path
     rate: int = 1000
     convert_to_FT: bool = True
     minVal: float = -10
     maxVal: float = 10
-    reverse_parameter_names: str | Tuple[str] | List[str] | None = None
 
-    def __post_init__(self):
 
-        super().__init__(
-            device_name=f"{self.device_label}",
-            channels=self.channels,
-            rate=self.rate,
-            minVal=self.minVal,
-            maxVal=self.maxVal,
-        )
+
+
 
 
 
@@ -175,14 +155,15 @@ class RecordingSettings(ABCSettings):
 
     def sensor_settings_list(self, working_dir: str | Path) -> List[SensorSettings]:
         rtn: List[SensorSettings] = []
+
         for label, cal_file, channels in zip(self.device_labels, self.calibration_files, self.device_channels):
-            cal_file_path = self.absolute_path_calibration(working_dir) / cal_file
             ss = SensorSettings(
-                sensor_id=self.device_labels.index(label) + 1,
                 device_label=label,
+                calibration_file_name=cal_file,
                 channels=channels,
-                calibration_file=cal_file_path,
                 reverse_parameter_names=self.reverse_parameters_for_device(label),
+                sensor_id=self.device_labels.index(label) + 1,
+                calibration_folder=self.absolute_path_calibration(working_dir),
                 rate=self.sampling_rate,
                 convert_to_FT=self.convert_to_forces,
             )
@@ -279,3 +260,24 @@ def list_settings_files():
             pass
 
     return rtn
+
+
+def old_recording_settings_to_new(d: dict):
+    """ensures backward compatibility with old settings files
+    that used device_labels, device_channels, calibration_files"""
+
+    s = []
+    for dev, channels, cal_file in zip(d["device_labels"], d["device_channels"], d["calibration_files"]):
+        rev_scaled = d["reverse_scaling"].get(dev, [])
+        s.append({
+            "device_label": dev,
+            "channels": channels,
+            "calibration_file": cal_file,
+            "reverse_scaling": rev_scaled
+        })
+    d["sensors"] = s
+    del d["device_labels"]
+    del d["device_channels"]
+    del d["calibration_files"]
+    del d["reverse_scaling"]
+    return d

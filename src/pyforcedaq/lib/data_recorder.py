@@ -221,7 +221,7 @@ class DataRecorder(object):
             f"Recorded at {asctime(localtime())} with pyForceDAQ {forceDAQVersion}\n")
 
         for s in self.sensor_settings_list:
-            txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file}\n"
+            txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file_name}\n"
             self.file_writer.queue.put(txt)
 
         if len(comment_line) > 0:

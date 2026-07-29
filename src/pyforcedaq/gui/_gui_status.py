@@ -77,9 +77,7 @@ class GUIStatus(object):
 
         self.sensor_info_str = ""
         for tmp in self.recorder.sensor_settings_list:
-            self.sensor_info_str = self.sensor_info_str + "{0}: {1}\n".format(
-                tmp.device_name, tmp.device_label
-            )
+            self.sensor_info_str = self.sensor_info_str + f"{tmp.device_label}\n"
         self.sensor_info_str = self.sensor_info_str.strip()
         self.plot_indicator = True
         self.plot_filtered = False
@@ -95,7 +93,7 @@ class GUIStatus(object):
         self.plot_data_indicator_names = []
         for x in self.plot_data_indicator:
             self.plot_data_indicator_names.append(
-                self.recorder.sensor_settings_list[x[0]].device_name
+                self.recorder.sensor_settings_list[x[0]].device_label
                 + "_"
                 + ForceSensorData.forces_names[x[1]]
             )
