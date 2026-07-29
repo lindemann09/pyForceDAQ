@@ -37,19 +37,12 @@ def cli():
         help="Use mock sensor",
     )
 
-    parser.add_argument(
-        "--dll",
-        action="store_true",
-        default=False,
-        help="Use self compiled ATI DLL",
-    )
 
     args = parser.parse_args()
     if args.mock:
         constants.DAQ_TYPE = constants.DaqType.MOCK_SENSOR
     else:
         constants.DAQ_TYPE = constants.DaqType.NIDAQMX # use NI-DAQmx
-    constants.USE_AIFTT = not args.dll
 
     print_version()
     if not args.omit_launcher:

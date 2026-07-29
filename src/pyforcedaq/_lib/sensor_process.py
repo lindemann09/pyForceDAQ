@@ -25,8 +25,7 @@ class SensorProcess(Process):
         sensor_settings: SensorSettings,
         recording_settings: RecordingSettings,
         file_writer_queue: Optional[Queue],
-        daq_type: DaqType,
-        use_aiftt: bool = True
+        daq_type: DaqType
     ):
         """ForceSensorProcess
 
@@ -48,7 +47,6 @@ class SensorProcess(Process):
         super(SensorProcess, self).__init__()
 
         self._daq_type = daq_type
-        self._use_aiftt = use_aiftt
         self.sensor_settings = sensor_settings
         self.recording_settings = recording_settings
         self._file_writer_queue = file_writer_queue
@@ -132,8 +130,7 @@ class SensorProcess(Process):
     def run(self):
         sensor = Sensor(self.sensor_settings,
                         daq_type=self._daq_type,
-                        buffer_size=SensorProcess.DETERMINE_BIAS_SAMPLES,
-                        use_aiftt=self._use_aiftt)
+                        buffer_size=SensorProcess.DETERMINE_BIAS_SAMPLES)
 
         stream_forces = self.recording_settings.array_write_forces()
         stream_trigger = self.recording_settings.array_write_trigger()

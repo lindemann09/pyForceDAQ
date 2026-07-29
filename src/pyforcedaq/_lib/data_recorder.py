@@ -42,7 +42,6 @@ class DataRecorder(object):
         DataRecorder instance:
             * set constants.DAQ_TYPE to constants.DaqType.PYDAQMX, constants.DaqType.NIDAQMX or
                             constants.DaqType.MOCK_SENSOR
-            * set constants.USE_AIFTT to True or False
         """
 
         if not isinstance(force_sensor_settings, list):
@@ -67,8 +66,7 @@ class DataRecorder(object):
                     sensor_settings=fs,
                     recording_settings=recording_settings,
                     file_writer_queue=queue,
-                    daq_type=constants.DAQ_TYPE,
-                    use_aiftt=constants.USE_AIFTT)
+                    daq_type=constants.DAQ_TYPE)
                 fst.start()
                 event_trigger.append(fst.event_trigger)
                 self.force_sensor_processes.append(fst)

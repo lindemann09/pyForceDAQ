@@ -9,7 +9,6 @@ class DaqType(Enum):
 
 
 DAQ_TYPE = DaqType.UNDEFINED
-USE_AIFTT = True # <-- change to False to use ATI DLL for calibration conversion, otherwise use atiiaftt
 
 SETTINGS_FILE_EXTENSION = ".toml"
 DEFAULT_SETTINGS_FILE = "pyForceDAQ.settings" + SETTINGS_FILE_EXTENSION

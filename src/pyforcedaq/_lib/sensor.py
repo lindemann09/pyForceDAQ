@@ -3,34 +3,44 @@
 Per default the NIDAQMX library is installed and access the NI instruments data.
 If the PyDAQMX library is installed, this library is used instead.
 
-For conversion to force data, the ATI dll will be used (use_aiftt=True, DEFAULT). Alternatively, you
-might use your own complied dll and pyforceDAQ own interface to the DLL (use_aiftt=False)
+Uses the atiiaftt library for converting voltages to force data, if installed.
 """
 
 __author__ = "Oliver Lindemann"
 
 from collections import deque
 
+import atiiaftt
 import numpy as np
+from numpy.typing import NDArray
 
-from .. import constants
 from ..constants import DaqType
 from .clock import local_clock
 from .settings import SensorSettings
 from .types import ForceSensorData
 
 
+class CalibrationConverter(object):  # type: ignore
+
+    def __init__(self, calibration_file:str):
+        self._ftsensor = atiiaftt.FTSensor(calibration_file, index=1)
+
+    def convertToFT(self, voltages:NDArray) -> list:
+        return self._ftsensor.convertToFt(voltages.tolist()) #TODO: to list needed?
+
+    def bias(self, bias_values: NDArray) -> None:
+        self._ftsensor.bias(bias_values.tolist())
+
 class Sensor(object):
 
     # channel 0:5 for FT sensor, channel 6  for trigger
     SENSOR_CHANNELS = range(0, 5 + 1)
     # channel 7 for trigger   synchronization validation
-    TRIGGER_CHANNELS = range(5, 6 + 1)
+    TRIGGER_CHANNELS = range(5, 6 + 1) # TODO remove deprecated trigger channel support
 
     def __init__(self, s_settings: SensorSettings,
                  daq_type: DaqType,
-                 buffer_size: int,
-                 use_aiftt: bool=True):
+                 buffer_size: int):
         """buffer_size: number of raw samples to keep in the buffer needed for determining the bias"""
 
         assert isinstance(s_settings, SensorSettings)
@@ -44,11 +54,6 @@ class Sensor(object):
             from ..daq.read_daq_mock_sensor import DAQReadAnalog
         else:
             raise RuntimeError(f"Unsupported daq_type: {daq_type}")
-
-        if use_aiftt:
-            from ..daq.calibration_iaftt import CalibrationConverter
-        else:
-            from ..daq.calibration_dll import CalibrationConverter
 
         self.daq = DAQReadAnalog(configuration=s_settings,
             read_array_size_in_samples=len(Sensor.SENSOR_CHANNELS)
@@ -86,28 +91,6 @@ class Sensor(object):
         self.bias = np.mean(self._raw_sample_buffer, axis=0)
         if self._calib_converter is not None:
             self._calib_converter.bias(self.bias)
-
-    # def determine_bias_old(self, n_samples=100): ## FIXME not needed
-    #     """determines the bias"""
-
-    #     task_was_running = self.daq.is_acquiring_data
-    #     self.daq.start_data_acquisition()
-    #     data = None
-    #     for _ in range(n_samples):
-    #         read_buffer, _ = self.daq.read_analog()
-    #         sample = read_buffer[Sensor.SENSOR_CHANNELS]
-    #         if data is None:
-    #             data = sample
-    #         else:
-    #             data = np.vstack((data, sample))
-
-    #     if not task_was_running:
-    #         self.daq.stop_data_acquisition()
-
-    #     if self._calib_converter is not None and isinstance(data, np.ndarray):
-    #         self._calib_converter.bias(np.mean(data, axis=0))
-    #         # not sure if bias required
-    #         # for recoding of voltages, that is, not convert to forces
 
     def poll_data(self) -> ForceSensorData:
         """Polling data

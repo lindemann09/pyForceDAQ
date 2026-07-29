@@ -47,22 +47,3 @@ class DAQReadAnalogABC(ABC):
             The number of samples actually read.
         """
         pass
-
-
-class CalibrationConverterABC(ABC):
-    """Abstract base class for Calibration Converters."""
-
-    @abstractmethod
-    def __init__(self, calibration_file: str):
-        """Initialize the calibration converter with a calibration file."""
-        pass
-
-    @abstractmethod
-    def convertToFT(self, voltages: npt.NDArray) -> list:
-        """Convert voltages to force and torque values."""
-        pass
-
-    @abstractmethod
-    def bias(self, bias_values: npt.NDArray) -> None:
-        """Set the bias for the calibration."""
-        pass
