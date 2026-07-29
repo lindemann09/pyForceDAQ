@@ -2,12 +2,37 @@ import json
 from abc import ABC
 from dataclasses import dataclass, field, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import tomlkit
 from tomlkit.exceptions import NonExistentKey
 
 from ..constants import SETTINGS_FILE_EXTENSION
+
+
+@dataclass(frozen=True)
+class SensorSettings:
+    """basic settings for a sensor that are in the toml settings file
+    :parameter:
+        reverse_scaling: ist of strings
+            list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
+            Sensors take this into account and correct data online
+    """
+
+    device_label: str
+    channels: str
+    calibration_file_name: str
+    calibration_folder: Path
+    sensor_id: int
+    reverse_scaling: List[str]
+    rate: int
+    convert_to_FT: bool
+    minVal: float
+    maxVal: float
+
+    @property
+    def physicalChannel(self):
+        return "{0}/{1}".format(self.device_label, self.channels)
 
 
 class ABCSettings(ABC):  # must be a dataclass
@@ -27,42 +52,15 @@ class ABCSettings(ABC):  # must be a dataclass
         return False
 
 
-
-@dataclass
-class SensorBasicSettings(ABCSettings):
-    """basic settings for a sensor that are in the toml settings file
-    :parameter:
-        reverse_scaling: ist of strings
-            list of parameter names for which the scaling needs to be reversed (e.g. to fix problems with calibration),
-            Sensors take this into account and correct data online
-    """
-
-    device_label: str
-    calibration_file_name: str
-    channels: str
-    reverse_scaling: List[str]
-
-    @property
-    def physicalChannel(self):
-        return "{0}/{1}".format(self.device_label, self.channels)
-
-@dataclass
-class SensorSettings(SensorBasicSettings):
-
-    sensor_id: int
-    calibration_folder: Path
-    rate: int = 1000
-    convert_to_FT: bool = True
-    minVal: float = -10
-    maxVal: float = 10
-
-
 @dataclass
 class RecordingSettings(ABCSettings):
 
-    device_labels: List[str] = field(default_factory=lambda: ["Dev1"])
-    device_channels: List[str] = field(default_factory=lambda: ["ai0:7"])
-    calibration_files: List[str] = field(default_factory=lambda: ["FT9334.cal"])
+    sensors: List[dict] = field(default_factory=lambda: [
+        {"device_label": "Dev1",
+         "channels": "ai0:7",
+         "calibration_file_name": "FT9334.cal",
+         "reverse_scaling": ["Fz"]}])
+
     calibration_folder: str = "./calibration"
     data_folder: str = "./data"
 
@@ -79,40 +77,31 @@ class RecordingSettings(ABCSettings):
     write_trigger1: bool = False
     write_trigger2: bool = False
 
-    sensors: List[SensorBasicSettings] = field(default_factory=lambda: [
-        SensorBasicSettings(device_label='Dev1',channels="ai0:7",
-            calibration_file_name="FT9334.cal", reverse_scaling=["Fz"])])
-    reverse_scaling: dict | None = field(
-        default_factory=lambda: {"Dev1": [], "Dev2": ["Fz"]}
-    )
     convert_to_forces: bool = True
     zip_data: bool = False
 
     priority: str | None = "normal"
 
     def __post_init__(self):
+        self._check_sensor_settings()
 
-        if isinstance(self.device_labels, str):
-            self.device_labels = [self.device_labels]
-        if isinstance(self.calibration_files, str):
-            self.calibration_files = [self.calibration_files]
-        if isinstance(self.device_channels, str):
-            self.device_channels = [self.device_channels]
+    def _check_sensor_settings(self):
+        if not isinstance(self.sensors, list):
+            raise ValueError("Sensors must be a list of dictionaries with the four sensor properties: "
+                             "     device_label, channels, calibration_file_name, reverse_scaling")
+        for s in self.sensors:
+            if not("device_label" in s and "channels" in s and "calibration_file_name" in s):
+                raise ValueError("Each sensor dictionary must have a device_label, channels, and calibration_file_name")
+            if "reverse_scaling" not in s:
+                s["reverse_scaling"] = []
 
     def set_properties(self, property_dict: Dict[str, Any]) -> bool:
         """return true if a properties of the data class is
         missing or changed in the dict"""
 
-        rtn = super().set_properties(property_dict)
         assert is_dataclass(self)
-
-        n = len(self.device_labels)
-        if len(self.calibration_files) == 1 and n>1:
-            self.calibration_files = self.calibration_files * n
-            rtn = True
-        if len(self.device_channels) == 1 and n>1:
-            self.device_channels = self.device_channels * n
-            rtn = True
+        rtn = super().set_properties(property_dict)
+        self._check_sensor_settings()
         return rtn
 
     def absolute_path_calibration(self, working_dir: str | Path) -> Path:
@@ -143,28 +132,21 @@ class RecordingSettings(ABCSettings):
     def array_write_trigger(self):
         return [self.write_trigger1, self.write_trigger2]
 
-    def reverse_parameters_for_device(self, label: str):
-        if self.reverse_scaling is None:
-            return []
-        else:
-            try:
-                return self.reverse_scaling[label]
-            except KeyError:
-                return []
+    def get_sensor_settings(self, working_dir: str | Path) -> List[SensorSettings]:
 
-    def sensor_settings_list(self, working_dir: str | Path) -> List[SensorSettings]:
         rtn: List[SensorSettings] = []
-
-        for label, cal_file, channels in zip(self.device_labels, self.calibration_files, self.device_channels):
+        for cnt,sensor in enumerate(self.sensors):
             ss = SensorSettings(
-                device_label=label,
-                calibration_file_name=cal_file,
-                channels=channels,
-                reverse_scaling=self.reverse_parameters_for_device(label),
-                sensor_id=self.device_labels.index(label) + 1,
+                device_label=sensor["device_label"],
+                calibration_file_name=sensor["calibration_file_name"],
+                channels=sensor["channels"],
+                reverse_scaling=sensor["reverse_scaling"],
+                sensor_id=cnt + 1,
                 calibration_folder=self.absolute_path_calibration(working_dir),
                 rate=self.sampling_rate,
                 convert_to_FT=self.convert_to_forces,
+                minVal=-10,
+                maxVal=10
             )
             rtn.append(ss)
         return rtn
@@ -230,14 +212,17 @@ class AppSettings(object):
             self.file = Path(filename)
         with open(self.file, "r", encoding="utf-8") as fl:
             d = tomlkit.load(fl)
+
+        do_save= False
         rec_section = d[self.recording_section]
         if "device_labels" in rec_section:
             # old settings convert to new format
-            rec_section = __old_recording_settings_to_new(rec_section)
+            rec_section = old_recording_settings_to_new(rec_section)
+            do_save =True
 
         a = self.gui.set_properties(d[self.gui_section])
-        b = self.recording.set_properties(d[self.recording_section])
-        if a or b:
+        b = self.recording.set_properties(rec_section)
+        if a or b or do_save:
             # missing property in settings file
             self.save()
 
@@ -265,9 +250,12 @@ def list_settings_files():
     return rtn
 
 
-def __old_recording_settings_to_new(d: dict):
+def old_recording_settings_to_new(d: dict):
     """ensures backward compatibility with old settings files
-    that used device_labels, device_channels, calibration_files"""
+    that used device_labels, device_channels, calibration_files
+
+    DEPRECATED
+    """
 
     s = []
     for dev, channels, cal_file in zip(d["device_labels"], d["device_channels"], d["calibration_files"]):
@@ -275,7 +263,7 @@ def __old_recording_settings_to_new(d: dict):
         s.append({
             "device_label": dev,
             "channels": channels,
-            "calibration_file": cal_file,
+            "calibration_file_name": cal_file,
             "reverse_scaling": rev_scaled
         })
     d["sensors"] = s

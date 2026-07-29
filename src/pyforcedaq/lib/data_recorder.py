@@ -230,7 +230,7 @@ class DataRecorder(object):
         if varnames:
             write_forces = self.recording_settings.array_write_forces()
             write_trigger = self.recording_settings.array_write_trigger()
-            write_deviceid = len(self.recording_settings.device_labels) > 1
+            write_deviceid = len(self.recording_settings.sensors) > 1
             line = "time,"
             if write_deviceid:
                 line += "device_tag,"

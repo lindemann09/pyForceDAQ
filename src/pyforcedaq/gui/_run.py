@@ -19,7 +19,7 @@ from ..constants import DEFAULT_OUTPUT_FILENAME
 from ..lib.clock import wait_ms
 from ..lib.data_recorder import DataRecorder
 from ..lib.sensor_process import SensorProcess
-from ..lib.settings import AppSettings, GUISettings, SensorBasicSettings, SensorSettings
+from ..lib.settings import AppSettings, GUISettings, SensorSettings
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator
@@ -389,15 +389,10 @@ def run(settings: AppSettings):
     rs = settings.recording
     working_dir = settings.file.parent
     logging.info("New Recording with forceDAQ %s", forceDAQVersion)
-    logging.info("Sensors %s", rs.calibration_files)
+    logging.info("Sensors %s", [sensor["calibration_file_name"] for sensor in rs.sensors])
     logging.info("Settings %s", settings.recording_as_json)
 
-    if not isinstance(rs.device_labels, (list, tuple)):
-        rs.device_labels = [rs.device_labels]
-    if not isinstance(rs.calibration_files, (list, tuple)):
-        rs.calibration_files = [rs.calibration_files]
-
-    sensor_settings: List[SensorSettings] = rs.sensor_settings_list(working_dir)
+    sensor_settings: List[SensorSettings] = rs.get_sensor_settings(working_dir)
 
     # expyriment
     control.defaults.initialise_delay = 0

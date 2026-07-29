@@ -27,7 +27,7 @@ class FileWriter(Process):
         self._close_file = Event()
         self._write_forces = recording_settings.array_write_forces()
         self._write_trigger = recording_settings.array_write_trigger()
-        self._write_deviceid = len(recording_settings.device_labels) > 1
+        self._write_deviceid = len(recording_settings.sensors) > 1
         self._decimal_places = float_decimal_places
 
     @property
