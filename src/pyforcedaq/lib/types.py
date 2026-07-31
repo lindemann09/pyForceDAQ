@@ -46,15 +46,16 @@ class ForceSensorData(TimedData):
     * trigger1 & trigger2
 
     """
-
+    n_forces = 6
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
+
     # FIXME update docu, types have change to numpy
 
     def __init__(
         self,
-        time: float | None = None,
-        forces: NDArray[np.float64] = np.zeros(6),
+        forces: NDArray[np.float64],
         trigger: NDArray[np.float64] = np.zeros(2),
+        time: float | None = None,
         sensor_id: int = 0,
         trigger_threshold:float =0.9,
         reverse=(),
@@ -80,6 +81,8 @@ class ForceSensorData(TimedData):
         super().__init__(time)
         self.sensor_id = sensor_id
         self.forces = np.asarray(forces, dtype=np.float64)
+        assert len(forces) == ForceSensorData.n_forces
+
         self.trigger = np.asarray(trigger, dtype=np.float64)
         if abs(self.trigger[0]) < trigger_threshold:
             self.trigger[0] = 0
@@ -145,22 +148,6 @@ class ForceSensorData(TimedData):
     @Tz.setter
     def Tz(self, value):
         self.forces[5] = value
-
-    @property
-    def ctypes_struct(self):
-        return CTypesForceSensorData(
-            self.sensor_id,
-            self.time,
-            CTYPE_FORCES(*self.forces.tolist()),
-            CTYPE_TRIGGER(*self.trigger.tolist()),
-        )
-
-    @ctypes_struct.setter
-    def ctypes_struct(self, struct):
-        self.sensor_id = struct.sensor_id
-        self.time = struct.time
-        self.forces = struct.forces
-        self.trigger = struct.trigger
 
     @classmethod
     def force_id(cls, force_label) -> float | None:

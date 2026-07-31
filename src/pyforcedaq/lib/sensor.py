@@ -107,10 +107,10 @@ class Sensor(object):
         """
 
         data, _ = self.daq.read_analog()
+        t = local_clock()
         raw_samples = data[Sensor.SENSOR_CHANNELS]
         self._raw_sample_buffer.append(raw_samples)
 
-        t = local_clock()
         # bias correction of raw samples and conversion to force data, if needed
         if self.convert_to_FT and self._calib_converter is not None:
             forces = np.asarray(
@@ -124,8 +124,8 @@ class Sensor(object):
         forces = forces * self._reverse_vector
 
         return ForceSensorData(
+            forces=forces,
             time=t,
             sensor_id=self.sensor_id,
-            forces=forces,
             trigger=data[Sensor.TRIGGER_CHANNELS]
-        )
+        ) # TODO: remove deprecated trigger channel support

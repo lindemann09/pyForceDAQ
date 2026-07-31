@@ -45,6 +45,8 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
         self._task_is_started = False
         self.read_array_size_in_samples = read_array_size_in_samples
 
+        self.sample_cnt = 0
+
     @property
     def is_acquiring_data(self) -> bool:
         return self._task_is_started
@@ -57,7 +59,9 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
 
         if not self._task_is_started:
             self.start()
+            self.sample_cnt = 0
             self._task_is_started = True
+
 
     def stop_data_acquisition(self) -> None:
         """Stop data acquisition of the NI device"""
@@ -84,8 +88,9 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
             the number of read samples
 
         """
-
         # FIXME nidaq_consts.READ_ALL_AVAILABLE
-        data = self.read(self.NUM_SAMPS_PER_CHAN, self.TIMEOUT) # type: ignore
+        data = self.read(nidaq_consts.READ_ALL_AVAILABLE, self.TIMEOUT) # type: ignore
         np_data = np.reshape(np.array(data), (-1,))  # reshape to vector
-        return np_data, len(np_data)
+        n = len(np_data)
+        self.sample_cnt += n
+        return np_data, n
