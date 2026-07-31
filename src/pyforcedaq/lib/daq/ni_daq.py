@@ -3,6 +3,7 @@ from typing import Tuple
 import nidaqmx
 import numpy as np
 from nidaqmx import constants as nidaq_consts
+from numpy.typing import NDArray
 
 from ..settings import SensorSettings
 from . import DAQReadAnalogABC
@@ -70,7 +71,7 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
             self.stop()
             self._task_is_started = False
 
-    def read_analog(self) -> Tuple[np.ndarray, int]:
+    def read_analog(self) -> NDArray[np.float64]:
         """Polling data
 
         Reading data from NI device
@@ -92,4 +93,4 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
         data = self.read(nidaq_consts.READ_ALL_AVAILABLE, self.TIMEOUT) # type: ignore
         np_data = np.array(data).T
         self.sample_cnt += len(np_data)
-        return np_data, len(np_data) # FIXME remove n
+        return np_data

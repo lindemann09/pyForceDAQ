@@ -1,9 +1,9 @@
 __author__ = "Oliver Lindemann"
 
 from abc import ABC, abstractmethod
-from typing import Tuple
 
-import numpy.typing as npt
+from numpy import float64
+from numpy.typing import NDArray
 
 from ..settings import SensorSettings
 
@@ -36,7 +36,7 @@ class DAQReadAnalogABC(ABC):
         pass
 
     @abstractmethod
-    def read_analog(self) -> Tuple[npt.NDArray, int]:
+    def read_analog(self) -> NDArray[float64]:
         """Read analog data.
 
         Returns

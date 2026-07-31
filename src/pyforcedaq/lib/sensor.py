@@ -106,7 +106,7 @@ class Sensor(object):
 
         """
 
-        npdata_2d, _ = self.daq.read_analog()
+        npdata_2d = self.daq.read_analog()
         t = local_clock()
         rtn = []
         for data in npdata_2d:
@@ -132,5 +132,5 @@ class Sensor(object):
                 sensor_id=self.sensor_id,
                 trigger=data[Sensor.TRIGGER_CHANNELS]
             )) # TODO: remove deprecated trigger channel support
-        
+
         return rtn

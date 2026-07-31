@@ -4,6 +4,7 @@ import logging
 from typing import Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ..clock import StopWatch
 from . import DAQReadAnalogABC
@@ -49,7 +50,7 @@ class DAQReadAnalog(DAQReadAnalogABC):
         if self._task_is_started:
             self._task_is_started = False
 
-    def read_analog(self) -> Tuple[np.ndarray, int]:
+    def read_analog(self) -> NDArray[np.float64]:
         """Reading data
 
         Reading data from NI device
@@ -70,7 +71,7 @@ class DAQReadAnalog(DAQReadAnalogABC):
 
         # fill in data
         if not self._task_is_started:
-            return np.array([]), 0
+            return np.array([])
 
         n_new_samples = int(self._simulation_timer.time_ms) - self._sample_cnt
         while n_new_samples <= 0: # wait until new sample is available
@@ -79,4 +80,4 @@ class DAQReadAnalog(DAQReadAnalogABC):
         self._sample_cnt += 1
         x = self._sample_cnt / 1000
         y = 10 + np.array((np.sin(x/2), np.cos(x/5), np.sin(x)))*10
-        return np.append(y, np.array((0, 0 , 0, 0, 0))), 1
+        return np.atleast_2d(np.append(y, np.zeros(5)))
