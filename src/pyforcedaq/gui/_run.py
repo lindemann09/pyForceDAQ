@@ -8,7 +8,6 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-from typing import List
 
 import numpy as np
 import pygame
@@ -32,7 +31,7 @@ RESPONSE_MINMAX2 = "RM2"
 CHANGED_LEVEL = "CL"
 CHANGED_LEVEL2 = "CL2"
 
-def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: List[str]):
+def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[str]):
 
     indicator_grid = 70  # distance between indicator center
     plotter_width = 900
@@ -392,7 +391,7 @@ def run(settings: AppSettings):
     logging.info("Sensors %s", [sensor["calibration_file_name"] for sensor in rs.sensors])
     logging.info("Settings %s", settings.recording_as_json)
 
-    sensor_settings: List[SensorSettings] = rs.get_sensor_settings(working_dir)
+    sensor_settings: list[SensorSettings] = rs.get_sensor_settings(working_dir)
 
     # expyriment
     control.defaults.initialise_delay = 0

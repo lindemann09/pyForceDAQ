@@ -67,7 +67,7 @@ class GUIStatus(object):
                 )
             )
 
-        self.pause_recording = True
+        self.pause_recording = False
         self.quit_recording = False
         self.clear_screen = True
         self.thresholds = None

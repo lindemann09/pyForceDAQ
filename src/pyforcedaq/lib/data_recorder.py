@@ -156,7 +156,6 @@ class DataRecorder(object):
         data : all last data
 
         """
-
         # pause polling
         for fsp in self.force_sensor_processes:
             fsp.pause_saving()

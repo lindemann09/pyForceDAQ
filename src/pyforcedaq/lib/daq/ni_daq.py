@@ -91,6 +91,6 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
         """
 
         data = self.read(nidaq_consts.READ_ALL_AVAILABLE, self.TIMEOUT) # type: ignore
-        np_data = np.array(data).T
+        np_data = np.asarray(data).T
         self.sample_cnt += len(np_data)
         return np_data
