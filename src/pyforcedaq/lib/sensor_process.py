@@ -176,38 +176,39 @@ class SensorProcess(Process):
 
         while not self._flag_quit_request.is_set():
 
-            d = sensor.poll_data()
-            if self.event_trigger.is_set():
-                self.event_trigger.clear()
-                d.trigger[0] = 1 # FIXME LSL marker stream
+            data = sensor.poll_data()
+            for d in data:
+                if self.event_trigger.is_set():
+                    self.event_trigger.clear()
+                    d.trigger[0] = 1 # FIXME LSL marker stream
 
-            if init_samples > 0:
-                # initial samples that are used and merely used bias determination, do not write to LSL or file writer queue
-                init_samples -= 1
-                if init_samples <= 0:
+                if init_samples > 0:
+                    # initial samples that are used and merely used bias determination, do not write to LSL or file writer queue
+                    init_samples -= 1
+                    if init_samples <= 0:
+                        sensor.determine_bias()
+                    continue
+
+                ## LSL
+                if lsl_data_steam is not None:
+                    lsl_data_steam.push_sample(d.forces[stream_forces])
+                if lsl_hardware_trigger_stream is not None:
+                    tr = d.trigger[stream_trigger]
+                    if any(tr):  # only stream if at least one trigger is active
+                        lsl_hardware_trigger_stream.push_sample(tr)
+
+                # write to shared memory and file writer queue
+                self._total_sample_cnt.value += 1 # type: ignore
+                self._dat[:] = d.forces
+
+                if self.is_saving() and self._file_writer_queue is not None:
+                    self._file_writer_queue.put(d)
+                    self._saved_sample_cnt.value += 1  # type: ignore # TODO check if all the sample counter are needed
+
+                if not self.flag_sensor_bias_is_determined.is_set():
+                    # new baseline requested
                     sensor.determine_bias()
-                continue
-
-            ## LSL
-            if lsl_data_steam is not None:
-                lsl_data_steam.push_sample(d.forces[stream_forces])
-            if lsl_hardware_trigger_stream is not None:
-                tr = d.trigger[stream_trigger]
-                if any(tr):  # only stream if at least one trigger is active
-                    lsl_hardware_trigger_stream.push_sample(tr)
-
-            # write to shared memory and file writer queue
-            self._total_sample_cnt.value += 1 # type: ignore
-            self._dat[:] = d.forces
-
-            if self.is_saving() and self._file_writer_queue is not None:
-                self._file_writer_queue.put(d)
-                self._saved_sample_cnt.value += 1  # type: ignore
-
-            if not self.flag_sensor_bias_is_determined.is_set():
-                # new baseline requested
-                sensor.determine_bias()
-                self.flag_sensor_bias_is_determined.set()
+                    self.flag_sensor_bias_is_determined.set()
 
         # stop process
         self.pause_saving()

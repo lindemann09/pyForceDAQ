@@ -88,9 +88,8 @@ class DAQReadAnalog(nidaqmx.Task, DAQReadAnalogABC):
             the number of read samples
 
         """
-        # FIXME nidaq_consts.READ_ALL_AVAILABLE
+
         data = self.read(nidaq_consts.READ_ALL_AVAILABLE, self.TIMEOUT) # type: ignore
-        np_data = np.reshape(np.array(data), (-1,))  # reshape to vector
-        n = len(np_data)
-        self.sample_cnt += n
-        return np_data, n
+        np_data = np.array(data).T
+        self.sample_cnt += len(np_data)
+        return np_data, len(np_data) # FIXME remove n

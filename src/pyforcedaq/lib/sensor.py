@@ -93,7 +93,7 @@ class Sensor(object):
         if self._calib_converter is not None:
             self._calib_converter.bias(self.bias)
 
-    def poll_data(self) -> ForceSensorData:
+    def poll_data(self) -> list[ForceSensorData]:
         """Polling data
 
         Reading data from NI device and converting voltages to force data using
@@ -106,26 +106,31 @@ class Sensor(object):
 
         """
 
-        data, _ = self.daq.read_analog()
+        npdata_2d, _ = self.daq.read_analog()
         t = local_clock()
-        raw_samples = data[Sensor.SENSOR_CHANNELS]
-        self._raw_sample_buffer.append(raw_samples)
+        rtn = []
+        for data in npdata_2d:
 
-        # bias correction of raw samples and conversion to force data, if needed
-        if self.convert_to_FT and self._calib_converter is not None:
-            forces = np.asarray(
-                self._calib_converter.convertToFT(voltages=raw_samples)
-            )
-        else:
-            # array
-            forces = raw_samples - self.bias
+            raw_samples = data[Sensor.SENSOR_CHANNELS]
+            self._raw_sample_buffer.append(raw_samples)
 
-        # reverse scaling if needed
-        forces = forces * self._reverse_vector
+            # bias correction of raw samples and conversion to force data, if needed
+            if self.convert_to_FT and self._calib_converter is not None:
+                forces = np.asarray(
+                    self._calib_converter.convertToFT(voltages=raw_samples)
+                )
+            else:
+                # array
+                forces = raw_samples - self.bias
 
-        return ForceSensorData(
-            forces=forces,
-            time=t,
-            sensor_id=self.sensor_id,
-            trigger=data[Sensor.TRIGGER_CHANNELS]
-        ) # TODO: remove deprecated trigger channel support
+            # reverse scaling if needed
+            forces = forces * self._reverse_vector
+
+            rtn.append(ForceSensorData(
+                forces=forces,
+                time=t,
+                sensor_id=self.sensor_id,
+                trigger=data[Sensor.TRIGGER_CHANNELS]
+            )) # TODO: remove deprecated trigger channel support
+        
+        return rtn
