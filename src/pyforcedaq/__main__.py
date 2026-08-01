@@ -15,7 +15,7 @@ def print_info(logfilename:str|None = None):
 
 def cli():
     parser = argparse.ArgumentParser(
-        prog="forcedaq",
+        prog=APPNAME,
         description=f"Command-line interface for {APPNAME} {__version__}",
         epilog=f"Author: {__author__}",
     )
