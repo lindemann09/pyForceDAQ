@@ -57,6 +57,7 @@ class FileWriter(Process):
 
         if self._filepath is None:
             raise ValueError("File path is not set. Call set_file() with a valid file path before running the process.")
+        self._filepath.parent.mkdir(parents=True, exist_ok=True)
 
         if self._append_mode:
             mode = "a"
