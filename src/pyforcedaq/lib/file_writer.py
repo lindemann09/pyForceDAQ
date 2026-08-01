@@ -15,7 +15,7 @@ class FileWriter(Process):
         self, recording_settings: RecordingSettings,
         filepath: Path|str = "",
         append_mode: bool = False,
-        float_decimal_places: int = 4
+        float_decimal_places: int = 6
     ):
         """To write to a file from multiple processes. Use FileWriter.queue.put(str) to write file"""
 
@@ -58,7 +58,6 @@ class FileWriter(Process):
         if self._filepath is None:
             raise ValueError("File path is not set. Call set_file() with a valid file path before running the process.")
 
-        float_format = "{0:." + str(self._decimal_places) + "f},"
         if self._append_mode:
             mode = "a"
         else:
@@ -85,18 +84,10 @@ class FileWriter(Process):
                     continue  # wait again for events
 
             if isinstance(d, ForceSensorData):
-                txt = f"{d.time},"
-                if self._write_deviceid:
-                    txt += f"{d.sensor_id},"
-                for x in d.forces[self._write_forces]:
-                    txt += float_format.format(x)
-                for x in d.trigger[self._write_trigger]:
-                    if isinstance(x, int):
-                        txt += f"{x},"
-                    else:
-                        txt += float_format.format(x)
-                txt = txt[:-1] + NEWLINE
-
+                txt = d.csv(write_device_id=self._write_deviceid,
+                            write_forces=self._write_forces,
+                            write_trigger=self._write_trigger,
+                            float_decimal_places=self._decimal_places) + NEWLINE
             elif isinstance(d, str):
                 txt = f"{TAG_COMMENTS} {d}"
             else:

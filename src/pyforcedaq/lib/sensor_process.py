@@ -14,6 +14,7 @@ from . import lsl
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 
+logger = logging.getLogger()
 
 class SensorProcess(Process):
 
@@ -38,13 +39,11 @@ class SensorProcess(Process):
 
         # type checks
         if not isinstance(sensor_settings, SensorSettings):
-            raise RuntimeError("sensor_settings has to be force_sensor settings object")
+            raise TypeError("sensor_settings has to be force_sensor settings object")
         if not isinstance(recording_settings, RecordingSettings):
-            raise RuntimeError(
-                "recording_settings has to be force_sensor.RecordingSettings object"
-            )
+            raise TypeError("recording_settings has to be force_sensor.RecordingSettings object")
 
-        super(SensorProcess, self).__init__()
+        super().__init__()
 
         self._daq_type = daq_type
         self.sensor_settings = sensor_settings
@@ -125,7 +124,7 @@ class SensorProcess(Process):
 
     def join(self, timeout=None):
         self._flag_quit_request.set()
-        super(SensorProcess, self).join(timeout)
+        super().join(timeout)
 
     def run(self):
         sensor = Sensor(self.sensor_settings,
@@ -161,12 +160,12 @@ class SensorProcess(Process):
                 )
 
         sensor.daq.start_data_acquisition()
-        logging.info(
+        logger.info(
             "Sensor start, %s, pid %s",
             sensor.device_label,
             self.pid
         )
-        # FIXME logging is inconsistent, check logging and console output
+        # FIXME  check logging and console output
 
         # polling loop
         self.pause_saving()
@@ -213,5 +212,5 @@ class SensorProcess(Process):
         # stop process
         self.pause_saving()
         sensor.daq.stop_data_acquisition()
-        logging.info("Sensor quit, %s", sensor.device_label)
+        logger.info("Sensor quit, %s", sensor.device_label)
 

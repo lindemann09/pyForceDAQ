@@ -14,7 +14,6 @@ def print_info(logfilename:str|None = None):
 
 
 def cli():
-    logging.info("==== App started ====")
     parser = argparse.ArgumentParser(
         prog="forcedaq",
         description=f"Command-line interface for {APPNAME} {__version__}",

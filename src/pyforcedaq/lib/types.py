@@ -47,6 +47,7 @@ class ForceSensorData(TimedData):
 
     """
     n_forces = 6
+    n_triggers = 2
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
 
     # FIXME update docu, types have change to numpy
@@ -91,15 +92,32 @@ class ForceSensorData(TimedData):
         for r in reverse:
             forces[r] = -1 * forces[r]
 
-    def __str__(self):
+    def csv(self,
+            write_device_id: bool,
+            write_forces: list[bool],
+            write_trigger: list[bool],
+            float_decimal_places: int= 4) -> str:
         """converts data to string."""
-        txt = (
-            f"{self.sensor_id:d},{self.time:.5f},{self.forces[0]:.4f},"
-            f"{self.forces[1]:.4f},{self.forces[2]:.4f},{self.forces[3]:.4f},"
-            f"{self.forces[4]:.4f},{self.forces[5]:.4f}"
-        )
-        txt += f",{self.trigger[0]:.4f},{self.trigger[1]:.4f}"
-        return txt
+
+        float_format = "{0:." + str(float_decimal_places) + "f},"
+        txt = f"{self.time},"
+        if write_device_id:
+            txt += f"{self.sensor_id},"
+        for x in self.forces[write_forces]:
+            txt += float_format.format(x)
+        for x in self.trigger[write_trigger]:
+            if isinstance(x, int):
+                txt += f"{x},"
+            else:
+                txt += float_format.format(x)
+        return txt[:-1]
+
+
+    def __str__(self):
+        return self.csv(write_device_id=True,
+                        write_forces=[True]*ForceSensorData.n_forces,
+                        write_trigger=[True]*ForceSensorData.n_triggers,
+                        float_decimal_places=4)
 
     @property
     def Fx(self):
