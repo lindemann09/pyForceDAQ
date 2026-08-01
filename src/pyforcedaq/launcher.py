@@ -144,6 +144,7 @@ def run_launcher():
         else:
             break
 
+
     if event == "Start":
         if not (settings.recording.save_data or settings.recording.lsl_stream):
             ch = _sg.popup_yes_no(

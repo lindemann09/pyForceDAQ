@@ -9,20 +9,13 @@ import atexit
 import logging
 from pathlib import Path
 from time import asctime, localtime
-from typing import List
 
-from .. import __version__ as forceDAQVersion
-from .. import constants
+from .. import APPNAME, __version__, constants
 from . import lsl
 from .file_writer import FileWriter, unique_file_path
-from .misc import set_logging
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
 from .types import ForceSensorData
-
-set_logging(data_directory="data", log_file="recording.log")
-
-# FIXME LSL marker event for all events
 
 
 class DataRecorder(object):
@@ -31,7 +24,7 @@ class DataRecorder(object):
     def __init__(
         self,
         recording_settings: RecordingSettings,
-        force_sensor_settings: SensorSettings | List[SensorSettings]):
+        force_sensor_settings: SensorSettings | list[SensorSettings]):
         """queue_data will be saved
         see sensorprocess.__init__
 
@@ -56,7 +49,7 @@ class DataRecorder(object):
             queue = None
 
         # create sensor processes
-        self.force_sensor_processes: List[SensorProcess] = []
+        self.force_sensor_processes: list[SensorProcess] = []
         event_trigger = []
         for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
@@ -177,7 +170,7 @@ class DataRecorder(object):
         file_path: str | Path,
         varnames: bool = True,
         comment_line: str = "",
-    ) -> Path:
+    ) -> Path | None:
         """Create a data file
 
         Only if data file has been opened, data will be saved!
@@ -217,7 +210,7 @@ class DataRecorder(object):
         logging.info("new file: %s", file_path)
 
         self.file_writer.queue.put(
-            f"Recorded at {asctime(localtime())} with pyForceDAQ {forceDAQVersion}\n")
+            f"Recorded at {asctime(localtime())} with {APPNAME} {__version__}\n")
 
         for s in self.sensor_settings_list:
             txt = f" Sensor: label={s.device_label}, cal-file={s.calibration_file_name}\n"

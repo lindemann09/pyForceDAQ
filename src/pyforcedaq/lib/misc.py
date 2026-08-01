@@ -1,31 +1,27 @@
 import logging
 import os
 import socket
-import sys
+from pathlib import Path
 from subprocess import check_output
 
+import appdirs
 import numpy as np
 from numpy import typing as npt
 
 from .clock import local_clock_ms
 
 
-def set_logging(data_directory, log_file):
-    base_dir = os.path.split(sys.argv[0])[0]
-    log_dir = os.path.join(base_dir, data_directory)
-    try:
-        os.mkdir(log_dir)
-    except:
-        pass
-    log_file = os.path.abspath(os.path.join(log_dir, log_file))
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[%(asctime)s] %(message)s",
-        datefmt="%m-%d %H:%M:%S",
-        filename=log_file,
-        filemode="a",
-    )
+def set_logging(log_file):
+    log_dir = Path(appdirs.AppDirs("").user_log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / log_file
+    logging.basicConfig(filename=log_file,
+                        encoding='utf-8',
+                        format="[%(asctime)s] %(levelname)s: %(message)s",
+                        datefmt="%m%d %H:%M:%S",
+                        level=logging.INFO)
     return log_file
+
 
 
 def N2g(N):

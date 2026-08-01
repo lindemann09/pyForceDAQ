@@ -1,26 +1,37 @@
 import argparse
+import logging
 
-from . import __author__, __version__, constants
+from . import APPNAME, LOGFILE, __author__, __version__, constants
 from .lib.settings import AppSettings
 
 
-def print_version():
+def print_info(logfilename:str|None = None):
     print("+" + "-" * 23 + "+")
-    print(f"| pyforceDAQ {__version__}".ljust(24) + "|")
+    print(f"| {APPNAME} {__version__}".ljust(24) + "|")
     print("+" + "-" * 23 + "+")
+    if logfilename is not None:
+        print(f"Logging to {logfilename}")
+
 
 def cli():
-
+    logging.info("==== App started ====")
     parser = argparse.ArgumentParser(
         prog="forcedaq",
-        description=f"Command-line interface for pyforceDAQ {__version__}",
+        description=f"Command-line interface for {APPNAME} {__version__}",
         epilog=f"Author: {__author__}",
-    )
-    parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
     parser.add_argument("SETTINGS_FILE", nargs="?", default="", help="settings file")
+
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "--logfile",
+        action="store_true",
+        default=False,
+        help="show logfile path",
+    )
 
     parser.add_argument(
         "-o",
@@ -39,12 +50,17 @@ def cli():
 
 
     args = parser.parse_args()
+
+    if args.logfile:
+        print(f"Log file: {LOGFILE}")
+        return
+
     if args.mock:
         constants.DAQ_TYPE = constants.DaqType.MOCK_SENSOR
     else:
         constants.DAQ_TYPE = constants.DaqType.NIDAQMX # use NI-DAQmx
 
-    print_version()
+    print_info(str(LOGFILE))
     if not args.omit_launcher:
         if len(args.SETTINGS_FILE) > 0:
             print("Can't use launcher and settings file")
