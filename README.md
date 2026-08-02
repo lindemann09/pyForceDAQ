@@ -30,10 +30,6 @@ To install pyForceDAQ from release-zipfile
 4. run `forceDAQ_GUI.py`
 5. edit settings via GUI if required
 
-**Note:** The software uses a mock sensor and simulates
-data, if no device is connected. It enforce mock sensor set (before importing further packages modules):
-
-``pyforcedaq.constants.DAQ_TYPE = pyforcedaq.daq.MOCK_SENSOR``
 
 Development
 -----------
