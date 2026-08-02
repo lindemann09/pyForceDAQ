@@ -6,7 +6,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .clock import local_clock
-from .misc import MinMaxDetector as _MinMaxDetector
 
 # tag in data output
 TAG_COMMENTS = "#"
@@ -168,7 +167,7 @@ class ForceSensorData(TimedData):
         self.forces[5] = value
 
     @classmethod
-    def force_id(cls, force_label) -> float | None:
+    def force_id(cls, force_label) -> int | None:
         """returns the id of the force parameter with the given label or None if not found"""
         try:
             return cls.forces_names.index(force_label)
@@ -201,120 +200,3 @@ class UDPData(TimedData):
         return self.byte_string[: len(byte_string)] == byte_string
 
 
-def bytes_startswith(a, b):
-    return a[: len(b)] == b
-
-
-class Thresholds(object):
-    def __init__(self, thresholds, n_channels=1):
-        """Thresholds for a one or multiple channels of data"""
-        self._thresholds = list(thresholds)
-        self._thresholds.sort()
-        self.set_number_of_channels(n_channels=n_channels)
-
-    def is_detecting(self, channels=0):
-        return (
-            self._minmax[channels] is not None or self._prev_level[channels] is not None
-        )
-
-    def is_level_change_detecting(self, channels=0):
-        return self._prev_level[channels] is not None
-
-    def is_response_minmax_detecting(self, channels=0):
-        return self._minmax[channels] is not None
-
-    def is_detecting_anything(self):
-        """is detecting something in at least one channel"""
-        nn = lambda x: x is not None
-        return (
-            len(list(filter(nn, self._prev_level))) > 0
-            or len(list(filter(nn, self._minmax))) > 0
-        )
-
-    def set_number_of_channels(self, n_channels):
-        self._prev_level = [None] * n_channels
-        self._minmax = [None] * n_channels
-
-    @property
-    def thresholds(self):
-        return self._thresholds
-
-    def get_level(self, value) -> int:
-        """return [int]
-        int: the level of current sensor value depending of thresholds (array)
-
-        return:
-                0 below smallest threshold
-                1 large first but small second threshold
-                ..
-                x larger highest threshold (x=n thresholds)
-        """
-
-        level = None
-        cnt = 0
-        for cnt, x in enumerate(self._thresholds):
-            if value < x:
-                level = cnt
-                break
-
-        if level is None:
-            level = cnt + 1
-        return level
-
-    def set_level_change_detection(self, value, channel=0):
-        """sets level change detection
-        returns: current level
-        """
-        self._prev_level[channel] = self.get_level(value)
-        self._minmax[channel] = None
-        return self._prev_level[channel]
-
-    def get_level_change(self, value, channel=0) -> tuple[bool, int] | tuple[None, None]:
-        """return tuple with level_change (boolean) and current level (int)
-        """
-
-        current = self.get_level(value)
-        changed = current != self._prev_level[channel]
-        if changed:
-            self._prev_level[channel] = current
-        return changed, current
-
-    def __str__(self):
-        return str(self._thresholds)
-
-    def set_response_minmax_detection(self, value, duration, channel=0):
-        """Start response detection
-        Parameters detects minimum and maximum of the response
-            after first level change (length =number_of_samples)
-
-        value: start level
-        polled samples need to feed via get_response_minmax()
-
-        returns: current level
-        """
-
-        lv = self.get_level(value)
-        self._minmax[channel] = _MinMaxDetector(start_value=lv, duration_ms=duration)
-        self._prev_level[channel] = None
-        return lv
-
-    def get_response_minmax(self, value, channel=0) -> tuple[int, int] | tuple[None, None]:
-        """checks for response minimum and maximum if set_response_minmax_detection is switch on
-        With this function you add a sample and check if the response can be classified. If so,
-        it returns a tuple with the minimum and maximum response level during the response period
-        otherwise
-            returns None
-
-        tuple with level_change (boolean) and current level (int)
-
-        Note: after response minmax has been determined once response_minmax_detection is switched off!
-        """
-
-        if self._minmax[channel] is None:
-            return None, None
-
-        rtn = self._minmax[channel].process(self.get_level(value))
-        if rtn is not None:
-            # minmax just detected
-            self._minmax[channel] = None  # switch off
-        return rtn

@@ -83,7 +83,6 @@ class RecordingScreen(object):
             self.add_text_line_left("P: pause/unpause saving", [self.left, self.bottom + 20], text_colour=col)
         self.add_text_line_left("B: set baseline", [self.left, self.bottom], text_colour=col)
         self.add_text_line_left("V: toggle view", [self.left + 190, self.bottom + 20], text_colour=col)
-        self.add_text_line_left("F: toggle show filtered", [self.left + 190, self.bottom], text_colour=col)
         self.add_text_line_left(
             "+/-: axes scaling", [self.left + 380, self.bottom + 20], text_colour=col
         )

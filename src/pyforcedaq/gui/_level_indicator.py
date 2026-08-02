@@ -2,6 +2,7 @@ import numpy as np
 from expyriment.misc import constants
 from expyriment.stimuli import Canvas, Rectangle
 
+from ..lib.misc import Thresholds
 from ._layout import make_text_line
 
 
@@ -13,7 +14,7 @@ def level_indicator(
     text_size=14,
     text_gap=20,
     position=(0, 0),
-    thresholds=None,
+    thresholds: Thresholds | None = None,
     colour=constants.C_EXPYRIMENT_ORANGE,
 ):
     """make an level indicator in for of an Expyriment stimulus
@@ -43,10 +44,11 @@ def level_indicator(
     bar.plot(indicator)
 
     # levels & horizontal lines
-    try:
+    if thresholds is not None:
         px_horizontal_lines = scaling.data2pixel(values=np.array(thresholds.thresholds))
-    except:
+    else:
         px_horizontal_lines = None
+
     if px_horizontal_lines is not None:
         for px in px_horizontal_lines:
             level = Rectangle(

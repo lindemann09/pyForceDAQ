@@ -2,21 +2,19 @@ __author__ = "Oliver Lindemann"
 
 
 from time import sleep
-from typing import List, Tuple
 
-import numpy as np
 from expyriment import io, misc
 
 from ..lib.data_recorder import DataRecorder
-from ..lib.misc import SensorHistory
+from ..lib.misc import DataBuffer, Thresholds
 from ..lib.sensor_process import SensorProcess
 from ..lib.settings import GUISettings
-from ..lib.types import ForceSensorData, Thresholds
+from ..lib.types import ForceSensorData
 from ._layout import RecordingScreen, expy_constants, logo_text_line
 from ._scaling import Scaling
 
 
-def _text2number_array(txt):
+def _text2number_array(txt) -> list[float] | None:
     """helper function"""
     rtn = []
     try:
@@ -27,14 +25,14 @@ def _text2number_array(txt):
         return None
 
 
-class GUIStatus(object):
+class GUIStatus:
 
     def __init__(
         self,
         gui_settings: GUISettings,
         recorder: DataRecorder,
-        screen_size: Tuple[int, int],
-        top_left_info:List[str] = [""]
+        screen_size: tuple[int, int],
+        top_left_info:list[str] = [""]
     ):
 
         self.gs = gui_settings
@@ -59,18 +57,19 @@ class GUIStatus(object):
         self.n_sensors = len(self.sensor_processes)
         self.force_id_level_detect = ForceSensorData.force_id(gui_settings.level_detection_parameter)
 
-        self.history: List[SensorHistory] = []
+        self.history: list[DataBuffer] = []
+
         for _ in range(self.n_sensors):
             self.history.append(
-                SensorHistory(
-                    history_size=gui_settings.moving_average_size, number_of_parameter=3
+                DataBuffer(
+                    maxlen=gui_settings.moving_average_size
                 )
             )
 
         self.pause_recording = False
         self.quit_recording = False
         self.clear_screen = True
-        self.thresholds = None
+        self.threshold_list: list[Thresholds] = []
         self.set_marker = False
         self._last_processed_smpl = [0] * self.n_sensors
         self._clock = misc.Clock()
@@ -80,7 +79,6 @@ class GUIStatus(object):
             self.sensor_info_str = self.sensor_info_str + f"{tmp.device_label}\n"
         self.sensor_info_str = self.sensor_info_str.strip()
         self.plot_indicator = True
-        self.plot_filtered = False
         if self.n_sensors == 1:
             self.plot_data_indicator = (
                 gui_settings.plot_data_indicator_for_single_sensor
@@ -154,7 +152,7 @@ class GUIStatus(object):
             return True
         return False
 
-    def check_new_samples(self):
+    def check_new_samples(self) -> list[int]:
         """returns list of sensors with new samples"""
         rtn = []
         for i, cnt in enumerate(
@@ -205,8 +203,6 @@ class GUIStatus(object):
             self.scaling_indicator.data_range_down()
             self.background.stimulus().present()
             self.clear_screen = True
-        elif key == misc.constants.K_f:
-            self.plot_filtered = not self.plot_filtered
 
         elif key == misc.constants.K_t:
             tmp = _text2number_array(
@@ -216,16 +212,6 @@ class GUIStatus(object):
             )
             self.background.stimulus().present()
             if tmp is not None:
-                self.thresholds = Thresholds(tmp, n_channels=self.n_sensors)
+                self.threshold_list = [Thresholds(tmp)] * self.n_sensors
             else:
-                self.thresholds = None
-
-    def update_history(self, sensor:int):
-        self.history[sensor].update(self.sensor_processes[sensor].get_Fxyz())
-
-    def get_average_level_detection_parameter(self, sensor:int) -> np.floating | None:
-        """just a short cut"""
-        if sensor < self.n_sensors and isinstance(self.force_id_level_detect, int):
-            return self.history[sensor].moving_average(self.force_id_level_detect)
-        else:
-            return None
+                self.threshold_list = []

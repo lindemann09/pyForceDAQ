@@ -7,7 +7,6 @@ Uses the atiiaftt library for converting voltages to force data, if installed.
 
 __author__ = "Oliver Lindemann"
 
-from collections import deque
 from pathlib import Path
 
 import atiiaftt
@@ -17,6 +16,7 @@ from numpy.typing import NDArray
 from ..constants import DaqType
 from .clock import local_clock
 from .daq import mock_daq, ni_daq
+from .misc import DataBuffer
 from .settings import SensorSettings
 from .types import ForceSensorData
 
@@ -57,8 +57,6 @@ class Sensor(object):
         else:
             raise RuntimeError(f"Unsupported daq_type: {daq_type}")
 
-
-
         if daq_type == DaqType.MOCK_SENSOR:
             self._calib_converter = None
         else:
@@ -83,13 +81,13 @@ class Sensor(object):
                 self._reverse_vector[idx] = -1
 
         # for bias determination
-        self._raw_sample_buffer = deque(maxlen=buffer_size)
+        self.raw_sample_buffer = DataBuffer(maxlen=buffer_size) # unbiased samples
         self.bias = np.zeros(len(Sensor.SENSOR_CHANNELS), dtype=np.float64)
 
     def determine_bias(self):
         """determines bias based on the last raw samples"""
 
-        self.bias = np.mean(self._raw_sample_buffer, axis=0)
+        self.bias = self.raw_sample_buffer.buffer_mean()
         if self._calib_converter is not None:
             self._calib_converter.bias(self.bias)
 
@@ -112,7 +110,7 @@ class Sensor(object):
         for data in npdata_2d:
 
             raw_samples = data[Sensor.SENSOR_CHANNELS]
-            self._raw_sample_buffer.append(raw_samples)
+            self.raw_sample_buffer.append(raw_samples)
 
             # bias correction of raw samples and conversion to force data, if needed
             if self.convert_to_FT and self._calib_converter is not None:

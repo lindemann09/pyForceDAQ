@@ -18,7 +18,7 @@ from .settings import RecordingSettings, SensorSettings
 from .types import ForceSensorData
 
 
-class DataRecorder(object):
+class DataRecorder:
     """handles multiple sensors, file writing and process management, LSL stream for events"""
 
     def __init__(
@@ -53,7 +53,7 @@ class DataRecorder(object):
         event_trigger = []
         for fs in force_sensor_settings:
             if not isinstance(fs, SensorSettings):
-                raise RuntimeError("Recorder needs a list of Force Sensor Settings!")
+                raise TypeError("Recorder needs a list of Force Sensor Settings!")
             else:
                 fst = SensorProcess(
                     sensor_settings=fs,
@@ -199,7 +199,6 @@ class DataRecorder(object):
 
         # create filename
         file_path = Path(file_path)
-        file_path.parent.mkdir(exist_ok=True)
         if self.recording_settings.zip_data:
             file_path = unique_file_path(file_path.with_suffix(".csv.bz2"))
         else:

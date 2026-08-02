@@ -227,7 +227,7 @@ class PlotterThread(threading.Thread):
         self._plotter.set_horizontal_line(y_values=y_values)
         self._lock_new_values.release()
 
-    def add_values(self, values, set_marker=False, set_point_marker=False):
+    def add_values(self, values, set_marker: bool = False, set_point_marker: bool = False):
         """adds new values to the plotter"""
         self._lock_new_values.acquire()
         self._new_values.append((values, set_marker, set_point_marker))

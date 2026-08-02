@@ -79,5 +79,5 @@ class DAQReadAnalog(DAQReadAnalogABC):
 
         self._sample_cnt += 1
         x = self._sample_cnt / 1000
-        y = 10 + np.array((np.sin(x/2), np.cos(x/5), np.sin(x)))*10
+        y = 20 + np.array((np.sin(x/2), np.cos(x), np.sin(x)))*10
         return np.atleast_2d(np.append(y, np.zeros(5)))

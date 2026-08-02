@@ -17,6 +17,7 @@ from .. import __version__ as forceDAQVersion
 from ..constants import DEFAULT_OUTPUT_FILENAME
 from ..lib.clock import wait_ms
 from ..lib.data_recorder import DataRecorder
+from ..lib.misc import Thresholds
 from ..lib.sensor_process import SensorProcess
 from ..lib.settings import AppSettings, GUISettings, SensorSettings
 from ._gui_status import GUIStatus
@@ -58,19 +59,19 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
         s.process_key(exp.keyboard.check(check_for_control_keys=False))
 
         ########################### process new samples
-        for x in s.check_new_samples():
-            s.update_history(sensor=x)
-
-            if s.thresholds is not None and isinstance(s.force_id_level_detect, int):
+        for sensor_id in s.check_new_samples():
+            # update sensor history
+            s.history[sensor_id].append(s.sensor_processes[sensor_id].get_Fxyz())
+            if len(s.threshold_list) > 0:
                 # level change detection
-                level_change, tmp = s.thresholds.get_level_change(
-                    s.history[x].moving_average(s.force_id_level_detect), channel=x
-                )
+                f = s.history[sensor_id].buffer_mean()[s.force_id_level_detect]
+                level_change = s.threshold_list[sensor_id].process(f) # type: ignore
                 if level_change:
-                    if x == 1:
-                        resp = f"{CHANGED_LEVEL}-{tmp}"
+                    lvl = s.threshold_list[sensor_id].current_level
+                    if sensor_id == 1:
+                        resp = f"{CHANGED_LEVEL}-{lvl}"
                     else:
-                        resp = f"{CHANGED_LEVEL2}-{tmp}"
+                        resp = f"{CHANGED_LEVEL2}-{lvl}"
                     if recorder.lsl_events_stream is not None:
                         recorder.lsl_events_stream.push_sample([resp])
 
@@ -99,13 +100,13 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
 
         if s.check_refresh_required():  # do not give priority to visual output
             update_rects = []
-
-            if s.thresholds != last_thresholds:
+            thr = s.threshold_list[0] if len(s.threshold_list) > 0 else None
+            if thr != last_thresholds:
                 # thresholds have changed
                 _draw_plotter_thread_thresholds(
-                    plotter_thread, s.thresholds, s.scaling_plotter
+                    plotter_thread, thr, s.scaling_plotter
                 )
-                last_thresholds = s.thresholds
+                last_thresholds = thr
 
             if s.plot_indicator:
                 ############################################  plot_indicator
@@ -114,26 +115,23 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                     plotter_thread = None
 
                 ## indicator
-                force_data_array = list(
-                    map(
-                        lambda x: s.sensor_processes[x[0]].get_force(x[1]),
-                        s.plot_data_indicator,
-                    )
-                )
+                for cnt, vals in enumerate(s.plot_data_indicator):
+                    sensor_id, force_id = vals
+                    force = s.sensor_processes[sensor_id].get_force(force_id)
 
-                for cnt in range(6):
                     x_pos = (
                         (-3 * indicator_grid)
                         + (cnt * indicator_grid)
                         + 0.5 * indicator_grid
                     )
 
-                    if cnt == s.force_id_level_detect:
-                        thr = s.thresholds
+                    if force_id == s.force_id_level_detect and len(s.threshold_list) > 0:
+                        thr = s.threshold_list[sensor_id]
                     else:
                         thr = None
+
                     li = level_indicator(
-                        value=force_data_array[cnt],
+                        value=force,
                         text=s.plot_data_indicator_names[cnt],
                         scaling=s.scaling_indicator,
                         width=50,
@@ -217,10 +215,10 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                             y_values=[s.scaling_plotter.data2pixel(0)]
                         )
 
-                    if s.thresholds is not None:
+                    if len(s.threshold_list) > 0:
                         plotter_thread.set_horizontal_lines(
                             y_values=s.scaling_plotter.data2pixel(
-                                np.array(s.thresholds.thresholds)
+                                np.array(s.threshold_list[0].thresholds)
                             )
                         )
 
@@ -228,34 +226,18 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                     plotter_thread.clear_area()
                     s.clear_screen = False
 
-                if s.plot_filtered:
-                    tmp = np.array(
-                        list(
-                            map(
-                                lambda x: s.history[x[0]].moving_average(x[1]),
-                                s.plot_data_plotter,
-                            )
-                        ),
-                        dtype=np.float64,
-                    )
-                else:
-                    tmp = np.array(
-                        list(
-                            map(
-                                lambda x: s.sensor_processes[x[0]].get_force(x[1]),
-                                s.plot_data_plotter,
-                            )
-                        ),
-                        dtype=np.float64,
-                    )
+                lvl = np.array([s.sensor_processes[x[0]].get_force(x[1])
+                                    for x in s.plot_data_plotter],
+                               dtype=np.float64)
 
-                if s.thresholds is not None:
-                    point_marker = s.thresholds.is_detecting_anything()
+                if len(s.threshold_list)>0:
+                    is_detecting = [thr.has_level() for thr in s.threshold_list]
+                    point_marker = bool(np.any(is_detecting))
                 else:
                     point_marker = False
 
                 plotter_thread.add_values(
-                    values=s.scaling_plotter.data2pixel(tmp),
+                    values=s.scaling_plotter.data2pixel(lvl),
                     set_marker=s.set_marker,
                     set_point_marker=point_marker,
                 )
@@ -298,14 +280,13 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                 position=pos, size=(400, 20), colour=misc.constants.C_BLACK
             ).present(update=False, clear=False)
 
+            sample_cnt = [x.get_total_sample_cnt() for x in s.sensor_processes]
             txt = stimuli.TextBox(
                 position=pos,
                 size=(400, 20),
                 # background_colour=(30,30,30),
                 text_size=15,
-                text="n samples (total): {0}".format(
-                    str(list(map(SensorProcess.get_saved_sample_cnt, s.sensor_processes)))[
-                        1:-1]),
+                text = f"n samples (total): {sample_cnt}",
                 text_colour=misc.constants.C_YELLOW,
                 text_justification=0,
             )
@@ -314,48 +295,31 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
 
             # Sensor info
             pos = (200, 250)
-            tmp = stimuli.Canvas(
+            lvl = stimuli.Canvas(
                 position=pos, size=(600, 50), colour=misc.constants.C_BLACK
             )
-            tmp.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
-            if s.thresholds is not None:
-                if s.n_sensors > 1:
-                    tmp = [
-                        s.thresholds.get_level(s.get_average_level_detection_parameter(0)),
-                        s.thresholds.get_level(s.get_average_level_detection_parameter(1)),
-                    ]
-                else:
-                    tmp = s.thresholds.get_level(s.get_average_level_detection_parameter(0))
-
-
+            lvl.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(lvl, exp.screen.size))
+            # print level detection
+            if len(s.threshold_list) > 0:
+                thr = s.threshold_list[0].thresholds
+                lvl = [x.current_level for x in s.threshold_list]
                 txt = stimuli.TextBox(
                     position=pos,
                     size=(600, 50),
                     text_size=15,
-                    text="T: {0} L: {1}".format(s.thresholds, tmp),
+                    text=f"T: {thr} L: {lvl}",
                     text_colour=misc.constants.C_YELLOW,
                     text_justification=0,
                 )
                 txt.present(update=False, clear=False)
 
             pos = (400, 250)
-            tmp = stimuli.Canvas(
+            lvl = stimuli.Canvas(
                 position=pos, size=(400, 50), colour=misc.constants.C_BLACK
             )
-            tmp.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(tmp, exp.screen.size))
-            if s.plot_filtered:
-                txt = stimuli.TextBox(
-                    position=pos,
-                    size=(400, 50),
-                    text_size=15,
-                    text="Filtered data!",
-                    text_colour=misc.constants.C_YELLOW,
-                    text_justification=0,
-                )
-                txt.present(update=False, clear=False)
-
+            lvl.present(update=False, clear=False)
+            update_rects.append(get_pygame_rect(lvl, exp.screen.size))
             pygame.display.update(update_rects)
             # end plotting screen
 
@@ -443,7 +407,7 @@ def run(settings: AppSettings):
 
 
 #### helper
-def _draw_plotter_thread_thresholds(plotter_thread, thresholds, scaling):
+def _draw_plotter_thread_thresholds(plotter_thread, thresholds: Thresholds | None, scaling):
     if plotter_thread is not None:
         if thresholds is not None:
             plotter_thread.set_horizontal_lines(
