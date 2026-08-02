@@ -1,12 +1,11 @@
 __author__ = 'Oliver Lindemann'
 
 import logging
-from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-from ..clock import StopWatch
+from ...tools.clock import StopWatch
 from . import DAQReadAnalogABC
 
 

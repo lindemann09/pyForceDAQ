@@ -1,9 +1,3 @@
-"""recording tools
-
-version 1.1.0
-(c) Oliver Lindemann
-"""
-
 import logging
 from collections import deque
 from pathlib import Path

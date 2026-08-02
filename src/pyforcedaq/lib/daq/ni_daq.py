@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import nidaqmx
 import numpy as np
 from nidaqmx import constants as nidaq_consts

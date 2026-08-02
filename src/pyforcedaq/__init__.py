@@ -26,7 +26,7 @@ Oliver Lindemann
 import sys as _sys
 from importlib.metadata import version
 
-from .lib.rec_tools import set_logging as _set_logging
+from .tools import _log
 
 APPNAME = "pyForceDAQ"
 __version__ = version(APPNAME)
@@ -39,4 +39,4 @@ if _sys.version_info[0] != 3 or _sys.version_info[1] < 12 or _sys.version_info[1
         + f"is not compatible with Python {_sys.version_info[0]}.{_sys.version_info[1]}. "
         + "Please use Python 3.12 or 3.13."
     )
-LOGFILE = _set_logging(log_file=f"{APPNAME}.log")
+LOGFILE = _log.set_logging(log_file=f"{APPNAME}.log")

@@ -5,7 +5,7 @@ import ctypes as ct
 import numpy as np
 from numpy.typing import NDArray
 
-from .clock import local_clock
+from ..tools.clock import local_clock
 
 # tag in data output
 TAG_COMMENTS = "#"

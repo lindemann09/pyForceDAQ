@@ -10,7 +10,7 @@ import numpy as np
 from numpy import typing as npt
 
 from ..constants import DaqType
-from . import lsl
+from ..tools import lsl
 from .sensor import Sensor
 from .settings import RecordingSettings, SensorSettings
 

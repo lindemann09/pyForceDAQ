@@ -6,10 +6,10 @@ from time import sleep
 from expyriment import io, misc
 
 from ..lib.data_recorder import DataRecorder
-from ..lib.rec_tools import DataBuffer, Thresholds
 from ..lib.sensor_process import SensorProcess
 from ..lib.settings import GUISettings
 from ..lib.types import ForceSensorData
+from ..tools.data import DataBuffer, Thresholds
 from ._layout import RecordingScreen, expy_constants, logo_text_line
 from ._scaling import Scaling
 

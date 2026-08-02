@@ -2,7 +2,7 @@ import json
 from abc import ABC
 from dataclasses import dataclass, field, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import tomlkit
 from tomlkit.exceptions import NonExistentKey
@@ -24,7 +24,7 @@ class SensorSettings:
     calibration_file_name: str
     calibration_folder: Path
     sensor_id: int
-    reverse_scaling: List[str]
+    reverse_scaling: list[str]
     rate: int
     convert_to_FT: bool
     minVal: float
@@ -37,7 +37,7 @@ class SensorSettings:
 
 class ABCSettings(ABC):  # must be a dataclass
 
-    def set_properties(self, property_dict: Dict[str, Any]) -> bool:
+    def set_properties(self, property_dict: dict[str, Any]) -> bool:
         """return true is a properties of the data class is
         missing in the dict"""
         assert is_dataclass(self)
@@ -55,7 +55,7 @@ class ABCSettings(ABC):  # must be a dataclass
 @dataclass
 class RecordingSettings(ABCSettings):
 
-    sensors: List[dict] = field(default_factory=lambda: [
+    sensors: list[dict] = field(default_factory=lambda: [
         {"device_label": "Dev1",
          "channels": "ai0:7",
          "calibration_file_name": "FT9334.cal",
@@ -95,7 +95,7 @@ class RecordingSettings(ABCSettings):
             if "reverse_scaling" not in s:
                 s["reverse_scaling"] = []
 
-    def set_properties(self, property_dict: Dict[str, Any]) -> bool:
+    def set_properties(self, property_dict: dict[str, Any]) -> bool:
         """return true if a properties of the data class is
         missing or changed in the dict"""
 
@@ -132,9 +132,9 @@ class RecordingSettings(ABCSettings):
     def array_write_trigger(self):
         return [self.write_trigger1, self.write_trigger2]
 
-    def get_sensor_settings(self, working_dir: str | Path) -> List[SensorSettings]:
+    def get_sensor_settings(self, working_dir: str | Path) -> list[SensorSettings]:
 
-        rtn: List[SensorSettings] = []
+        rtn: list[SensorSettings] = []
         for cnt,sensor in enumerate(self.sensors):
             ss = SensorSettings(
                 device_label=sensor["device_label"],

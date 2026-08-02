@@ -13,7 +13,7 @@ ordinal sequences is spatially organized. Cognition, 87(3), B87-95.
 from expyriment import control, design, stimuli
 from expyriment.misc import constants
 
-from .lib import lsl
+from .tools import lsl
 
 
 def run_snarc():

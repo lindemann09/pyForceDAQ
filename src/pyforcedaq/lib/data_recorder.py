@@ -11,7 +11,7 @@ from pathlib import Path
 from time import asctime, localtime
 
 from .. import APPNAME, __version__, constants
-from . import lsl
+from ..tools import lsl
 from .file_writer import FileWriter, unique_file_path
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings

@@ -11,8 +11,8 @@ import logging
 import socket
 from multiprocessing import Event, Process, Queue
 
-from .clock import local_clock, wait_ms
-from .lan_tools import get_lan_ip
+from ..tools.clock import local_clock, wait_ms
+from ..tools.lan import get_lan_ip
 from .types import UDPData
 
 

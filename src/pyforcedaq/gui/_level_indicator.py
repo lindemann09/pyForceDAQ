@@ -2,7 +2,7 @@ import numpy as np
 from expyriment.misc import constants
 from expyriment.stimuli import Canvas, Rectangle
 
-from ..lib.rec_tools import Thresholds
+from ..tools.data import Thresholds
 from ._layout import make_text_line
 
 

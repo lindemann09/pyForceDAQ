@@ -15,10 +15,10 @@ from expyriment import control, design, io, misc, stimuli
 
 from .. import __version__ as forceDAQVersion
 from ..constants import DEFAULT_OUTPUT_FILENAME
-from ..lib.clock import wait_ms
 from ..lib.data_recorder import DataRecorder
-from ..lib.rec_tools import Thresholds
 from ..lib.settings import AppSettings, GUISettings, SensorSettings
+from ..tools.clock import wait_ms
+from ..tools.data import Thresholds
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
 from ._level_indicator import level_indicator

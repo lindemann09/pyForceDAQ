@@ -1,5 +1,5 @@
 class Scaling(object):
-    """littel helper object function to handle plotter scaling"""
+    """little helper object function to handle plotter scaling"""
 
     step_size = 5  # for increasing/decreasing
 
