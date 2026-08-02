@@ -56,7 +56,6 @@ class SensorProcess(Process):
         self._np_dat = np.frombuffer(
             self._dat.get_obj(), dtype=np.float64
         )  # numpy view
-        self._saved_sample_cnt = Value(ct.c_int64, 0)
         self._total_sample_cnt = Value(ct.c_int64, 0)
         self.flag_sensor_bias_is_determined = Event()
         self._flag_quit_request = Event()
@@ -66,45 +65,51 @@ class SensorProcess(Process):
 
     @property
     def Fx(self) -> float:
-        return self._dat[0]
+        with self._dat.get_lock():
+            return self._dat[0]
 
     @property
     def Fy(self) -> float:
-        return self._dat[1]
+        with self._dat.get_lock():
+            return self._dat[1]
 
     @property
     def Fz(self) -> float:
-        return self._dat[2]
+        with self._dat.get_lock():
+            return self._dat[2]
 
     @property
     def Tx(self) -> float:
-        return self._dat[3]
+        with self._dat.get_lock():
+            return self._dat[3]
 
     @property
     def Ty(self) -> float:
-        return self._dat[4]
+        with self._dat.get_lock():
+            return self._dat[4]
 
     @property
     def Tz(self) -> float:
-        return self._dat[5]
+        with self._dat.get_lock():
+            return self._dat[5]
 
     def get_force(self, parameter_id) -> float | None:
         if parameter_id < 0 or parameter_id > 5:
             return None
-        else:
+        with self._dat.get_lock():
             return self._dat[parameter_id]
 
     def get_Fxyz(self) -> npt.NDArray[np.float64]:
-        return self._np_dat[0:3]
+        with self._dat.get_lock():
+            return self._np_dat[0:3].copy()
 
     def Txyz(self) -> npt.NDArray[np.float64]:
-        return self._np_dat[3:6]
-
-    def get_saved_sample_cnt(self) -> int:
-        return self._saved_sample_cnt.value
+        with self._dat.get_lock():
+            return self._np_dat[3:6].copy()
 
     def get_total_sample_cnt(self) -> int:
-        return self._total_sample_cnt.value
+        with self._total_sample_cnt.get_lock():
+            return int(self._total_sample_cnt.value)  # type: ignore
 
     def determine_bias(self):
         self.flag_sensor_bias_is_determined.clear()
@@ -197,12 +202,13 @@ class SensorProcess(Process):
                         lsl_hardware_trigger_stream.push_sample(tr)
 
                 # write to shared memory and file writer queue
-                self._total_sample_cnt.value += 1 # type: ignore
-                self._dat[:] = d.forces
+                with self._total_sample_cnt.get_lock():
+                    self._total_sample_cnt.value += 1 # type: ignore
+                with self._dat.get_lock():
+                    self._dat[:] = d.forces
 
                 if self.is_saving() and self._file_writer_queue is not None:
                     self._file_writer_queue.put(d)
-                    self._saved_sample_cnt.value += 1  # type: ignore # TODO check if all the sample counter are needed
 
                 if not self.flag_sensor_bias_is_determined.is_set():
                     # new baseline requested
