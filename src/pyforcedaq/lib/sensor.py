@@ -42,7 +42,7 @@ class Sensor:
 
     def __init__(self, s_settings: SensorSettings,
                  daq_type: DaqType,
-                 buffer_size: int):
+                 buffer_size: int): #FIXME Rename Buffer to history
         """buffer_size: number of raw samples to keep in the buffer needed for determining the bias"""
 
         assert isinstance(s_settings, SensorSettings)
