@@ -70,7 +70,7 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                     if recorder.lsl_events_stream is not None:
                         recorder.lsl_events_stream.push_sample([resp])
 
-                ## minmax detection FIXME needs to call first  "set_response_minmax_detection"
+                ## minmax detection TODO needs to call first  "set_response_minmax_detection"
                 # tmp = s.thresholds.get_response_minmax(
                 #     s.history[x].moving_average(s.force_id_level_detect), channel=x
                 # )

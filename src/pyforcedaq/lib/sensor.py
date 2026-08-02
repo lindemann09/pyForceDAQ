@@ -129,6 +129,6 @@ class Sensor(object):
                 time=t,
                 sensor_id=self.sensor_id,
                 trigger=data[Sensor.TRIGGER_CHANNELS]
-            )) # TODO: remove deprecated trigger channel support
+            )) # TODO: remove deprecated hardware trigger channel support
 
         return rtn
