@@ -18,7 +18,6 @@ from ..constants import DEFAULT_OUTPUT_FILENAME
 from ..lib.clock import wait_ms
 from ..lib.data_recorder import DataRecorder
 from ..lib.misc import Thresholds
-from ..lib.sensor_process import SensorProcess
 from ..lib.settings import AppSettings, GUISettings, SensorSettings
 from ._gui_status import GUIStatus
 from ._layout import colours, get_pygame_rect, logo_text_line, make_text_line
@@ -33,10 +32,6 @@ CHANGED_LEVEL = "CL"
 CHANGED_LEVEL2 = "CL2"
 
 def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[str]):
-
-    indicator_grid = 70  # distance between indicator center
-    plotter_width = 900
-    plotter_position = (0, -30)
 
     s = GUIStatus(gui_settings=gs, recorder=recorder, screen_size=exp.screen.size,
                   top_left_info=info_strings)
@@ -94,12 +89,8 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
             else:
                 recorder.start_saving()
 
-        ###########################
         ########################### plotting
-        ###########################
-
         if s.check_refresh_required():  # do not give priority to visual output
-            update_rects = []
             thr = s.threshold_list[0] if len(s.threshold_list) > 0 else None
             if thr != last_thresholds:
                 # thresholds have changed
@@ -109,217 +100,28 @@ def _main_loop(exp, recorder: DataRecorder, gs: GUISettings, info_strings: list[
                 last_thresholds = thr
 
             if s.plot_indicator:
-                ############################################  plot_indicator
+                ### plot_indicator
                 if plotter_thread is not None:
+                    # kill plotter thread if indicator is used
                     plotter_thread.join()
                     plotter_thread = None
-
-                ## indicator
-                for cnt, vals in enumerate(s.plot_data_indicator):
-                    sensor_id, force_id = vals
-                    force = s.sensor_processes[sensor_id].get_force(force_id)
-
-                    x_pos = (
-                        (-3 * indicator_grid)
-                        + (cnt * indicator_grid)
-                        + 0.5 * indicator_grid
-                    )
-
-                    if force_id == s.force_id_level_detect and len(s.threshold_list) > 0:
-                        thr = s.threshold_list[sensor_id]
-                    else:
-                        thr = None
-
-                    li = level_indicator(
-                        value=force,
-                        text=s.plot_data_indicator_names[cnt],
-                        scaling=s.scaling_indicator,
-                        width=50,
-                        position=(x_pos, 0),
-                        thresholds=thr,
-                    )
-                    li.present(update=False, clear=False)
-                    update_rects.append(get_pygame_rect(li, exp.screen.size))
-
-                # line
-                zero = s.scaling_indicator.data2pixel(s.scaling_indicator.trim(0))
-                rect = stimuli.Line(
-                    start_point=(-200, zero),
-                    end_point=(200, zero),
-                    line_width=1,
-                    colour=misc.constants.C_YELLOW,
-                )
-                rect.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(rect, exp.screen.size))
-
-                # axis labels
-                pos = (-220, -145)
-                stimuli.Canvas(
-                    position=pos, size=(30, 20), colour=misc.constants.C_BLACK
-                ).present(update=False, clear=False)
-                txt = make_text_line(
-                    position=pos,
-                    text=str(s.scaling_indicator.min),
-                    text_size=15,
-                    text_colour=misc.constants.C_YELLOW,
-                )
-                txt.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(txt, exp.screen.size))
-                pos = (-220, 145)
-                stimuli.Canvas(
-                    position=pos, size=(30, 20), colour=misc.constants.C_BLACK
-                ).present(update=False, clear=False)
-                txt = make_text_line(
-                    position=pos,
-                    text=str(s.scaling_indicator.max),
-                    text_size=15,
-                    text_colour=misc.constants.C_YELLOW,
-                )
-                txt.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(txt, exp.screen.size))
-                # end indicator
-
-                stimuli.Canvas(
-                    position=(-250, 200), size=(200, 50), colour=misc.constants.C_BLACK
-                ).present(update=False, clear=False)
-                txt = stimuli.TextBox(
-                    text=str(s.sensor_info_str),
-                    # background_colour=(30,30,30),
-                    size=(200, 50),
-                    text_size=15,
-                    position=(-250, 200),
-                    text_colour=misc.constants.C_YELLOW,
-                    text_justification=0,
-                )
-                txt.present(update=False, clear=False)
-                update_rects.append(get_pygame_rect(txt, exp.screen.size))
+                update_rects = _update_indicator_plotter(status=s,
+                                                         exp_screen_size=exp.screen.size,
+                                                         indicator_grid=70)
             else:
-                ############################################  plotter
+                ### plotter
                 if plotter_thread is None:
-                    plotter_thread = PlotterThread(
-                        n_data_rows=len(s.plot_data_plotter),
-                        data_row_colours=colours[: len(s.plot_data_plotter)],
-                        y_range=[
-                            s.scaling_plotter.pixel_min,
-                            s.scaling_plotter.pixel_max,
-                        ],
-                        width=plotter_width,
-                        position=plotter_position,
-                        background_colour=[10, 10, 10],
-                        axis_colour=misc.constants.C_YELLOW,
-                    )
-                    plotter_thread.start()
+                    plotter_thread = _make_plotter_thread(status=s, gs=gs,
+                                                          plotter_width=900,
+                                                          plotter_position=(0, -30))
+                update_rects = _update_plotter(
+                    plotter_thread, status=s,
+                    plotter_width=900,
+                    plotter_position=(0, -30),
+                    exp_screen_size=exp.screen.size)
 
-                    if gs.plot_axis:
-                        plotter_thread.set_horizontal_lines(
-                            y_values=[s.scaling_plotter.data2pixel(0)]
-                        )
+            update_rects = _draw_plotter_texts(update_rects, status=s, exp_screen_size=exp.screen.size)
 
-                    if len(s.threshold_list) > 0:
-                        plotter_thread.set_horizontal_lines(
-                            y_values=s.scaling_plotter.data2pixel(
-                                np.array(s.threshold_list[0].thresholds)
-                            )
-                        )
-
-                if s.clear_screen:
-                    plotter_thread.clear_area()
-                    s.clear_screen = False
-
-                lvl = np.array([s.sensor_processes[x[0]].get_force(x[1])
-                                    for x in s.plot_data_plotter],
-                               dtype=np.float64)
-
-                if len(s.threshold_list)>0:
-                    is_detecting = [thr.has_level() for thr in s.threshold_list]
-                    point_marker = bool(np.any(is_detecting))
-                else:
-                    point_marker = False
-
-                plotter_thread.add_values(
-                    values=s.scaling_plotter.data2pixel(lvl),
-                    set_marker=s.set_marker,
-                    set_point_marker=point_marker,
-                )
-                s.set_marker = False
-
-                update_rects.append(plotter_thread.get_plotter_rect(exp.screen.size))
-
-                # axis labels
-                axis_labels = (
-                    int(s.scaling_plotter.min),
-                    int(s.scaling_plotter.max),
-                    0,
-                )
-                xpos = plotter_position[0] - (plotter_width / 2) - 20
-                for cnt, ypos in enumerate(
-                    (
-                        plotter_position[1] + s.scaling_plotter.pixel_min + 10,
-                        plotter_position[1] + s.scaling_plotter.pixel_max - 10,
-                        plotter_position[1] + s.scaling_plotter.data2pixel(0),
-                    )
-                ):
-                    stimuli.Canvas(
-                        position=(xpos, ypos),
-                        size=(50, 30),
-                        colour=misc.constants.C_BLACK,
-                    ).present(update=False, clear=False)
-                    txt = make_text_line(
-                        position=(xpos, ypos),
-                        text=str(axis_labels[cnt]),
-                        text_size=15,
-                        text_colour=misc.constants.C_YELLOW,
-                    )
-                    txt.present(update=False, clear=False)
-                    update_rects.append(get_pygame_rect(txt, exp.screen.size))
-
-            # counter
-            pos = (-270, 240)
-
-            stimuli.Canvas(
-                position=pos, size=(400, 20), colour=misc.constants.C_BLACK
-            ).present(update=False, clear=False)
-
-            sample_cnt = [x.get_total_sample_cnt() for x in s.sensor_processes]
-            txt = stimuli.TextBox(
-                position=pos,
-                size=(400, 20),
-                # background_colour=(30,30,30),
-                text_size=15,
-                text = f"n samples (total): {sample_cnt}",
-                text_colour=misc.constants.C_YELLOW,
-                text_justification=0,
-            )
-            txt.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(txt, exp.screen.size))
-
-            # Sensor info
-            pos = (200, 250)
-            lvl = stimuli.Canvas(
-                position=pos, size=(600, 50), colour=misc.constants.C_BLACK
-            )
-            lvl.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(lvl, exp.screen.size))
-            # print level detection
-            if len(s.threshold_list) > 0:
-                thr = s.threshold_list[0].thresholds
-                lvl = [x.current_level for x in s.threshold_list]
-                txt = stimuli.TextBox(
-                    position=pos,
-                    size=(600, 50),
-                    text_size=15,
-                    text=f"T: {thr} L: {lvl}",
-                    text_colour=misc.constants.C_YELLOW,
-                    text_justification=0,
-                )
-                txt.present(update=False, clear=False)
-
-            pos = (400, 250)
-            lvl = stimuli.Canvas(
-                position=pos, size=(400, 50), colour=misc.constants.C_BLACK
-            )
-            lvl.present(update=False, clear=False)
-            update_rects.append(get_pygame_rect(lvl, exp.screen.size))
             pygame.display.update(update_rects)
             # end plotting screen
 
@@ -406,6 +208,238 @@ def run(settings: AppSettings):
     return True
 
 
+def _update_indicator_plotter(
+                              status:GUIStatus,
+                             exp_screen_size:tuple, indicator_grid = 70) -> list[pygame.Rect]:
+    """update the indicator or plotter display
+        indicator_grid = distance between indicator center
+    """
+    ############################################  plot_indicator
+    update_rects = []
+    ## indicator
+    for cnt, vals in enumerate(status.plot_data_indicator):
+        sensor_id, force_id = vals
+        force = status.sensor_processes[sensor_id].get_force(force_id)
+
+        x_pos = (
+            (-3 * indicator_grid)
+            + (cnt * indicator_grid)
+            + 0.5 * indicator_grid
+        )
+
+        if force_id == status.force_id_level_detect and len(status.threshold_list) > 0:
+            thr = status.threshold_list[sensor_id]
+        else:
+            thr = None
+
+        li = level_indicator(
+            value=force,
+            text=status.plot_data_indicator_names[cnt],
+            scaling=status.scaling_indicator,
+            width=50,
+            position=(x_pos, 0),
+            thresholds=thr,
+        )
+        li.present(update=False, clear=False)
+        update_rects.append(get_pygame_rect(li, exp_screen_size))
+
+    # line
+    zero = status.scaling_indicator.data2pixel(status.scaling_indicator.trim(0))
+    rect = stimuli.Line(
+        start_point=(-200, zero),
+        end_point=(200, zero),
+        line_width=1,
+        colour=misc.constants.C_YELLOW,
+    )
+    rect.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(rect, exp_screen_size))
+
+    # axis labels
+    pos = (-220, -145)
+    stimuli.Canvas(
+        position=pos, size=(30, 20), colour=misc.constants.C_BLACK
+    ).present(update=False, clear=False)
+    txt = make_text_line(
+        position=pos,
+        text=str(status.scaling_indicator.min),
+        text_size=15,
+        text_colour=misc.constants.C_YELLOW,
+    )
+    txt.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(txt, exp_screen_size))
+    pos = (-220, 145)
+    stimuli.Canvas(
+        position=pos, size=(30, 20), colour=misc.constants.C_BLACK
+    ).present(update=False, clear=False)
+    txt = make_text_line(
+        position=pos,
+        text=str(status.scaling_indicator.max),
+        text_size=15,
+        text_colour=misc.constants.C_YELLOW,
+    )
+    txt.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(txt, exp_screen_size))
+    # end indicator
+
+    stimuli.Canvas(
+        position=(-250, 200), size=(200, 50), colour=misc.constants.C_BLACK
+    ).present(update=False, clear=False)
+    txt = stimuli.TextBox(
+        text=str(status.sensor_info_str),
+        # background_colour=(30,30,30),
+        size=(200, 50),
+        text_size=15,
+        position=(-250, 200),
+        text_colour=misc.constants.C_YELLOW,
+        text_justification=0,
+    )
+    txt.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(txt, exp_screen_size))
+    return update_rects
+
+
+def _make_plotter_thread(status:GUIStatus, gs:GUISettings, plotter_width:int , plotter_position:tuple) -> PlotterThread:
+
+    plotter_thread = PlotterThread(
+        n_data_rows=len(status.plot_data_plotter),
+        data_row_colours=colours[: len(status.plot_data_plotter)],
+        y_range=[
+            status.scaling_plotter.pixel_min,
+            status.scaling_plotter.pixel_max,
+        ],
+        width=plotter_width,
+        position=plotter_position,
+        background_colour=[10, 10, 10],
+        axis_colour=misc.constants.C_YELLOW,
+    )
+    plotter_thread.start()
+
+    if gs.plot_axis:
+        plotter_thread.set_horizontal_lines(
+            y_values=[status.scaling_plotter.data2pixel(0)]
+        )
+
+    if len(status.threshold_list) > 0:
+        plotter_thread.set_horizontal_lines(
+            y_values=status.scaling_plotter.data2pixel(
+                np.array(status.threshold_list[0].thresholds)
+            )
+        )
+    return plotter_thread
+
+def _update_plotter(plotter_thread:PlotterThread,
+                    status:GUIStatus,
+                    plotter_width:int ,
+                    plotter_position:tuple,
+                    exp_screen_size:tuple) -> list[pygame.Rect]:
+    ############################################  plotter
+    update_rects = []
+
+    if status.clear_screen:
+        plotter_thread.clear_area()
+        status.clear_screen = False
+
+    lvl = np.array([status.sensor_processes[x[0]].get_force(x[1])
+                        for x in status.plot_data_plotter],
+                    dtype=np.float64)
+
+    if len(status.threshold_list)>0:
+        is_detecting = [thr.has_level() for thr in status.threshold_list]
+        point_marker = bool(np.any(is_detecting))
+    else:
+        point_marker = False
+
+    plotter_thread.add_values(
+        values=status.scaling_plotter.data2pixel(lvl),
+        set_marker=status.set_marker,
+        set_point_marker=point_marker,
+    )
+    status.set_marker = False
+
+    update_rects.append(plotter_thread.get_plotter_rect(exp_screen_size))
+
+    # axis labels
+    axis_labels = (
+        int(status.scaling_plotter.min),
+        int(status.scaling_plotter.max),
+        0,
+    )
+    xpos = plotter_position[0] - (plotter_width / 2) - 20
+    for cnt, ypos in enumerate(
+        (
+            plotter_position[1] + status.scaling_plotter.pixel_min + 10,
+            plotter_position[1] + status.scaling_plotter.pixel_max - 10,
+            plotter_position[1] + status.scaling_plotter.data2pixel(0),
+        )
+    ):
+        stimuli.Canvas(
+            position=(xpos, ypos),
+            size=(50, 30),
+            colour=misc.constants.C_BLACK,
+        ).present(update=False, clear=False)
+        txt = make_text_line(
+            position=(xpos, ypos),
+            text=str(axis_labels[cnt]),
+            text_size=15,
+            text_colour=misc.constants.C_YELLOW,
+        )
+        txt.present(update=False, clear=False)
+        update_rects.append(get_pygame_rect(txt, exp_screen_size))
+
+    return update_rects
+
+def _draw_plotter_texts(update_rects:list[pygame.Rect], status:GUIStatus,
+                        exp_screen_size:tuple) -> list[pygame.Rect]:
+
+    pos = (-270, 240)
+    stimuli.Canvas(
+        position=pos, size=(400, 20), colour=misc.constants.C_BLACK
+    ).present(update=False, clear=False)
+
+    sample_cnt = [x.get_total_sample_cnt() for x in status.sensor_processes]
+    txt = stimuli.TextBox(
+        position=pos,
+        size=(400, 20),
+        # background_colour=(30,30,30),
+        text_size=15,
+        text = f"n samples (total): {sample_cnt}",
+        text_colour=misc.constants.C_YELLOW,
+        text_justification=0,
+    )
+    txt.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(txt, exp_screen_size))
+
+    # Sensor info
+    pos = (200, 250)
+    lvl = stimuli.Canvas(
+        position=pos, size=(600, 50), colour=misc.constants.C_BLACK
+    )
+    lvl.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(lvl, exp_screen_size))
+
+    # print level detection
+    if len(status.threshold_list) > 0:
+        thr = status.threshold_list[0].thresholds
+        lvl = [x.current_level for x in status.threshold_list]
+        txt = stimuli.TextBox(
+            position=pos,
+            size=(600, 50),
+            text_size=15,
+            text=f"T: {thr} L: {lvl}",
+            text_colour=misc.constants.C_YELLOW,
+            text_justification=0,
+        )
+        txt.present(update=False, clear=False)
+
+    pos = (400, 250)
+    lvl = stimuli.Canvas(
+        position=pos, size=(400, 50), colour=misc.constants.C_BLACK
+    )
+    lvl.present(update=False, clear=False)
+    update_rects.append(get_pygame_rect(lvl, exp_screen_size))
+    return update_rects
+
+
 #### helper
 def _draw_plotter_thread_thresholds(plotter_thread, thresholds: Thresholds | None, scaling):
     if plotter_thread is not None:
@@ -415,7 +449,3 @@ def _draw_plotter_thread_thresholds(plotter_thread, thresholds: Thresholds | Non
             )
         else:
             plotter_thread.set_horizontal_lines(y_values=None)
-
-
-def _strlist_append(prefix, strlist):
-    return list(map(lambda x: prefix + x, strlist))
