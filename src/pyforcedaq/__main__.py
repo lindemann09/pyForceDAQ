@@ -1,5 +1,4 @@
 import argparse
-import logging
 
 from . import APPNAME, LOGFILE, __author__, __version__, constants
 from .lib.settings import AppSettings
