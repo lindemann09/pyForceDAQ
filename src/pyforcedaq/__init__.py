@@ -26,7 +26,7 @@ Oliver Lindemann
 import sys as _sys
 from importlib.metadata import version
 
-from .lib.misc import set_logging as _set_logging
+from .lib.rec_tools import set_logging as _set_logging
 
 APPNAME = "pyForceDAQ"
 __version__ = version(APPNAME)

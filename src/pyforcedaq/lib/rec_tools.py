@@ -1,9 +1,12 @@
+"""recording tools
+
+version 1.1.0
+(c) Oliver Lindemann
+"""
+
 import logging
-import os
-import socket
 from collections import deque
 from pathlib import Path
-from subprocess import check_output
 from time import perf_counter
 
 import appdirs
@@ -25,25 +28,6 @@ def set_logging(log_file):
 def N2g(N):
     kg = N / 9.81
     return kg * 1000
-
-def get_lan_ip():
-    if os.name == "nt":
-        # Windows
-        return socket.gethostbyname(socket.gethostname())
-    else:
-        # Linux and macOS
-        try:
-            # Try Linux command first
-            rtn = check_output(["hostname", "-I"]).decode().strip()
-            return rtn.split()[0] if rtn else None
-        except:
-            try:
-                # Fallback to macOS command
-                rtn = check_output(["ipconfig", "getifaddr", "en0"]).decode().strip()
-                return rtn if rtn else None
-            except:
-                # Fallback to socket method if both commands fail
-                return socket.gethostbyname(socket.gethostname())
 
 
 

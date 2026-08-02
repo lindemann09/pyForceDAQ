@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 from ..constants import DaqType
 from .clock import local_clock
 from .daq import mock_daq, ni_daq
-from .misc import DataBuffer
+from .rec_tools import DataBuffer
 from .settings import SensorSettings
 from .types import ForceSensorData
 

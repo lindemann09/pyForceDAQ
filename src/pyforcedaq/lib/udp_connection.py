@@ -12,7 +12,7 @@ import socket
 from multiprocessing import Event, Process, Queue
 
 from .clock import local_clock, wait_ms
-from .misc import get_lan_ip
+from .lan_tools import get_lan_ip
 from .types import UDPData
 
 

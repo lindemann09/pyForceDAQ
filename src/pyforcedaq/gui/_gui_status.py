@@ -6,7 +6,7 @@ from time import sleep
 from expyriment import io, misc
 
 from ..lib.data_recorder import DataRecorder
-from ..lib.misc import DataBuffer, Thresholds
+from ..lib.rec_tools import DataBuffer, Thresholds
 from ..lib.sensor_process import SensorProcess
 from ..lib.settings import GUISettings
 from ..lib.types import ForceSensorData

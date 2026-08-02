@@ -4,7 +4,7 @@ from pathlib import Path
 import PySimpleGUI as _sg
 
 from . import __version__, constants
-from .lib.misc import get_lan_ip
+from .lib.lan_tools import get_lan_ip
 from .lib.settings import AppSettings, SensorSettings, list_settings_files
 
 #icon converted with psgresizer
