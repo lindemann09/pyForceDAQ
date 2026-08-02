@@ -19,14 +19,12 @@ Install pyForceDAQ via UV:
 uv tool install pyforcedaq --python 3.13 -U
 ``
 
-* Create the shared library `atidaq.dll` (or `atidaq.so` for Linux) using
- `Makefile` in the folder `atidaq_cdll`. A complied version of `atidaq.dll
- ` can be also found in the `dll` subfolder
-* Make the library available by coping it in your system folder
+* Under Windows: A complied version of `atidaq.dll` can be 
+ found in the `dll` subfolder of the Branch 'additional materials.  Make this library available by coping it in your ystem folder
 
 To install pyForceDAQ from release-zipfile
 
-1. Ensure that [Python 3](https://www.python.org/) is installed
+1. Ensure that [Python 3.13](https://www.python.org/) is installed
 2. Download and unpack zipfile file
 3. run `install_dependencies.py`
 4. run `forceDAQ_GUI.py`
