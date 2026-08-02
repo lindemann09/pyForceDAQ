@@ -12,7 +12,8 @@ from time import asctime, localtime
 
 from .. import APPNAME, __version__, constants
 from ..tools import lsl
-from .file_writer import FileWriter, unique_file_path
+from ..tools.file_writer import unique_file_path
+from .sensor import SensorDataWriter
 from .sensor_process import SensorProcess
 from .settings import RecordingSettings, SensorSettings
 from .types import ForceSensorData
@@ -42,7 +43,7 @@ class DataRecorder:
 
         self.recording_settings = recording_settings
         if recording_settings.save_data:
-            self.file_writer = FileWriter(recording_settings)
+            self.file_writer = SensorDataWriter(recording_settings)
             queue = self.file_writer.queue
         else:
             self.file_writer = None
@@ -82,7 +83,7 @@ class DataRecorder:
     @property
     def has_file_writer(self):
         """Property indicates whether a data file is open"""
-        return isinstance(self.file_writer, FileWriter) and self.file_writer.is_alive()
+        return isinstance(self.file_writer, SensorDataWriter) and self.file_writer.is_alive()
 
     @property
     def is_alive(self):
@@ -194,7 +195,7 @@ class DataRecorder:
 
         """
 
-        if not isinstance(self.file_writer, FileWriter):
+        if not isinstance(self.file_writer, SensorDataWriter):
             return
 
         # create filename
@@ -242,7 +243,7 @@ class DataRecorder:
         Afterwards data will not be saved anymore.
 
         """
-        if isinstance(self.file_writer, FileWriter):
+        if isinstance(self.file_writer, SensorDataWriter):
             self.pause_saving()
             self.file_writer.close_file()
             if self.file_writer.is_alive():

@@ -6,13 +6,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..tools.clock import local_clock
+from ..tools.file_writer import AbstractCSVDataStruct
 
 # tag in data output
 TAG_COMMENTS = "#"
 
 CTYPE_FORCES = ct.c_double * 600
 CTYPE_TRIGGER = ct.c_double * 2
-
 
 class CTypesForceSensorData(ct.Structure):
     _fields_ = [
@@ -35,7 +35,7 @@ class TimedData(object):
             self.time = time
 
 
-class ForceSensorData(TimedData):
+class ForceSensorData(TimedData, AbstractCSVDataStruct):
     """The Force data structure with the following properties
     * sensor_id (int)
     * time (time stamp)
@@ -48,8 +48,6 @@ class ForceSensorData(TimedData):
     n_forces = 6
     n_triggers = 2
     forces_names = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
-
-    # FIXME update docu, types have change to numpy
 
     def __init__(
         self,
@@ -90,33 +88,6 @@ class ForceSensorData(TimedData):
             self.trigger[1] = 0
         for r in reverse:
             forces[r] = -1 * forces[r]
-
-    def csv(self,
-            write_device_id: bool,
-            write_forces: list[bool],
-            write_trigger: list[bool],
-            float_decimal_places: int= 4) -> str:
-        """converts data to string."""
-
-        float_format = "{0:." + str(float_decimal_places) + "f},"
-        txt = f"{self.time},"
-        if write_device_id:
-            txt += f"{self.sensor_id},"
-        for x in self.forces[write_forces]:
-            txt += float_format.format(x)
-        for x in self.trigger[write_trigger]:
-            if isinstance(x, int):
-                txt += f"{x},"
-            else:
-                txt += float_format.format(x)
-        return txt[:-1]
-
-
-    def __str__(self):
-        return self.csv(write_device_id=True,
-                        write_forces=[True]*ForceSensorData.n_forces,
-                        write_trigger=[True]*ForceSensorData.n_triggers,
-                        float_decimal_places=4)
 
     @property
     def Fx(self):
@@ -173,30 +144,3 @@ class ForceSensorData(TimedData):
             return cls.forces_names.index(force_label)
         except ValueError:
             return None
-
-class UDPData(TimedData):
-    """The UDP data class, used to store UDP DATA with timestamps"""
-
-    def __init__(self, time: float | None, string: str | bytes):
-        """Create a UDA_DATA object
-
-        Parameters
-        ----------
-        time : float
-        code : numerical or string
-
-        """
-        super().__init__(time)
-        if isinstance(string, str):
-            self.byte_string = string.encode()
-        else:
-            self.byte_string = string
-
-    @property
-    def unicode(self):
-        return self.byte_string.decode("utf-8", "replace")  # pyright: ignore[reportAttributeAccessIssue]
-
-    def startswith(self, byte_string):
-        return self.byte_string[: len(byte_string)] == byte_string
-
-

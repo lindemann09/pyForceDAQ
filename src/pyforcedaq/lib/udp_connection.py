@@ -13,7 +13,34 @@ from multiprocessing import Event, Process, Queue
 
 from ..tools.clock import local_clock, wait_ms
 from ..tools.lan import get_lan_ip
-from .types import UDPData
+from .types import TimedData
+
+
+class UDPData(TimedData):
+    """The UDP data class, used to store UDP DATA with timestamps"""
+
+    def __init__(self, time: float | None, string: str | bytes):
+        """Create a UDA_DATA object
+
+        Parameters
+        ----------
+        time : float
+        code : numerical or string
+
+        """
+        super().__init__(time)
+        if isinstance(string, str):
+            self.byte_string = string.encode()
+        else:
+            self.byte_string = string
+
+    @property
+    def unicode(self):
+        return self.byte_string.decode("utf-8", "replace")  # pyright: ignore[reportAttributeAccessIssue]
+
+    def startswith(self, byte_string):
+        return self.byte_string[: len(byte_string)] == byte_string
+
 
 
 class UDPConnection(object):

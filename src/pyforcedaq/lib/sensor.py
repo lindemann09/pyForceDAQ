@@ -16,12 +16,13 @@ from numpy.typing import NDArray
 from ..constants import DaqType
 from ..tools.clock import local_clock
 from ..tools.data import DataBuffer
+from ..tools.file_writer import AbstractFileWriter
 from .daq import mock_daq, ni_daq
-from .settings import SensorSettings
+from .settings import RecordingSettings, SensorSettings
 from .types import ForceSensorData
 
 
-class CalibrationConverter(object):  # type: ignore
+class CalibrationConverter:
 
     def __init__(self, calibration_file: str | Path):
         self._ftsensor = atiiaftt.FTSensor(str(calibration_file), index=1)
@@ -32,7 +33,7 @@ class CalibrationConverter(object):  # type: ignore
     def bias(self, bias_values: NDArray) -> None:
         self._ftsensor.bias(bias_values.tolist())
 
-class Sensor(object):
+class Sensor:
 
     # channel 0:5 for FT sensor, channel 6  for trigger
     SENSOR_CHANNELS = range(0, 5 + 1)
@@ -132,3 +133,37 @@ class Sensor(object):
             )) # TODO: remove deprecated hardware trigger channel support
 
         return rtn
+
+class SensorDataWriter(AbstractFileWriter):
+
+    def __init__(
+        self,
+        recording_settings: RecordingSettings,
+        filepath: Path|str = "",
+        append_mode: bool = False,
+        float_decimal_places: int = 6
+    ):
+        """To write to a file from multiple processes. Use SensorDataWriter.queue.put(str) to write file"""
+
+        super().__init__(filepath=Path(filepath), append_mode=append_mode)
+
+        self._write_forces = recording_settings.array_write_forces()
+        self._write_trigger = recording_settings.array_write_trigger()
+        self._write_deviceid = len(recording_settings.sensors) > 1
+        self._decimal_places = float_decimal_places
+
+    def to_csv(self, data: ForceSensorData) -> str:
+        """converts data to string."""
+
+        float_format = "{0:." + str(self._decimal_places) + "f},"
+        txt = f"{data.time},"
+        if self._write_deviceid:
+            txt += f"{data.sensor_id},"
+        for x in data.forces[self._write_forces]:
+            txt += float_format.format(x)
+        for x in data.trigger[self._write_trigger]:
+            if isinstance(x, int):
+                txt += f"{x},"
+            else:
+                txt += float_format.format(x)
+        return txt[:-1]

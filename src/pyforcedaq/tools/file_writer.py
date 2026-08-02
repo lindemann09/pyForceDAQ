@@ -1,21 +1,35 @@
+"""
+Docstring for pyforcedaq.tools.file_writer
+"""
 import bz2
+from abc import ABC, abstractmethod
 from multiprocessing import Event, Process, Queue
 from pathlib import Path
 from queue import Empty
 
-from .settings import RecordingSettings
-from .types import TAG_COMMENTS, ForceSensorData
-
 NEWLINE = "\n"
 ENCODING = "utf-8"
 
-class FileWriter(Process):
+class AbstractCSVDataStruct(ABC):
+    ...
 
+class AbstractFileWriter(ABC, Process):
+    """FileWriter is a process that runs in the background and writes data to a file.
+    You can send data to be written by putting it into the queue attribute of the FileWriter instance.
+    You need to start the process by calling the start() method. The process will run until you call
+    the join() method or the program exits.
+
+    Instructions to use  the FileWriter process:
+    1. The data structure you want to save with FileWriter as csv has to be a subclass of
+        AbstractCSVDataStruct.
+    2. Create a subclass of AbstractFileWriter and implement the to_csv method to convert your
+        data structure to a CSV string.
+
+    """
     def __init__(
-        self, recording_settings: RecordingSettings,
-        filepath: Path|str = "",
+        self,
+        filepath: Path|str,
         append_mode: bool = False,
-        float_decimal_places: int = 6
     ):
         """To write to a file from multiple processes. Use FileWriter.queue.put(str) to write file"""
 
@@ -25,10 +39,6 @@ class FileWriter(Process):
         self.queue = Queue()
         self._enforce_quit = Event()
         self._close_file = Event()
-        self._write_forces = recording_settings.array_write_forces()
-        self._write_trigger = recording_settings.array_write_trigger()
-        self._write_deviceid = len(recording_settings.sensors) > 1
-        self._decimal_places = float_decimal_places
 
     @property
     def filepath(self) -> Path:
@@ -53,12 +63,17 @@ class FileWriter(Process):
         self._close_file.set()
         super().join(timeout)
 
+    @abstractmethod
+    def to_csv(self, data: AbstractCSVDataStruct) -> str:
+        ...
+
     def run(self):
 
         if self._filepath is None:
             raise ValueError("File path is not set. Call set_file() with a valid file path before running the process.")
         self._filepath.parent.mkdir(parents=True, exist_ok=True)
 
+        print(f"FileWriter: writing to {self._filepath} (append_mode={self._append_mode})")
         if self._append_mode:
             mode = "a"
         else:
@@ -84,15 +99,13 @@ class FileWriter(Process):
                 except Empty:
                     continue  # wait again for events
 
-            if isinstance(d, ForceSensorData):
-                txt = d.csv(write_device_id=self._write_deviceid,
-                            write_forces=self._write_forces,
-                            write_trigger=self._write_trigger,
-                            float_decimal_places=self._decimal_places) + NEWLINE
+            if isinstance(d, AbstractCSVDataStruct):
+                txt = self.to_csv(d) + NEWLINE
+
             elif isinstance(d, str):
-                txt = f"{TAG_COMMENTS} {d}"
+                txt = f"{d}"
             else:
-                continue  # ignore unknown data types or maybe raise error (TODO)
+                continue  # ignore unknown
 
             if isinstance(fl, bz2.BZ2File):
                 fl.write(txt.encode(ENCODING))
@@ -101,6 +114,7 @@ class FileWriter(Process):
 
         fl.flush()
         fl.close()
+
 
 def unique_file_path(path: Path|str) -> Path:
     """Generates a unique file path by appending a number to the base path if the file already exists."""
