@@ -42,8 +42,8 @@ class Sensor:
 
     def __init__(self, s_settings: SensorSettings,
                  daq_type: DaqType,
-                 buffer_size: int): #FIXME Rename Buffer to history
-        """buffer_size: number of raw samples to keep in the buffer needed for determining the bias"""
+                 history_size: int):
+        """history_size: number of raw samples to keep in the history needed for determining the bias"""
 
         assert isinstance(s_settings, SensorSettings)
         assert len(self.SENSOR_CHANNELS) == len(ForceSensorData.forces_names)
@@ -82,13 +82,13 @@ class Sensor:
                 self._reverse_vector[idx] = -1
 
         # for bias determination
-        self.raw_sample_buffer = DataBuffer(maxlen=buffer_size) # unbiased samples
+        self.raw_sample_history = DataBuffer(maxlen=history_size) # unbiased samples
         self.bias = np.zeros(len(Sensor.SENSOR_CHANNELS), dtype=np.float64)
 
     def determine_bias(self):
         """determines bias based on the last raw samples"""
 
-        self.bias = self.raw_sample_buffer.buffer_mean()
+        self.bias = self.raw_sample_history.buffer_mean()
         if self._calib_converter is not None:
             self._calib_converter.bias(self.bias)
 
@@ -111,7 +111,7 @@ class Sensor:
         for data in npdata_2d:
 
             raw_samples = data[Sensor.SENSOR_CHANNELS]
-            self.raw_sample_buffer.append(raw_samples)
+            self.raw_sample_history.append(raw_samples)
 
             # bias correction of raw samples and conversion to force data, if needed
             if self.convert_to_FT and self._calib_converter is not None:

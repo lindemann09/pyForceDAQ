@@ -134,7 +134,7 @@ class SensorProcess(Process):
     def run(self):
         sensor = Sensor(self.sensor_settings,
                         daq_type=self._daq_type,
-                        buffer_size=SensorProcess.DETERMINE_BIAS_SAMPLES)
+                        history_size=SensorProcess.DETERMINE_BIAS_SAMPLES)
 
         stream_forces = self.recording_settings.array_write_forces()
         stream_trigger = self.recording_settings.array_write_trigger()
