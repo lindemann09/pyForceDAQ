@@ -1,6 +1,3 @@
-"""
-Docstring for pyforcedaq.tools.file_writer
-"""
 import bz2
 from abc import ABC, abstractmethod
 from multiprocessing import Event, Process, Queue
@@ -120,14 +117,17 @@ def unique_file_path(path: Path|str) -> Path:
     """Generates a unique file path by appending a number to the base path if the file already exists."""
     path = Path(path)
     stem_parts = path.stem.rsplit("_", 1)
+    stem = stem_parts[0]
     try:
         counter = int(stem_parts[-1])
     except ValueError:
         counter = 1
+        stem = path.stem
+
 
     unique_path = path
     while True:
         if not unique_path.exists():
             return unique_path
-        unique_path = path.with_name(f"{stem_parts[0]}_{counter}{path.suffix}")
+        unique_path = path.with_name(f"{stem}_{counter}{path.suffix}")
         counter += 1
