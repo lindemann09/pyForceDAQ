@@ -7,20 +7,20 @@
 <!-- sure any custom software you write stays up to date with the latest version of  -->
 <!-- the calibration matrix.                                                         -->
 <FTSensor  Serial="FT9093" BodyStyle="Mini40" Family="DAQ" NumGages="6" CalFileVersion="1.1">
-	<Calibration  PartNumber="SI-40-2" CalDate="5/28/2014" ForceUnits="N" TorqueUnits="N-m" DistUnits="m" OutputMode="Ground Referenced Differential" OutputRange="20" HWTempComp="True" GainMultiplier="1" CableLossDetection="False" OutputBipolar="True">
-		<Axis Name="Fx" values="  0.92661  31.11424  -0.20060  -0.19967  -0.80826 -32.40685 " max="40" scale="5.21826094892786"/>
-		<Axis Name="Fy" values=" -0.07786 -18.09029   1.57147  37.77771  -1.02762 -18.56838 " max="40" scale="5.21826094892786"/>
-		<Axis Name="Fz" values="-18.44275   0.82683 -18.04733   0.62188 -18.24343   0.78606 " max="120" scale="1.77231963660372"/>
-		<Axis Name="Tx" values=" 31.65151  -1.44957  -0.43333   0.17848 -31.90735   1.16529 " max="2" scale="217.518025516362"/>
-		<Axis Name="Ty" values="-18.70014   0.63152  36.41296  -1.14563 -18.09690   0.94000 " max="2" scale="217.518025516362"/>
-		<Axis Name="Tz" values="  0.61165  18.45164   0.79017  18.69969   0.34858  18.46984 " max="2" scale="217.669567800686"/>
+	<Calibration  PartNumber="SI-20-1" CalDate="1/17/2019" ForceUnits="N" TorqueUnits="N-m" DistUnits="m" OutputMode="Ground Referenced Differential" OutputRange="20" HWTempComp="True" GainMultiplier="1" CableLossDetection="False" OutputBipolar="True">
+		<Axis Name="Fx" values="  0.91883  31.53602  -0.21683  -0.26321  -0.87605 -33.60410 " max="20" scale="10.4365218978557"/>
+		<Axis Name="Fy" values=" -0.03940 -18.21354   1.67705  38.23872  -0.92857 -19.49350 " max="20" scale="10.4365218978557"/>
+		<Axis Name="Fz" values="-18.57462   0.80130 -18.33747   0.64651 -18.76347   0.83825 " max="60" scale="3.54463927320744"/>
+		<Axis Name="Tx" values=" 32.49074  -1.41401   0.19239   0.13957 -31.98298   1.13524 " max="1" scale="435.036051032724"/>
+		<Axis Name="Ty" values="-18.78792   0.65810  37.24269  -1.18759 -18.62760   0.89325 " max="1" scale="435.036051032724"/>
+		<Axis Name="Tz" values="  0.52830  17.95192   0.92240  19.04775   0.43959  19.98989 " max="1" scale="435.339135601372"/>
 		<BasicTransform Dx="0" Dy="0" Dz="0.0053594" Rx="0" Ry="0" Rz="0"/>
-		<UserAxis Name="Fx" values="  0.17757   5.96257  -0.03844  -0.03826  -0.15489  -6.21028 " max="40"/>
-		<UserAxis Name="Fy" values=" -0.01492  -3.46673   0.30115   7.23952  -0.19693  -3.55835 " max="40"/>
-		<UserAxis Name="Fz" values="-10.40600   0.46652 -10.18289   0.35088 -10.29353   0.44352 " max="120"/>
-		<UserAxis Name="Tx" values="  0.14543  -0.02524  -0.00038   0.03962  -0.14774  -0.01371 " max="2"/>
-		<UserAxis Name="Ty" values=" -0.08692  -0.02905   0.16761  -0.00506  -0.08237   0.03760 " max="2"/>
-		<UserAxis Name="Tz" values="  0.00281   0.08477   0.00363   0.08591   0.00160   0.08485 " max="2"/>
+		<UserAxis Name="Fx" values="  0.08804   3.02170  -0.02078  -0.02522  -0.08394  -3.21986 " max="20"/>
+		<UserAxis Name="Fy" values=" -0.00378  -1.74517   0.16069   3.66393  -0.08897  -1.86782 " max="20"/>
+		<UserAxis Name="Fz" values=" -5.24020   0.22606  -5.17330   0.18239  -5.29348   0.23648 " max="60"/>
+		<UserAxis Name="Tx" values="  0.07466  -0.01260   0.00130   0.01996  -0.07399  -0.00740 " max="1"/>
+		<UserAxis Name="Ty" values=" -0.04366  -0.01468   0.08572  -0.00259  -0.04237   0.01931 " max="1"/>
+		<UserAxis Name="Tz" values="  0.00121   0.04124   0.00212   0.04375   0.00101   0.04592 " max="1"/>
 	</Calibration>
 </FTSensor>
 
