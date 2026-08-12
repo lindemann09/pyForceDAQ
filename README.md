@@ -1,4 +1,4 @@
-![pyForceDAQ](https://github.com/lindemann09/pyForceDAQ/blob/master/src/pyforcedaq/gui/forceDAQ_logo.png)
+![pyForceDAQ](src/pyforcedaq/gui/forceDAQ_logo.png)
 
 Python DAQ library and application for ATI force sensors and NI-DAQ
 
@@ -19,7 +19,7 @@ Install pyForceDAQ via UV:
 uv tool install pyforcedaq --python 3.13 -U
 ``
 
-* Under Windows: A complied version of `atidaq.dll` can be 
+* Under Windows: A complied version of `atidaq.dll` can be
  found in the `dll` subfolder of the Branch 'additional materials.  Make this library available by coping it in your ystem folder
 
 To install pyForceDAQ from release-zipfile
