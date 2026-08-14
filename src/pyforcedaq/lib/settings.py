@@ -46,7 +46,7 @@ class ABCSettings(ABC):  # must be a dataclass
             if hasattr(self, key):
                 setattr(self, key, values)
         # check all properties in dataclass have been set
-        for class_property in self.__dataclass_fields__.keys():  # type: ignore
+        for class_property in self.__dataclass_fields__.keys():
             if class_property not in property_dict:
                 return True
         return False

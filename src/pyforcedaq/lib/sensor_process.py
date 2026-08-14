@@ -109,7 +109,7 @@ class SensorProcess(Process):
 
     def get_total_sample_cnt(self) -> int:
         with self._total_sample_cnt.get_lock():
-            return int(self._total_sample_cnt.value)  # type: ignore
+            return int(self._total_sample_cnt.value)
 
     def determine_bias(self):
         self.flag_sensor_bias_is_determined.clear()
@@ -203,7 +203,7 @@ class SensorProcess(Process):
 
                 # write to shared memory and file writer queue
                 with self._total_sample_cnt.get_lock():
-                    self._total_sample_cnt.value += 1 # type: ignore
+                    self._total_sample_cnt.value += 1
                 with self._dat.get_lock():
                     self._dat[:] = d.forces
 

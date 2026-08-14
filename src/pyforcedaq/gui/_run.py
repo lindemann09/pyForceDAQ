@@ -171,7 +171,7 @@ def run(settings: AppSettings):
     exp.set_log_level(0)
 
     control.initialize(exp)
-    exp.mouse.show_cursor()  # type: ignore #
+    exp.mouse.show_cursor()  # type: ignore
     pygame.display.set_caption(f"pyforceDAQ {forceDAQVersion}")
 
     icon_path = os.path.join(os.path.dirname(__file__), "rf_icon.png")

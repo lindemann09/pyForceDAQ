@@ -11,7 +11,7 @@ def client(server_ip):
     # space : enter
 
     control.set_develop_mode(True)
-    control.defaults.audiosystem_autostart=False
+    control.defaults.audiosystem_autostart = False
     exp = control.initialize()
 
     udp_connection = UDPConnection()
