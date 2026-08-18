@@ -1,8 +1,8 @@
-![pyForceDAQ](src/pyforcedaq/gui/forceDAQ_logo.png)
+# pyForceDAQ
 
 Python DAQ library and application for ATI force sensors and NI-DAQ
 
-*Released under the MIT License*
+![License](https://img.shields.io/pypi/l/pyforcedaq)
 
  Oliver Lindemann <lindemann@cognitive-psychology.eu>
 

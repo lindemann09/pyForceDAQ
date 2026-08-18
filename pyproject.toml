@@ -1,7 +1,9 @@
 [project]
 name = "pyForceDAQ"
-version = "2.1.0"
+version = "2.1.2"
 description = "A Python package for data acquisition and analysis in force-based experiments."
+readme = "README.md"
+license = {file = "COPYING", text = "MIT"}
 authors = [
     { name = "Oliver Lindemann", email = "lindemann@essb.eur.nl" },
 ]
@@ -21,7 +23,7 @@ dependencies = [
     pygame = ["setuptools._distutils.msvccompiler"]
 
 [build-system]
-requires = ["uv_build>=0.11.15,<0.12.0"]
+requires = ["uv_build>=0.11.15,<0.13"]
 build-backend = "uv_build"
 
 [dependency-groups]
